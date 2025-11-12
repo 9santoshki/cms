@@ -1,9 +1,9 @@
 // Define TypeScript interfaces for our application
-
 export interface User {
   id: number;
   name: string;
   email: string;
+  role?: 'admin' | 'user';
   [key: string]: any;
 }
 
@@ -13,7 +13,7 @@ export interface Product {
   description: string;
   price: number;
   image_url?: string;
-  imageClass: string;
+  category?: string;
   [key: string]: any;
 }
 
@@ -30,6 +30,17 @@ export interface Order {
   id: number;
   user_id: number;
   total_amount: number;
+  items: CartItem[];
+  status: string;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    zipCode: string;
+  };
+  created_at?: string;
   [key: string]: any;
 }
 
@@ -55,4 +66,11 @@ export interface State {
   orders: Order[];
   loading: LoadingState;
   error: ErrorState;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
 }

@@ -37,7 +37,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
         </CloseButton>
         
         <ProductDetailContent>
-          <ProductDetailImage imageClass={product.imageClass}></ProductDetailImage>
+          <ProductDetailImage imageClass={product.imageClass} imageUrl={product.image_url}></ProductDetailImage>
           
           <ProductDetailInfo>
             <ProductDetailTitle>{product.name}</ProductDetailTitle>

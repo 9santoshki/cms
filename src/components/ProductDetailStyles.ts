@@ -50,7 +50,9 @@ export const ProductDetailContent = styled.div`
   }
 `;
 
-export const ProductDetailImage = styled.div<{ imageClass?: string }>`
+export const ProductDetailImage = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['imageClass', 'imageUrl'].includes(prop),
+})<{ imageClass?: string; imageUrl?: string }>`
   height: 300px;
   background-color: #f0f0f0;
   background-size: cover;
@@ -61,6 +63,7 @@ export const ProductDetailImage = styled.div<{ imageClass?: string }>`
     height: auto;
   }
   
+  /* Handle specific imageClass values */
   ${props => props.imageClass === 'modern' && `
     background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
   `}
@@ -72,6 +75,9 @@ export const ProductDetailImage = styled.div<{ imageClass?: string }>`
   ${props => props.imageClass === 'coastal' && `
     background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
   `}
+  
+  /* Handle imageUrl if provided */
+  ${props => props.imageUrl ? `background-image: url('${props.imageUrl}');` : ''}
 `;
 
 export const ProductDetailInfo = styled.div`

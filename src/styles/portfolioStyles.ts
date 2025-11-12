@@ -22,11 +22,20 @@ export const PortfolioHero = styled.section`
   color: white;
   margin-top: 80px;
   
+  .container {
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
+  }
+  
   h1 {
     font-size: 3.5rem;
     margin-bottom: 20px;
     text-transform: uppercase;
     letter-spacing: 3px;
+    width: 100%;
+    text-align: center;
   }
   
   p {
@@ -36,6 +45,8 @@ export const PortfolioHero = styled.section`
     font-family: ${theme.fonts.secondary};
     text-transform: uppercase;
     letter-spacing: 2px;
+    width: 100%;
+    text-align: center;
   }
 `;
 
@@ -48,6 +59,9 @@ export const PortfolioFilter = styled.section`
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
   }
 `;
 
@@ -59,45 +73,25 @@ export const FilterButtons = styled.div`
   margin: 0 auto;
   max-width: 800px;
   padding: 0 20px;
+  width: 100%;
 `;
 
-export const FilterButton = styled.button<{ active?: boolean }>`
+export const FilterButton = styled.button<{ $active?: boolean }>`
   padding: 14px 30px;
-  background-color: ${props => props.active ? theme.colors.primary : 'transparent'};
+  background-color: ${props => props.$active ? theme.colors.primary : 'transparent'};
   border: 2px solid ${theme.colors.primary};
-  color: ${props => props.active ? theme.colors.white : theme.colors.primary};
+  color: ${props => props.$active ? theme.colors.white : theme.colors.primary};
   cursor: pointer;
-  font-family: ${theme.fonts.secondary};
   font-size: 16px;
-  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
+  font-family: ${theme.fonts.secondary};
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
-  min-width: 150px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: ${theme.colors.primary};
-    z-index: -1;
-    transform: ${props => props.active ? 'scaleX(1)' : 'scaleX(0)'};
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
+  margin: 0 10px;
+  
   &:hover {
+    background-color: ${theme.colors.primary};
     color: ${theme.colors.white};
-    
-    &::before {
-      transform: scaleX(1);
-    }
   }
 `;
 
@@ -109,6 +103,9 @@ export const PortfolioGrid = styled.section`
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
   }
 `;
 
@@ -117,9 +114,17 @@ export const ProjectsGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
   justify-content: center;
+  align-items: center;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  width: 100%;
+  
+  /* Ensure grid items are centered in their cells */
+  > * {
+    justify-self: center;
+    max-width: 100%;
+  }
 `;
 
 export const ProjectCard = styled.div`
@@ -129,13 +134,17 @@ export const ProjectCard = styled.div`
   overflow: hidden;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
+  width: 100%;
+  max-width: 300px; /* Limit card width to prevent stretching */
   
   &:hover {
     transform: translateY(-10px);
   }
 `;
 
-export const ProjectImage = styled.div<{ imageClass: string }>`
+export const ProjectImage = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['imageClass'].includes(prop),
+})<{ imageClass: string }>`
   width: 100%;
   height: 100%;
   background-size: cover;
@@ -289,12 +298,17 @@ export const PortfolioCTA = styled.section`
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
   }
   
   h2 {
     font-size: 2.5rem;
     margin-bottom: 20px;
     color: white;
+    width: 100%;
+    text-align: center;
   }
   
   p {
@@ -303,6 +317,8 @@ export const PortfolioCTA = styled.section`
     margin: 0 auto 30px;
     color: #ddd;
     font-family: ${theme.fonts.secondary};
+    width: 100%;
+    text-align: center;
   }
   
   button {

@@ -1,6 +1,8 @@
+'use client';
+
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { productsAPI, authAPI, cartAPI, ordersAPI } from '../utils/api';
-import { User, Product, CartItem, Order, LoadingState, ErrorState, State } from '../types';
+import { apiClient } from '@/lib/api';
+import { User, Product, CartItem, Order, LoadingState, ErrorState, State } from '@/types';
 
 // Action types
 
@@ -84,8 +86,8 @@ const appReducer = (state: State, action: Action): State => {
         ...state,
         loading: {
           ...state.loading,
-          [action.payload.type]: action.payload.value
-        }
+          products: false
+        },
       };
     
     case ACTIONS.SET_ERROR:
@@ -254,21 +256,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   
   // Fetch products
   const fetchProducts = async () => {
+    // Don't fetch if already loading to prevent race conditions
+    if (state.loading.products) return;
+    
     setLoading('products', true);
     setError('products', null);
     
     try {
-      const data = await productsAPI.getAll();
-      // Convert price strings to numbers for proper formatting
-      const formattedProducts = data.map((product: any) => ({
-        ...product,
-        price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
-        imageClass: product.image_url || 'modern'
-      }));
-      dispatch({ type: ACTIONS.SET_PRODUCTS, payload: formattedProducts });
+      const response = await apiClient.getProducts();
+      if (response.success && response.data) {
+        // Convert price strings to numbers for proper formatting
+        const formattedProducts = response.data.map((product: any) => ({
+          ...product,
+          price: typeof product.price === 'number' ? product.price : parseFloat(product.price),
+          image_url: product.image_url || undefined,
+          imageClass: product.image_url ? undefined : (product.imageClass || 'modern') // Only set imageClass if no image_url
+        }));
+        dispatch({ type: ACTIONS.SET_PRODUCTS, payload: formattedProducts });
+      } else {
+        throw new Error(response.error || 'Failed to load products');
+      }
     } catch (error: any) {
       console.error('Error fetching products:', error);
-      setError('products', 'Failed to load products. Please try again later.');
+      setError('products', error.message || 'Failed to load products. Please try again later.');
     } finally {
       setLoading('products', false);
     }
@@ -282,11 +292,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setError('cart', null);
     
     try {
-      const data = await cartAPI.getItems(state.token);
-      dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: data });
+      const response = await apiClient.getCartItems();
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: response.data });
+      } else {
+        throw new Error(response.error || 'Failed to load cart items');
+      }
     } catch (error: any) {
       console.error('Error fetching cart items:', error);
-      setError('cart', 'Failed to load cart items. Please try again later.');
+      setError('cart', error.message || 'Failed to load cart items. Please try again later.');
     } finally {
       setLoading('cart', false);
     }
@@ -299,11 +313,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setError('cart', null);
       
       try {
-        await cartAPI.addItem(product.id, quantity, state.token);
-        dispatch({ type: ACTIONS.ADD_TO_CART, payload: { ...product, quantity } });
+        const response = await apiClient.addToCart(product.id, quantity);
+        if (response.success && response.data) {
+          dispatch({ type: ACTIONS.ADD_TO_CART, payload: response.data });
+        } else {
+          throw new Error(response.error || 'Failed to add item to cart');
+        }
       } catch (error: any) {
         console.error('Error adding to cart:', error);
-        setError('cart', 'Failed to add item to cart. Please try again.');
+        setError('cart', error.message || 'Failed to add item to cart. Please try again.');
       } finally {
         setLoading('cart', false);
       }
@@ -319,16 +337,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setError('cart', null);
       
       try {
-        if (quantity <= 0) {
-          await cartAPI.removeItem(productId, state.token);
+        const response = await apiClient.updateCartItem(productId, quantity);
+        if (response.success && response.data) {
+          dispatch({ type: ACTIONS.UPDATE_CART_ITEM, payload: response.data });
+        } else if (quantity <= 0 && response.success) {
+          // When quantity is 0, the item was removed
           dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
         } else {
-          await cartAPI.updateItem(productId, quantity, state.token);
-          dispatch({ type: ACTIONS.UPDATE_CART_ITEM, payload: { id: productId, quantity } });
+          throw new Error(response.error || 'Failed to update cart item');
         }
       } catch (error: any) {
         console.error('Error updating cart item:', error);
-        setError('cart', 'Failed to update cart item. Please try again.');
+        setError('cart', error.message || 'Failed to update cart item. Please try again.');
       } finally {
         setLoading('cart', false);
       }
@@ -348,11 +368,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setError('cart', null);
       
       try {
-        await cartAPI.removeItem(productId, state.token);
-        dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+        const response = await apiClient.removeFromCart(productId);
+        if (response.success) {
+          dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+        } else {
+          throw new Error(response.error || 'Failed to remove item from cart');
+        }
       } catch (error: any) {
         console.error('Error removing from cart:', error);
-        setError('cart', 'Failed to remove item from cart. Please try again.');
+        setError('cart', error.message || 'Failed to remove item from cart. Please try again.');
       } finally {
         setLoading('cart', false);
       }
@@ -368,11 +392,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setError('cart', null);
       
       try {
-        await cartAPI.clear(state.token);
-        dispatch({ type: ACTIONS.CLEAR_CART });
+        const response = await apiClient.clearCart();
+        if (response.success) {
+          dispatch({ type: ACTIONS.CLEAR_CART });
+        } else {
+          throw new Error(response.error || 'Failed to clear cart');
+        }
       } catch (error: any) {
         console.error('Error clearing cart:', error);
-        setError('cart', 'Failed to clear cart. Please try again.');
+        setError('cart', error.message || 'Failed to clear cart. Please try again.');
       } finally {
         setLoading('cart', false);
       }
@@ -389,11 +417,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setError('orders', null);
     
     try {
-      const data = await ordersAPI.getAll(state.token);
-      dispatch({ type: ACTIONS.SET_ORDERS, payload: data });
+      const response = await apiClient.getOrders();
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.SET_ORDERS, payload: response.data });
+      } else {
+        throw new Error(response.error || 'Failed to load orders');
+      }
     } catch (error: any) {
       console.error('Error fetching orders:', error);
-      setError('orders', 'Failed to load orders. Please try again later.');
+      setError('orders', error.message || 'Failed to load orders. Please try again later.');
     } finally {
       setLoading('orders', false);
     }
@@ -407,10 +439,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setError('orders', null);
     
     try {
-      const data = await ordersAPI.create(orderData, state.token);
-      dispatch({ type: ACTIONS.ADD_ORDER, payload: data });
-      dispatch({ type: ACTIONS.CLEAR_CART });
-      return data;
+      const response = await apiClient.createOrder(orderData);
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.ADD_ORDER, payload: response.data });
+        dispatch({ type: ACTIONS.CLEAR_CART });
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to create order');
+      }
     } catch (error: any) {
       console.error('Error creating order:', error);
       
@@ -418,7 +454,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error.message && error.message.includes('Validation Error')) {
         setError('orders', 'Please check your order details and try again.');
       } else {
-        setError('orders', 'Failed to create order. Please try again.');
+        setError('orders', error.message || 'Failed to create order. Please try again.');
       }
       
       throw error;
@@ -433,10 +469,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setError('auth', null);
     
     try {
-      const response = await authAPI.login(credentials);
-      setToken(response.token);
-      setUser(response.user);
-      return response;
+      const response = await apiClient.login(credentials);
+      if (response.success && response.data) {
+        apiClient.setToken(response.data.token);
+        setToken(response.data.token);
+        setUser(response.data.user);
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Login failed. Please check your credentials.');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -453,16 +494,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
   
+  
+  
   // Register
   const register = async (userData: any) => {
     setLoading('auth', true);
     setError('auth', null);
     
     try {
-      const response = await authAPI.register(userData);
-      setToken(response.token);
-      setUser(response.user);
-      return response;
+      const response = await apiClient.register(userData);
+      if (response.success && response.data) {
+        apiClient.setToken(response.data.token);
+        setToken(response.data.token);
+        setUser(response.data.user);
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Registration failed. Please try again.');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       
@@ -487,13 +535,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     dispatch({ type: ACTIONS.SET_ORDERS, payload: [] });
   };
   
-  // Verify token
+  // Verify token - we can use any authenticated endpoint to verify the token
   const verifyToken = async () => {
     if (!state.token) return false;
     
     try {
-      await authAPI.getProfile(state.token);
-      return true;
+      // Using the getOrders endpoint as a way to verify the token
+      const response = await apiClient.getOrders();
+      if (response.success) {
+        return true;
+      } else {
+        throw new Error('Token verification failed');
+      }
     } catch (error: any) {
       console.error('Token verification failed:', error);
       logout();

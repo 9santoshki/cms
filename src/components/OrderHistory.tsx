@@ -1,11 +1,17 @@
+'use client';
+
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import '../App.css'; // Import the main CSS file
 import { formatDate } from '../utils/formatUtils';
 
 const OrderHistory = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
+
+const navigate = (path: string) => {
+  router.push(path);
+};
   const { user, cartItems, orders, loading, error, fetchOrders } = useAppContext();
   
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -14,7 +20,7 @@ const OrderHistory = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const formatDateLocal = (dateString) => {
+  const formatDateLocal = (dateString: string) => {
     return formatDate(dateString);
   };
 
@@ -99,8 +105,12 @@ const OrderHistory = () => {
             {user && (
               <a href="/orders" className="nav-link">Orders</a>
             )}
-            <a href="#about" className="nav-link">About</a>
-            <a href="#contact" className="nav-link">Contact</a>
+            <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate('/about'); }}>About</a>
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate('/contact'); }}>Contact</a>
+            </div>
+            <div className="nav-menu">
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate('/about'); }}>About</a>
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate('/contact'); }}>Contact</a>
           </div>
           <div className="nav-icons">
             <button className="nav-icon">
@@ -169,7 +179,7 @@ const OrderHistory = () => {
                       <div className="order-item" key={item.id || itemIndex}>
                         <div className="item-name">{item.name || item.product_name}</div>
                         <div className="item-quantity">Qty: {item.quantity}</div>
-                        <div className="item-price">₹{(item.price * item.quantity).toLocaleString()}</div>
+                        <div className="item-price">₹{((typeof item.price === 'number' ? item.price : parseFloat(item.price || '0')) * item.quantity).toLocaleString()}</div>
                       </div>
                     ))}
                   </div>

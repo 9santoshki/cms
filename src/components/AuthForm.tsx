@@ -1,13 +1,21 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import '../App.css'; // Import the main CSS file
-import { validateEmail, validatePassword, validateName } from '../utils/validation';
 
+interface AuthFormProps {
+  onClose?: () => void;
+}
 
-const AuthForm = ({ onClose }) => {
-  const navigate = useNavigate();
-  const { login, register, loading, error, setError } = useAppContext();
+const AuthForm: React.FC<AuthFormProps> = ({ onClose: _onClose = () => {} }) => {
+  const { error, loading, setError, login, register } = useAppContext();
+  const router = useRouter();
+
+const navigate = (path: string) => {
+  router.push(path);
+};
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -16,7 +24,7 @@ const AuthForm = ({ onClose }) => {
     confirmPassword: ''
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -25,7 +33,7 @@ const AuthForm = ({ onClose }) => {
     if (error.auth) setError('auth', '');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
@@ -76,7 +84,6 @@ const AuthForm = ({ onClose }) => {
 
   return (
     <div className="auth-page">
-      <Header />
       <div className="auth-container">
         <div className="auth-header">
           <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>

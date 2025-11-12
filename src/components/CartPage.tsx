@@ -1,20 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+'use client';
+
+import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
+import Header from './Header';
+import Footer from './Footer';
 import '../App.css'; // Import the main CSS file
-import { calculateCartTotal, calculateCartItemCount } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
 
 
 const CartPage = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
+
+const navigate = (path: string) => {
+  router.push(path);
+};
   const { cartItems, loading, error, updateCartItem, removeFromCart } = useAppContext();
 
-  const updateQuantity = (productId, newQuantity) => {
+  const updateQuantity = (productId: number, newQuantity: number) => {
     updateCartItem(productId, newQuantity);
   };
 
-  const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const shipping = subtotal > 50000 ? 0 : 1500;
+  const subtotal = calculateCartTotal(cartItems);
+  const shipping = calculateShippingCost(subtotal);
   const total = subtotal + shipping;
 
   const handleCheckout = () => {
@@ -68,7 +76,7 @@ const CartPage = () => {
           {cartItems.map(item => (
             <div className="cart-item" key={item.id}>
               <div className="item-product">
-                <div className={`item-image ${item.imageClass}`}></div>
+                <div className={`item-image ${item.imageClass || 'modern'}`}></div>
                 <div className="item-details">
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
@@ -76,14 +84,14 @@ const CartPage = () => {
               </div>
               
               <div className="item-price">
-                ₹{item.price.toLocaleString()}
+                ₹{typeof item.price === 'number' ? item.price.toLocaleString() : parseFloat(item.price || '0').toLocaleString()}
               </div>
               
               <div className="item-quantity">
                 <button 
                   className="quantity-btn"
                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  disabled={loading.cart}
+                  disabled={loading.cart || item.quantity <= 1}
                 >
                   -
                 </button>
@@ -98,7 +106,9 @@ const CartPage = () => {
               </div>
               
               <div className="item-total">
-                ₹{(item.price * item.quantity).toLocaleString()}
+                ₹{typeof item.price === 'number' 
+                  ? (item.price * item.quantity).toLocaleString() 
+                  : (parseFloat(item.price || '0') * item.quantity).toLocaleString()}
               </div>
               
               <div className="item-actions">
@@ -146,6 +156,7 @@ const CartPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

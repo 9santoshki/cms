@@ -1,158 +1,157 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
-import Logo from './Logo';
-import { 
-  StyledHeader, 
-  HeaderContainer, 
-  HeaderLogo, 
-  HeaderSearch, 
-  SearchForm, 
-  SearchInput, 
-  SearchButton, 
-  HeaderActions, 
-  UserMenu, 
-  CartIcon, 
-  CartCount, 
-  CartText, 
-  HeaderNavigation, 
-  MainNav, 
-  StyledNavLink 
-} from './HeaderStyles';
+'use client';
 
-interface HeaderProps {
-  showSearch?: boolean;
-  showNavigation?: boolean;
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppContext } from '../context/AppContext';
+
+// Import header styles
+import { 
+  SharedHeader,
+  HeaderContainer,
+  HeaderLogo,
+  HeaderMenu,
+  HeaderLink,
+  HeaderIcons,
+  CartCount,
+  UserGreeting,
+  NavIcon,
+  MobileMenuToggle
+} from '../styles/HeaderStyles';
+
+interface SharedHeaderProps {
+  activePage?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ showSearch = true, showNavigation = true }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
+  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navigate = (path: string) => {
+    router.push(path);
+    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+  };
+  
   const { user, cartItems, logout } = useAppContext();
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
+  
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to shop page with search query
-      navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else if (location.pathname !== '/shop') {
-      navigate('/shop');
-    }
-  };
-
-  const viewCart = () => {
-    navigate('/cart');
-  };
 
   const handleLogout = () => {
     logout();
     navigate('/');
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
-    <StyledHeader>
+    <SharedHeader>
       <HeaderContainer>
-        {/* Logo */}
         <HeaderLogo>
-          <Logo />
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
+            <img 
+              src="/logo.svg" 
+              alt="Colour My Space Logo" 
+              className="logo-image" 
+            />
+          </a>
         </HeaderLogo>
-        {/* Added to force rebuild */}
-
-        {/* Search Bar */}
-        {showSearch && (
-          <HeaderSearch>
-            <SearchForm onSubmit={handleSearch}>
-              <SearchInput
-                type="text"
-                placeholder="Search furniture and home decor..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <SearchButton type="submit">
-                <i className="fas fa-search"></i>
-              </SearchButton>
-            </SearchForm>
-          </HeaderSearch>
-        )}
-
-        {/* User Actions */}
-        <HeaderActions>
-          <UserMenu>
-            {user ? (
-              <>
-                <span>Hello, {user.name}</span>
-                <button onClick={handleLogout}>
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <button onClick={() => navigate('/auth')}>
-                Sign In
-              </button>
-            )}
-          </UserMenu>
-
-          <CartIcon onClick={viewCart}>
-            <i className="fas fa-shopping-cart"></i>
-            {cartCount > 0 && <CartCount>{cartCount}</CartCount>}
-            <CartText>Cart</CartText>
-          </CartIcon>
-        </HeaderActions>
+        
+        <HeaderMenu style={{ display: isMobileMenuOpen ? 'flex' : 'flex' }}>
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'home'}
+            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+          >
+            Home
+          </HeaderLink>
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'shop'}
+            onClick={(e) => { e.preventDefault(); navigate('/shop'); }}
+          >
+            Shop
+          </HeaderLink>
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'portfolio'}
+            onClick={(e) => { e.preventDefault(); navigate('/portfolio'); }}
+          >
+            Portfolio
+          </HeaderLink>
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'services'}
+            onClick={(e) => { e.preventDefault(); navigate('/services'); }}
+          >
+            Services
+          </HeaderLink>
+          {user && (
+            <HeaderLink 
+              href="#" 
+              $active={activePage === 'orders'}
+              onClick={(e) => { e.preventDefault(); navigate('/orders'); }}
+            >
+              Orders
+            </HeaderLink>
+          )}
+          {user && user.role === 'admin' && (
+            <HeaderLink 
+              href="#" 
+              $active={activePage === 'admin'}
+              onClick={(e) => { e.preventDefault(); navigate('/admin'); }}
+            >
+              Admin
+            </HeaderLink>
+          )}
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'about'}
+            onClick={(e) => { e.preventDefault(); navigate('/about'); }}
+          >
+            About
+          </HeaderLink>
+          <HeaderLink 
+            href="#" 
+            $active={activePage === 'contact'}
+            onClick={(e) => { e.preventDefault(); navigate('/contact'); }}
+          >
+            Contact
+          </HeaderLink>
+        </HeaderMenu>
+        
+        <HeaderIcons>
+          <NavIcon>
+            <i className="fas fa-search"></i>
+          </NavIcon>
+          {user ? (
+            <>
+              <NavIcon onClick={handleLogout}>
+                <i className="fas fa-sign-out-alt"></i>
+              </NavIcon>
+              <UserGreeting>Hi, {user.name}</UserGreeting>
+            </>
+          ) : (
+            <NavIcon onClick={() => navigate('/auth')}>
+              <i className="fas fa-user"></i>
+            </NavIcon>
+          )}
+          <div style={{ position: 'relative' }}>
+            <NavIcon onClick={() => navigate('/cart')}>
+              <i className="fas fa-shopping-cart"></i>
+            </NavIcon>
+            {cartItems.length > 0 && <CartCount>{cartCount}</CartCount>}
+          </div>
+          
+          <MobileMenuToggle onClick={toggleMobileMenu}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </MobileMenuToggle>
+        </HeaderIcons>
       </HeaderContainer>
-
-      {/* Navigation */}
-      {showNavigation && (
-        <HeaderNavigation>
-          <MainNav>
-            <StyledNavLink 
-              href="/" 
-              isActive={location.pathname === '/'} 
-              onClick={(e) => { e.preventDefault(); navigate('/'); }}
-            >
-              Home
-            </StyledNavLink>
-            <StyledNavLink 
-              href="/shop" 
-              isActive={location.pathname === '/shop'} 
-              onClick={(e) => { e.preventDefault(); navigate('/shop'); }}
-            >
-              Shop
-            </StyledNavLink>
-            <StyledNavLink 
-              href="/categories" 
-              isActive={location.pathname === '/categories'} 
-              onClick={(e) => { e.preventDefault(); navigate('/categories'); }}
-            >
-              Categories
-            </StyledNavLink>
-            {user && (
-              <StyledNavLink 
-                href="/orders" 
-                isActive={location.pathname === '/orders'} 
-                onClick={(e) => { e.preventDefault(); navigate('/orders'); }}
-              >
-                Orders
-              </StyledNavLink>
-            )}
-            <StyledNavLink 
-              href="#about"
-              onClick={(e) => { e.preventDefault(); document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); }}
-            >
-              About
-            </StyledNavLink>
-            <StyledNavLink 
-              href="#contact"
-              onClick={(e) => { e.preventDefault(); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}
-            >
-              Contact
-            </StyledNavLink>
-          </MainNav>
-        </HeaderNavigation>
-      )}
-    </StyledHeader>
+    </SharedHeader>
   );
 };
 

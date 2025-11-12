@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import Header from './Header';
 import '../App.css'; // Import the main CSS file
-import { categories } from '../data/categories';
 
 
 const CategoriesPage = () => {
@@ -78,7 +80,7 @@ const CategoriesPage = () => {
         <div className="categories-grid">
           {categories.map(category => (
             <div className="category-card" key={category.id}>
-              <Link to={`/category/${category.id}`} className="category-link">
+              <Link href={`/category/${category.id}`} className="category-link">
                 <div className={`category-image ${category.imageClass}`}>
                   <div className="category-overlay">
                     <h3>{category.name}</h3>

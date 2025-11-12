@@ -74,35 +74,34 @@ export const NavLogo = styled.div`
   }
 `;
 
-export const NavMenu = styled.ul<{ isActive?: boolean }>`
-  display: ${props => props.isActive ? 'flex' : 'none'};
+export const NavMenu = styled.ul<{ $isActive?: boolean }>`
+  display: ${props => props.$isActive ? 'flex' : 'none'};
   gap: 30px;
   list-style: none;
-  position: ${props => props.isActive ? 'fixed' : 'static'};
-  left: ${props => props.isActive ? (props.isActive ? '0' : '-100%') : 'auto'};
-  top: 70px;
-  flex-direction: column;
-  background-color: ${theme.colors.white};
+  position: ${props => props.$isActive ? 'fixed' : 'static'};
+  top: 80px;
+  left: 0;
   width: 100%;
-  text-align: center;
-  transition: 0.3s;
-  box-shadow: 0 10px 27px ${theme.colors.shadow}0D;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 80px);
+  background-color: white;
+  flex-direction: column;
+  padding: 20px;
+  z-index: 999;
   overflow-y: auto;
 
-  @media (min-width: ${theme.breakpoints.mobile}) {
-    display: flex;
+  @media (min-width: 768px) {
     position: static;
+    width: auto;
+    height: auto;
+    display: flex;
     flex-direction: row;
     background-color: transparent;
-    width: auto;
-    text-align: left;
-    height: auto;
+    padding: 0;
     overflow-y: visible;
   }
 `;
 
-export const NavLink = styled.a<{ isActive?: boolean }>`
+export const NavLink = styled.a<{ $isActive?: boolean }>`
   text-decoration: none;
   color: ${theme.colors.text};
   font-weight: 500;
@@ -198,14 +197,14 @@ export const NavToggle = styled.div`
   }
 `;
 
-export const Bar = styled.span<{ isActive?: boolean }>`
+export const Bar = styled.span<{ $isActive?: boolean }>`
   width: 25px;
   height: 3px;
   background-color: ${theme.colors.text};
   margin: 3px 0;
   transition: 0.3s;
 
-  ${props => props.isActive && `
+  ${props => props.$isActive && `
     &:nth-child(2) {
       opacity: 0;
     }
