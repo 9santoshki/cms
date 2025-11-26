@@ -1,8 +1,9 @@
 var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/cart/route.js")
-R.c("server/chunks/[root-of-the-server]__695d4c23._.js")
-R.c("server/chunks/sk_codebase_newprojs_qwenproj_01a4d34b._.js")
-R.c("server/chunks/[root-of-the-server]__2ff2c68b._.js")
-R.c("server/chunks/[root-of-the-server]__b42b9af0._.js")
-R.c("server/chunks/28d17_newprojs_qwenproj__next-internal_server_app_api_cart_route_actions_1e79d84a.js")
-R.m(96602)
-module.exports=R.m(96602).exports
+R.c("server/chunks/[root-of-the-server]__507a04a6._.js")
+R.c("server/chunks/node_modules_next_f2da0d3e._.js")
+R.c("server/chunks/node_modules_6d568a77._.js")
+R.c("server/chunks/node_modules_@supabase_416604e6._.js")
+R.c("server/chunks/[root-of-the-server]__6010f445._.js")
+R.c("server/chunks/_next-internal_server_app_api_cart_route_actions_64d0c949.js")
+R.m(58357)
+module.exports=R.m(58357).exports

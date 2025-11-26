@@ -203,7 +203,7 @@ export const ProductCard = styled.div`
 export const ProductImage = styled.div.withConfig({
   shouldForwardProp: (prop) => !['imageClass', 'imageUrl'].includes(prop),
 })<{ imageClass?: string; imageUrl?: string }>`
-  height: 250px;
+  height: 180px; /* Reduced from 250px to make card more compact */
   background-color: #f8f8f8;
   background-size: cover;
   background-position: center;
@@ -266,40 +266,47 @@ export const ProductImage = styled.div.withConfig({
 
 // Product info
 export const ProductInfo = styled.div`
-  padding: 25px 20px 20px;
+  padding: 18px 15px 15px; /* Reduced padding */
   text-align: center;
 
   h3 {
-    font-size: 1.6rem;
-    margin-bottom: 10px;
+    font-size: 1.2rem; /* Smaller font */
+    margin-bottom: 6px; /* Less margin */
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: capitalize;
+    min-height: 2.5em; /* Ensure consistent height for varying text lengths */
   }
 
   p {
     color: #666;
-    margin-bottom: 12px;
+    margin-bottom: 8px; /* Less margin */
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 12px; /* Smaller font */
+    line-height: 1.4; /* Tighter line height */
+    min-height: 2.5em; /* Ensure consistent height for varying text lengths */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
   
   .product-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px; /* Less gap */
+    margin-top: 12px; /* Less top margin */
   }
 `;
 
 // Product price
 export const ProductPrice = styled.div`
-  font-size: 1.8rem;
+  font-size: 1.4rem; /* Smaller font */
   font-weight: 600;
   color: #c19a6b;
-  margin: 10px 0;
+  margin: 6px 0; /* Less margin */
   font-family: var(--font-playfair), 'Playfair Display', serif;
 `;
 

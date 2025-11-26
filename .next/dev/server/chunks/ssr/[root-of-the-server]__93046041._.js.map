@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 20, "column": 0}, "map": {"version":3,"sources":["file:///home/santoshk/sk/codebase/newprojs/qwenproj/src/app/portfolio/page.tsx"],"sourcesContent":["import NewPortfolioPage from '@/components/NewPortfolioPage'\n\nexport default function PortfolioPage() {\n  return <NewPortfolioPage />\n}"],"names":[],"mappings":";;;;;AAAA;;;AAEe,SAAS;IACtB,qBAAO,wRAAC,2LAAgB;;;;;AAC1B","debugId":null}}]
-}

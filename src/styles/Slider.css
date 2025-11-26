@@ -20,12 +20,14 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity 0.5s ease-in-out;
+  visibility: hidden;
+  transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
   min-height: 600px;
 }
 
 .slide.active {
   opacity: 1;
+  visibility: visible;
   z-index: 1;
 }
 
@@ -43,11 +45,23 @@
 
 .slide-text {
   max-width: 800px;
+  width: 100%;
   padding: 0 40px;
   text-align: center;
   z-index: 3;
   color: white;
-  animation: fadeInUp 0.8s ease-out;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-50%) scale(0.95);
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transition: all 0.8s ease-out;
+  box-sizing: border-box;
+}
+
+.slide.active .slide-text {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-50%) scale(1);
 }
 
 .slide-title {
@@ -56,7 +70,16 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  animation: fadeInDown 0.8s ease-out 0.2s both;
+  word-break: break-word; /* Prevent text overflow */
+  max-width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease-out 0.2s;
+}
+
+.slide.active .slide-title {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .slide-subtitle {
@@ -66,14 +89,33 @@
   font-family: 'Montserrat', Arial, sans-serif;
   text-transform: uppercase;
   letter-spacing: 1px;
-  animation: fadeInUp 0.8s ease-out 0.4s both;
+  word-break: break-word; /* Prevent text overflow */
+  max-width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease-out 0.4s;
+}
+
+.slide.active .slide-subtitle {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .slide-buttons {
   display: flex;
   gap: 20px;
   justify-content: center;
-  animation: fadeInUp 0.8s ease-out 0.6s both;
+  position: relative;
+  z-index: 6; /* Ensure buttons are above the indicator dots */
+  margin-bottom: 20px; /* Reduced spacing above indicators */
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease-out 0.6s;
+}
+
+.slide.active .slide-buttons {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .slide-buttons .btn {
@@ -120,34 +162,7 @@
   right: 30px;
 }
 
-.slider-indicators {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 12px;
-  z-index: 10;
-}
 
-.indicator {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.indicator.active {
-  background: white;
-  transform: scale(1.2);
-}
-
-.indicator:hover {
-  background: rgba(193, 154, 107, 0.8);
-}
 
 /* Animations */
 @keyframes fadeIn {
@@ -182,25 +197,25 @@
   .slider-container {
     height: 70vh;
   }
-  
+
   .slide-title {
     font-size: 2.8rem;
   }
-  
+
   .slide-subtitle {
     font-size: 1.2rem;
   }
-  
+
   .slider-nav-arrow {
     width: 50px;
     height: 50px;
     font-size: 20px;
   }
-  
+
   .prev-arrow {
     left: 20px;
   }
-  
+
   .next-arrow {
     right: 20px;
   }
@@ -210,41 +225,52 @@
   .slider-container {
     height: 60vh;
   }
-  
+
   .slide-text {
     padding: 0 20px;
+    margin-bottom: 0; /* Margin is handled by position now */
+    max-width: 100%;
+    top: 35%;
   }
-  
+
   .slide-title {
     font-size: 2.2rem;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
   }
-  
+
   .slide-subtitle {
     font-size: 1rem;
     margin-bottom: 30px;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
   }
-  
+
   .slide-buttons {
     flex-direction: column;
     gap: 15px;
+    margin-top: 20px; /* Added top margin for spacing */
   }
-  
+
   .slide-buttons .btn {
     min-width: 200px;
     padding: 14px 28px;
     font-size: 15px;
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto; /* Center buttons on mobile */
   }
-  
+
   .slider-nav-arrow {
     width: 45px;
     height: 45px;
     font-size: 18px;
   }
-  
+
   .prev-arrow {
     left: 15px;
   }
-  
+
   .next-arrow {
     right: 15px;
   }
@@ -255,13 +281,23 @@
     height: 55vh;
   }
   
+  .slide-text {
+    margin-bottom: 0; /* Margin is handled by position now */
+    max-width: 100%;
+    top: 30%;
+  }
+  
   .slide-title {
     font-size: 1.8rem;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
   }
   
   .slide-subtitle {
     font-size: 0.9rem;
     margin-bottom: 25px;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
   }
   
   .slide-buttons .btn {
@@ -269,10 +305,50 @@
     padding: 12px 24px;
     font-size: 14px;
   }
-  
+
   .slider-nav-arrow {
     width: 40px;
     height: 40px;
     font-size: 16px;
+  }
+}
+
+/* Extra small devices (phones, 320px and up) */
+@media (max-width: 375px) {
+  .slider-container {
+    height: 50vh;
+  }
+  
+  .slide-text {
+    margin-bottom: 0; /* Margin is handled by position now */
+    max-width: 100%;
+    top: 25%;
+  }
+  
+  .slide-title {
+    font-size: 1.5rem;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
+  }
+  
+  .slide-subtitle {
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+    word-break: break-word; /* Prevent text overflow */
+    max-width: 100%;
+  }
+  
+  .slide-buttons .btn {
+    min-width: 150px;
+    padding: 12px 24px;
+    font-size: 14px;
+    max-width: 200px;
+    margin: 0 auto;
+  }
+
+  .slider-nav-arrow {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
   }
 }

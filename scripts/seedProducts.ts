@@ -1,13 +1,32 @@
-import db from '../src/lib/db';
+import { createClient } from '@supabase/supabase-js';
+import { generateUniqueSlug } from '../src/lib/slug';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Seed products data
 const seedProducts = async () => {
   try {
     console.log('Seeding products...');
-    
+
     // Clear existing products
-    await db.query('DELETE FROM products;');
-    
+    const { error: deleteError } = await supabase
+      .from('products')
+      .delete()
+      .match({ id: 'gt.0' }); // Delete all records
+
+    if (deleteError) {
+      console.error('Error clearing products:', deleteError);
+      throw deleteError;
+    }
+
     // Insert sample products
     const sampleProducts = [
       {
@@ -53,26 +72,33 @@ const seedProducts = async () => {
         category: "Living Room"
       }
     ];
-    
+
     for (const product of sampleProducts) {
-      await db.query(`
-        INSERT INTO products (name, description, price, image_url, category)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [
-        product.name,
-        product.description,
-        product.price,
-        product.image_url,
-        product.category
-      ]);
+      // Generate a unique slug for each product
+      const slug = await generateUniqueSlug(product.name);
+      
+      const { error: insertError } = await supabase
+        .from('products')
+        .insert([
+          { 
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            image_url: product.image_url,
+            category: product.category,
+            slug: slug
+          }
+        ]);
+
+      if (insertError) {
+        console.error('Error inserting product:', insertError);
+        throw insertError;
+      }
     }
-    
+
     console.log('Products seeded successfully!');
   } catch (error) {
     console.error('Error seeding products:', error);
-  } finally {
-    // Close the database connection pool
-    await db.end();
   }
 };
 

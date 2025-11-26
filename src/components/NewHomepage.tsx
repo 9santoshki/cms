@@ -6,10 +6,31 @@ import { useAppContext } from '../context/AppContext';
 import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
-import ProductDetail from './ProductDetail';
 
 // Font Awesome import
 import '@fortawesome/fontawesome-free/css/all.min.css';
+
+// Type definitions
+interface PortfolioProject {
+  id: number;
+  title: string;
+  description: string;
+  imageClass: string;
+}
+
+interface Testimonial {
+  id: number;
+  text: string;
+  author: string;
+  rating: number;
+}
+
+interface Service {
+  id: number;
+  icon: string;
+  title: string;
+  description: string;
+}
 
 // Import elegant homepage styles
 import {
@@ -43,9 +64,11 @@ const NewHomepage = () => {
     products,
     loading,
     error,
-    fetchProducts
+    fetchProducts,
+    addToCartWithAuth,
+    cartItems
   } = useAppContext();
-  
+
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
@@ -58,7 +81,7 @@ const NewHomepage = () => {
   };
 
   // Portfolio projects for homepage
-  const portfolioProjects = [
+  const portfolioProjects: PortfolioProject[] = [
     {
       id: 1,
       title: "Modern Minimalist",
@@ -80,7 +103,7 @@ const NewHomepage = () => {
   ];
 
   // Testimonials for homepage
-  const testimonials = [
+  const testimonials: Testimonial[] = [
     {
       id: 1,
       text: "Sarah transformed our outdated home into a modern masterpiece. Her attention to detail and creative vision exceeded all our expectations. The process was seamless from start to finish!",
@@ -102,7 +125,7 @@ const NewHomepage = () => {
   ];
 
   // Services for homepage
-  const services = [
+  const services: Service[] = [
     {
       id: 1,
       icon: "fas fa-pencil-ruler",
@@ -141,17 +164,9 @@ const NewHomepage = () => {
     }
   ];
 
-  const openProductDetail = (product: any) => {
-    setSelectedProduct(product);
-  };
 
-  const closeProductDetail = () => {
-    setSelectedProduct(null);
-  };
 
-  
 
-  
 
   if (loading.products) {
     return (
@@ -173,10 +188,12 @@ const NewHomepage = () => {
   }
 
   return (
-    <HomepageContainer>
-      {/* Navigation Bar */}
-      <Header activePage="home" />
-
+    <HomepageContainer style={{ paddingTop: '80px' }}>
+      {/* Navigation Bar - Sticky */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
+        <Header activePage="home" />
+      </div>
+      
       {/* Hero Slider Section */}
       <Slider />
 
@@ -188,19 +205,21 @@ const NewHomepage = () => {
           <p className="section-subtitle">Explore our curated collection of distinctive design concepts that harmoniously blend timeless elegance with contemporary innovation</p>
         </div>
         <PortfolioGrid>
-          {portfolioProjects.map(project => (
-            <PortfolioCard key={project.id} imageClass={project.imageClass}>
-              <div className="project-image"></div>
-              <div className="project-overlay">
-                <div className="project-content">
-                  <h3>{project.title}</h3>
-                  <p>{project.description}</p>
-                  <button className="btn primary" onClick={() => navigate('/portfolio')}>
-                    View Project
-                  </button>
+          {portfolioProjects.map((project: PortfolioProject) => (
+            project.id && project.imageClass ? (
+              <PortfolioCard key={project.id} imageClass={project.imageClass}>
+                <div className="project-image"></div>
+                <div className="project-overlay">
+                  <div className="project-content">
+                    <h3>{project.title || 'Project Title'}</h3>
+                    <p>{project.description || 'Project Description'}</p>
+                    <button className="btn primary" onClick={() => navigate('/portfolio')}>
+                      View Project
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </PortfolioCard>
+              </PortfolioCard>
+            ) : null
           ))}
         </PortfolioGrid>
         <div className="section-footer">
@@ -218,41 +237,102 @@ const NewHomepage = () => {
             Curated masterpieces that exemplify our commitment to quality craftsmanship and design excellence
           </p>
         </SectionHeader>
-        <ProductsGrid>
-          {products.slice(0, 6).map(product => (
-            <ProductCard key={product.id}>
-              <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
-                <div className="add-to-cart-overlay">
-                  <button 
-                    className="btn primary" 
-                    onClick={() => openProductDetail(product)}
-                  >
-                    View Details
-                  </button>
-                </div>
-              </ProductImage>
-              <ProductInfo>
-                <h3>{product.name}</h3>
-                <p>{product.description}</p>
-                <ProductPrice>₹{product.price.toLocaleString()}</ProductPrice>
-                <div className="product-actions">
-                  <button 
-                    className="btn primary" 
-                    onClick={() => openProductDetail(product)}
-                  >
-                    View Details
-                  </button>
-                  <button 
-                    className="btn secondary" 
-                    onClick={() => navigate('/cart')}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </ProductInfo>
-            </ProductCard>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
+          gap: '20px', 
+          padding: '20px 0' 
+        }}>
+          {products.slice(0, 6).map((product: any) => (
+            <div 
+              key={product.id} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100%', 
+                minWidth: '250px',
+                maxWidth: '300px',
+                margin: '0 auto'
+              }}
+            >
+              <ProductCard 
+                onClick={() => router.push(`/products/${product.slug || product.id}`)} 
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+              >
+                <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
+                </ProductImage>
+                <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', margin: '8px 0 4px 0' }}>{product.name}</h4>
+                    <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0' }}>{product.description}</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '8px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 'bold', color: '#e74c3c', fontSize: '1.1rem', marginRight: '6px' }}>
+                          ₹{product.price?.toLocaleString()}
+                        </span>
+                        <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
+                          ₹{product.price ? (product.price * 1.2).toLocaleString() : product.price?.toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <button
+                          className="btn secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const result = addToCartWithAuth(product, 1);
+                            if (!result.success && result.requiresLogin) {
+                              // Store the pending cart action in localStorage
+                              localStorage.setItem('pendingCartAction', JSON.stringify({
+                                product: result.product,
+                                quantity: result.quantity
+                              }));
+                              // Trigger a global event or callback to show login modal
+                              window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
+                            } else if (result.success && !result.requiresLogin && result.action) {
+                              // User is authenticated, proceed with adding to cart
+                              result.action();
+                            }
+                          }}
+                          style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minWidth: '40px', position: 'relative', zIndex: 1 }}
+                          aria-label="Add to cart"
+                        >
+                          <i className="fas fa-shopping-cart"></i>
+                        </button>
+                        {(() => {
+                          const cartItem = cartItems.find(item => item.product_id === product.id);
+                          return cartItem ? (
+                            <span style={{
+                              position: 'absolute',
+                              top: '-10px',
+                              right: '-10px',
+                              backgroundColor: '#e74c3c',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              fontSize: '0.7rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 'bold',
+                              border: '2px solid white',
+                              zIndex: 2,
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }}>
+                              {cartItem.quantity}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </ProductInfo>
+              </ProductCard>
+            </div>
           ))}
-        </ProductsGrid>
+        </div>
         <div className="section-footer">
           <button className="btn primary" onClick={() => navigate('/shop')}>
             Explore Collection
@@ -267,7 +347,7 @@ const NewHomepage = () => {
           <p className="section-subtitle">Professional design solutions tailored to transform your space into an extraordinary experience</p>
         </div>
         <ServicesGrid>
-          {services.map(service => (
+          {services.map((service: Service) => (
             <ServiceCard key={service.id}>
               <ServiceIcon>
                 <i className={service.icon}></i>
@@ -286,7 +366,7 @@ const NewHomepage = () => {
           <p className="section-subtitle">Discover what our valued clients say about their transformative experiences with our design services</p>
         </div>
         <TestimonialsGrid>
-          {testimonials.map(testimonial => (
+          {testimonials.map((testimonial: Testimonial) => (
             <TestimonialCard key={testimonial.id}>
               <div className="rating">
                 {'★'.repeat(testimonial.rating)}
@@ -314,16 +394,10 @@ const NewHomepage = () => {
       </ConsultationSection>
 
       <Footer />
-      
-      {/* Product Detail Modal */}
-      {selectedProduct && (
-        <ProductDetail 
-          product={selectedProduct} 
-          onBack={closeProductDetail} 
-        />
-      )}
-      
-      
+
+      {/* Product Detail Modal - Not used, now navigates to individual product page */}
+
+
     </HomepageContainer>
   );
 };

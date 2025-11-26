@@ -20,7 +20,8 @@ const navigate = (path: string) => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const formatDateLocal = (dateString: string) => {
+  const formatDateLocal = (dateString?: string) => {
+    if (!dateString) return '';
     return formatDate(dateString);
   };
 
@@ -50,13 +51,19 @@ const navigate = (path: string) => {
               </button>
               {user ? (
                 <>
-                  <button className="nav-icon" onClick={() => navigate('/auth')}>
+                  <button className="nav-icon" onClick={() => {
+                    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+                    navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+                  }}>
                     <i className="fas fa-sign-out-alt"></i>
                 </button>
                   <span className="user-greeting">Hi, {user.name}</span>
                 </>
               ) : (
-                <button className="nav-icon" onClick={() => navigate('/auth')}>
+                <button className="nav-icon" onClick={() => {
+                  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+                  navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+                }}>
                   <i className="fas fa-user"></i>
                 </button>
               )}
@@ -124,14 +131,19 @@ const navigate = (path: string) => {
                 <span className="user-greeting">Hi, {user.name}</span>
               </>
             ) : (
-              <button className="nav-icon" onClick={() => navigate('/auth')}>
+              <button className="nav-icon" onClick={() => {
+                const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+                navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+              }}>
                 <i className="fas fa-user"></i>
               </button>
             )}
+            {user && (
             <button className="nav-icon" onClick={() => navigate('/cart')}>
               <i className="fas fa-shopping-cart"></i>
               {cartItems.length > 0 && <span className="cart-count">{cartCount}</span>}
             </button>
+            )}
           </div>
           {/* Mobile menu toggle */}
           <div className="nav-toggle">
@@ -170,12 +182,12 @@ const navigate = (path: string) => {
                       <span className="order-date">{formatDateLocal(order.created_at || order.date)}</span>
                     </div>
                     <div className="order-total">
-                      ₹{(order.total_amount || order.total).toLocaleString()}
+                      ₹{((order.total_amount ?? order.total ?? 0) as number).toLocaleString()}
                     </div>
                   </div>
                   
                   <div className="order-items">
-                    {order.items && order.items.map((item, itemIndex) => (
+                    {order.items && order.items.map((item: any, itemIndex: number) => (
                       <div className="order-item" key={item.id || itemIndex}>
                         <div className="item-name">{item.name || item.product_name}</div>
                         <div className="item-quantity">Qty: {item.quantity}</div>

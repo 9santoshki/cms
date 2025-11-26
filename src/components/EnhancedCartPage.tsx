@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppContext } from '../context/AppContext';
+import { useCartStore } from '../store/cartStore';
 import Header from './Header';
 import Footer from './Footer';
-import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, calculateOriginalCartTotal, calculateDiscountSavings } from '../utils/cartUtils';
 import {
   CartContainer,
   CartHeaderSection,
@@ -30,12 +30,13 @@ import {
 
 const EnhancedCartPage = () => {
   const router = useRouter();
+  const cartItems = useCartStore(state => state.items);
+  const updateCartItem = useCartStore(state => state.updateItem);
+  const removeFromCart = useCartStore(state => state.removeItem);
 
   const navigate = (path: string) => {
     router.push(path);
   };
-  
-  const { cartItems, loading, error, updateCartItem, removeFromCart } = useAppContext();
 
   const updateQuantity = (productId: number, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -88,9 +89,7 @@ const EnhancedCartPage = () => {
       <CartHeaderSection>
         <h1>Shopping Cart</h1>
       </CartHeaderSection>
-      
-      {error.cart && <div className="error-message">{error.cart}</div>}
-      
+
       <CartItemsSection>
         <CartItemsHeader>
           <div className="header-item">Product</div>
@@ -99,98 +98,119 @@ const EnhancedCartPage = () => {
           <div className="header-total">Total</div>
           <div className="header-actions"></div>
         </CartItemsHeader>
-        
+
         <CartItemsList>
-          {cartItems.map(item => (
-            <CartItem key={item.id}>
-              <ItemProduct>
-                <ItemImage imageClass={item.imageClass || 'modern'}></ItemImage>
-                <ItemDetails>
-                  <h3>{item.name}</h3>
-                  <p>{item.description}</p>
-                </ItemDetails>
-              </ItemProduct>
-              
-              <ItemPrice>
-                ₹{typeof item.price === 'number' 
-                  ? item.price.toLocaleString() 
-                  : parseFloat(item.price || '0').toLocaleString()}
-              </ItemPrice>
-              
-              <ItemQuantity>
-                <button 
-                  className="quantity-btn"
-                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  disabled={loading.cart || item.quantity <= 1}
-                >
-                  <i className="fas fa-minus"></i>
-                </button>
-                <span className="quantity">{item.quantity}</span>
-                <button 
-                  className="quantity-btn"
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  disabled={loading.cart}
-                >
-                  <i className="fas fa-plus"></i>
-                </button>
-              </ItemQuantity>
-              
-              <ItemTotal>
-                ₹{typeof item.price === 'number' 
-                  ? (item.price * item.quantity).toLocaleString() 
-                  : (parseFloat(item.price || '0') * item.quantity).toLocaleString()}
-              </ItemTotal>
-              
-              <ItemActions>
-                <button 
-                  className="remove-btn"
-                  onClick={() => removeFromCart(item.id)}
-                  disabled={loading.cart}
-                >
-                  <i className="fas fa-trash-alt"></i>
-                </button>
-              </ItemActions>
-            </CartItem>
-          ))}
+          {cartItems.map((item, index) => {
+            // Create a unique key to avoid duplicate key errors
+            // Use product_id first (most reliable), then id, then index as fallback
+            const uniqueKey = item.product_id ? `prod-${item.product_id}` :
+                             item.id ? `item-${item.id}-${index}` :
+                             `idx-${index}`;
+
+            const productId = item.product_id || item.id;
+
+            if (!productId) {
+              console.error('Cart item missing product_id and id:', item);
+              return null;
+            }
+
+            return (
+              <CartItem key={uniqueKey}>
+                <ItemProduct>
+                  <ItemImage $imageClass={item.imageClass || 'modern'} />
+                  <ItemDetails>
+                    <h3>{item.name}</h3>
+                    <p>{item.description}</p>
+                  </ItemDetails>
+                </ItemProduct>
+
+                <ItemPrice>
+                  ₹{typeof item.price === 'number'
+                    ? item.price.toLocaleString()
+                    : parseFloat(item.price || '0').toLocaleString()}
+                </ItemPrice>
+
+                <ItemQuantity>
+                  <button
+                    className="quantity-btn"
+                    onClick={() => updateQuantity(productId, item.quantity - 1)}
+                  >
+                    <i className="fas fa-minus"></i>
+                  </button>
+                  <span className="quantity">{item.quantity}</span>
+                  <button
+                    className="quantity-btn"
+                    onClick={() => updateQuantity(productId, item.quantity + 1)}
+                  >
+                    <i className="fas fa-plus"></i>
+                  </button>
+                </ItemQuantity>
+
+                <ItemTotal>
+                  ₹{typeof item.price === 'number'
+                    ? (item.price * item.quantity).toLocaleString()
+                    : (parseFloat(item.price || '0') * item.quantity).toLocaleString()}
+                </ItemTotal>
+
+                <ItemActions>
+                  <button
+                    className="remove-btn"
+                    onClick={() => removeFromCart(productId)}
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </button>
+                </ItemActions>
+              </CartItem>
+            );
+          })}
         </CartItemsList>
       </CartItemsSection>
-      
+
       <CartSummarySection>
         <CartSummary>
           <h2>Order Summary</h2>
-          
+
           <SummaryDetails>
+            <div className="summary-row">
+              <span>Original Price</span>
+              <span>₹{calculateOriginalCartTotal(cartItems).toLocaleString()}</span>
+            </div>
+            <div className="summary-row" style={{ color: '#28a745', fontWeight: '600' }}>
+              <span>You saved</span>
+              <span>-₹{calculateDiscountSavings(cartItems).toLocaleString()}</span>
+            </div>
             <div className="summary-row">
               <span>Subtotal</span>
               <span>₹{subtotal.toLocaleString()}</span>
             </div>
-            
+
             <div className="summary-row">
               <span>Shipping</span>
               <span>{shipping === 0 ? 'FREE' : `₹${shipping.toLocaleString()}`}</span>
             </div>
-            
+
             <div className="summary-row total">
               <span>Total</span>
               <span>₹{total.toLocaleString()}</span>
             </div>
           </SummaryDetails>
-          
+
           <SummaryActions>
             <button className="btn secondary" onClick={continueShopping}>
               <i className="fas fa-arrow-left"></i> Continue Shopping
             </button>
-            <button 
-              className="btn primary" 
-              onClick={handleCheckout}
-              disabled={loading.cart || cartItems.length === 0}
-            >
-              Proceed to Checkout
-            </button>
           </SummaryActions>
         </CartSummary>
+        <button
+          className="btn primary"
+          onClick={handleCheckout}
+          disabled={cartItems.length === 0}
+          style={{ marginTop: '20px', width: '100%', maxWidth: '450px' }}
+        >
+          Proceed to Checkout
+        </button>
       </CartSummarySection>
-      
+
       <Footer />
     </CartContainer>
   );

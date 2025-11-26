@@ -18,16 +18,17 @@ import {
 const AdminDashboard = () => {
   const router = useRouter();
 
-const navigate = (path: string) => {
-  router.push(path);
-};
+  const navigate = (path: string) => {
+    router.push(path);
+  };
   const { user, logout } = useAppContext();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Check if user has admin privileges
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+      navigate(`/auth?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
     
@@ -44,7 +45,7 @@ const navigate = (path: string) => {
   };
 
   const adminNavigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt' },
+    { id: 'dashboard', label: 'Overview', icon: 'fas fa-tachometer-alt' },
     { id: 'products', label: 'Products', icon: 'fas fa-box' },
     { id: 'orders', label: 'Orders', icon: 'fas fa-shopping-cart' },
     { id: 'users', label: 'Users', icon: 'fas fa-users' },
@@ -55,7 +56,7 @@ const navigate = (path: string) => {
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard':
-        return <DashboardContent />;
+        return <DashboardContent setActiveTab={setActiveTab} />;
       case 'products':
         return <ProductManagement />;
       case 'orders':
@@ -67,7 +68,7 @@ const navigate = (path: string) => {
       case 'settings':
         return <SettingsContent />;
       default:
-        return <DashboardContent />;
+        return <DashboardContent setActiveTab={setActiveTab} />;
     }
   };
 
@@ -75,13 +76,6 @@ const navigate = (path: string) => {
     <AdminContainer>
       <AdminHeader>
         <Header activePage="admin" />
-        <div className="admin-header-content">
-          <h1>Admin Dashboard</h1>
-          <div className="admin-header-actions">
-            <button className="btn secondary" onClick={() => navigate('/')}>Visit Site</button>
-            <button className="btn primary" onClick={handleLogout}>Logout</button>
-          </div>
-        </div>
       </AdminHeader>
 
       <div className="admin-layout">
@@ -112,17 +106,66 @@ const navigate = (path: string) => {
 };
 
 // Dashboard Content Component
-const DashboardContent = () => {
+const DashboardContent = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
+  const { products, orders, fetchProducts, fetchOrders, loading, error } = useAppContext();
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalCustomers: 0,
+    totalRevenue: 0
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch products
+        await fetchProducts();
+        
+        // Fetch orders
+        await fetchOrders();
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []); // Empty dependency array to run only once on mount
+
+  useEffect(() => {
+    // Calculate stats based on products and orders
+    const totalProducts = products.length;
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    
+    // Note: For customers, we'll need to get unique users from orders
+    // For now, we'll use a placeholder count - in a real app you'd fetch actual customer count
+    const uniqueCustomers = [...new Set(orders.map(order => order.user_id))].length;
+    
+    setStats({
+      totalProducts,
+      totalOrders,
+      totalCustomers: uniqueCustomers,
+      totalRevenue
+    });
+    
+    // Get recent orders (last 5)
+    const sortedOrders = [...orders].sort((a, b) => 
+      new Date(b.created_at || '').getTime() - 
+      new Date(a.created_at || '').getTime()
+    );
+    setRecentOrders(sortedOrders.slice(0, 5));
+  }, [products, orders]);
+
   return (
     <div className="admin-dashboard">
-      <h2>Dashboard Overview</h2>
       <div className="dashboard-stats">
         <AdminCard>
           <div className="stat-icon">
             <i className="fas fa-shopping-cart"></i>
           </div>
           <div className="stat-content">
-            <h3>128</h3>
+            <h3>{loading.orders ? '...' : stats.totalOrders}</h3>
             <p>Total Orders</p>
           </div>
         </AdminCard>
@@ -132,7 +175,7 @@ const DashboardContent = () => {
             <i className="fas fa-box"></i>
           </div>
           <div className="stat-content">
-            <h3>42</h3>
+            <h3>{loading.products ? '...' : stats.totalProducts}</h3>
             <p>Products</p>
           </div>
         </AdminCard>
@@ -142,7 +185,7 @@ const DashboardContent = () => {
             <i className="fas fa-users"></i>
           </div>
           <div className="stat-content">
-            <h3>89</h3>
+            <h3>{stats.totalCustomers}</h3>
             <p>Customers</p>
           </div>
         </AdminCard>
@@ -152,7 +195,7 @@ const DashboardContent = () => {
             <i className="fas fa-receipt"></i>
           </div>
           <div className="stat-content">
-            <h3>₹42,350</h3>
+            <h3>₹{loading.orders ? '...' : stats.totalRevenue.toLocaleString()}</h3>
             <p>Total Revenue</p>
           </div>
         </AdminCard>
@@ -161,19 +204,44 @@ const DashboardContent = () => {
       <div className="dashboard-content">
         <AdminCard>
           <h3>Recent Orders</h3>
-          <p>Latest orders from your store</p>
+          {recentOrders.length > 0 ? (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map((order) => (
+                  <tr key={order.id}>
+                    <td>#{order.id}</td>
+                    <td>User {order.user_id}</td>
+                    <td>{new Date(order.created_at || order.createdAt || '').toLocaleDateString()}</td>
+                    <td>₹{order.total?.toLocaleString()}</td>
+                    <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No recent orders</p>
+          )}
         </AdminCard>
         
         <AdminCard>
           <h3>Quick Actions</h3>
           <div className="quick-actions">
-            <AdminButton onClick={() => window.location.hash = '#add-product'}>
+            <AdminButton onClick={() => setActiveTab('products')}>
               <i className="fas fa-plus"></i> Add Product
             </AdminButton>
-            <AdminButton onClick={() => window.location.hash = '#manage-content'}>
+            <AdminButton onClick={() => setActiveTab('content')}>
               <i className="fas fa-edit"></i> Manage Content
             </AdminButton>
-            <AdminButton onClick={() => window.location.hash = '#view-orders'}>
+            <AdminButton onClick={() => setActiveTab('orders')}>
               <i className="fas fa-list"></i> View Orders
             </AdminButton>
           </div>
@@ -185,20 +253,24 @@ const DashboardContent = () => {
 
 // Product Management Component
 const ProductManagement = () => {
-  const { products, fetchProducts, loading, error } = useAppContext();
+  const { products, fetchProducts, loading, error, createProduct, updateProduct } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     category: '',
-    imageClass: 'modern'
+    imageClass: 'modern',
+    imageFile: null as File | null,
+    imageFiles: [] as File[]
   });
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -208,27 +280,101 @@ const ProductManagement = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      setFormData(prev => ({
+        ...prev,
+        imageFiles: newFiles
+      }));
+
+      // Create preview URLs for the selected images
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      setImagePreviews(newPreviews);
+
+      // Clean up the preview URLs when component unmounts or when new files are selected
+      newPreviews.forEach(previewUrl => {
+        return () => URL.revokeObjectURL(previewUrl);
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingProduct) {
-      // Update existing product
-      console.log('Updating product:', { ...editingProduct, ...formData });
-      setEditingProduct(null);
-    } else {
-      // Add new product
-      console.log('Adding new product:', formData);
+    // Prepare form data for submission
+    const productData: any = {
+      name: formData.name,
+      description: formData.description,
+      price: parseFloat(formData.price), // Ensure price is a number
+      category: formData.category,
+      imageClass: formData.imageClass
+    };
+    
+    // Handle image upload if files are selected
+    if (formData.imageFiles && formData.imageFiles.length > 0) {
+      try {
+        // Process all selected images
+        const imageUrls = await Promise.all(
+          formData.imageFiles.map(file => {
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = (e) => reject(e);
+              reader.readAsDataURL(file);
+            });
+          })
+        );
+        
+        // Add the image URLs to the product data
+        productData.image_urls = imageUrls;
+        // Use the first image as the primary image for backward compatibility
+        productData.image_url = imageUrls[0];
+      } catch (error) {
+        console.error('Error processing image files:', error);
+        alert('Error processing image files. Please try again.');
+        return;
+      }
+    } else if (editingProduct) {
+      // If editing and no new images were selected, use existing images
+      productData.image_url = editingProduct.image_url;
+      productData.image_urls = editingProduct.images || [];
     }
     
-    // Reset form
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      category: '',
-      imageClass: 'modern'
-    });
-    setIsAdding(false);
+    try {
+      if (editingProduct) {
+        // Update existing product
+        await updateProduct(editingProduct.id, productData);
+        setEditingProduct(null);
+      } else {
+        // Add new product
+        await createProduct(productData);
+      }
+      
+      // Reset form
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        category: '',
+        imageClass: 'modern',
+        imageFile: null,
+        imageFiles: []
+      });
+      setImagePreview(null);
+      setImagePreviews([]);
+      setIsAdding(false);
+      
+      // Show success message
+      alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!');
+      
+      // Refresh products list after successful update/add
+      fetchProducts();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert(`Error saving product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleEdit = (product: any) => {
@@ -238,8 +384,16 @@ const ProductManagement = () => {
       description: product.description || '',
       price: product.price?.toString() || '',
       category: product.category || '',
-      imageClass: product.imageClass || 'modern'
+      imageClass: product.imageClass || 'modern',
+      imageFile: null,
+      imageFiles: []
     });
+    // Set image previews to the existing images if available
+    if (product.images && product.images.length > 0) {
+      setImagePreviews(product.images);
+    } else if (product.image_url) {
+      setImagePreviews([product.image_url]);
+    }
     setIsAdding(true);
   };
 
@@ -355,9 +509,68 @@ const ProductManagement = () => {
                 <option value="restaurant">Restaurant</option>
               </select>
             </div>
+
+            <div className="form-group">
+              <label htmlFor="productImage">Product Images</label>
+              <input
+                type="file"
+                id="productImage"
+                name="productImage"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+              />
+              {imagePreviews.length > 0 && (
+                <div className="image-previews">
+                  <p>Selected Images:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} style={{ border: '1px solid #ddd', padding: '5px', borderRadius: '4px' }}>
+                        <img 
+                          src={preview} 
+                          alt={`Product preview ${index + 1}`} 
+                          style={{ maxWidth: '150px', maxHeight: '150px', display: 'block' }} 
+                        />
+                        <small>Image {index + 1}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {editingProduct && editingProduct.images && editingProduct.images.length > 0 && imagePreviews.length === 0 && (
+                <div className="image-previews">
+                  <p>Current Images:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                    {editingProduct.images.map((img: string, index: number) => (
+                      <div key={index} style={{ border: '1px solid #ddd', padding: '5px', borderRadius: '4px' }}>
+                        <img 
+                          src={img} 
+                          alt={`Current product image ${index + 1}`} 
+                          style={{ maxWidth: '150px', maxHeight: '150px', display: 'block' }} 
+                        />
+                        <small>Image {index + 1}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             
             <div className="form-actions">
-              <AdminButton type="button" onClick={() => setIsAdding(false)}>
+              <AdminButton type="button" onClick={() => {
+                setIsAdding(false);
+                setFormData({
+                  name: '',
+                  description: '',
+                  price: '',
+                  category: '',
+                  imageClass: 'modern',
+                  imageFile: null,
+                  imageFiles: []
+                });
+                setImagePreview(null);
+                setImagePreviews([]);
+              }}>
                 Cancel
               </AdminButton>
               <AdminButton type="submit">
@@ -466,20 +679,220 @@ const UserManagement = () => {
 
 // Content Management Component
 const ContentManagement = () => {
+  const [contentItems, setContentItems] = useState([
+    { id: 1, title: 'Homepage Banner', type: 'banner', content: 'Welcome to Our Store - Amazing Deals Inside!', status: 'active' },
+    { id: 2, title: 'About Us Section', type: 'text', content: 'We are dedicated to providing high-quality products...', status: 'active' },
+    { id: 3, title: 'Footer Text', type: 'text', content: '© 2025 Our Store. All rights reserved.', status: 'active' },
+    { id: 4, title: 'Promotional Email', type: 'email', content: 'Special discount for our valued customers...', status: 'inactive' }
+  ]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingContent, setEditingContent] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    type: 'text',
+    content: '',
+    status: 'active'
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingContent) {
+      // Update existing content
+      setContentItems(prev => prev.map(item => 
+        item.id === editingContent.id ? { ...formData, id: editingContent.id } : item
+      ));
+      setEditingContent(null);
+    } else {
+      // Add new content
+      const newContent = {
+        ...formData,
+        id: contentItems.length + 1
+      };
+      setContentItems(prev => [...prev, newContent]);
+    }
+    
+    // Reset form
+    setFormData({
+      title: '',
+      type: 'text',
+      content: '',
+      status: 'active'
+    });
+    setIsAdding(false);
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingContent(item);
+    setFormData({
+      title: item.title,
+      type: item.type,
+      content: item.content,
+      status: item.status
+    });
+    setIsAdding(true);
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this content item?')) {
+      setContentItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
   return (
     <div className="admin-content">
       <div className="admin-header">
         <h2>Content Management</h2>
         <div className="admin-actions">
-          <AdminButton>
+          <AdminButton onClick={() => {
+            setIsAdding(true);
+            setEditingContent(null);
+            setFormData({
+              title: '',
+              type: 'text',
+              content: '',
+              status: 'active'
+            });
+          }}>
             <i className="fas fa-plus"></i> Add Content
           </AdminButton>
         </div>
       </div>
-      
+
+      {isAdding && (
+        <AdminCard>
+          <h3>{editingContent ? 'Edit Content' : 'Add New Content'}</h3>
+          <form onSubmit={handleSubmit} className="admin-form">
+            <div className="form-group">
+              <label htmlFor="contentTitle">Title</label>
+              <input
+                type="text"
+                id="contentTitle"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="Enter content title"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="contentType">Type</label>
+              <select
+                id="contentType"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+              >
+                <option value="text">Text</option>
+                <option value="banner">Banner</option>
+                <option value="email">Email</option>
+                <option value="image">Image</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="contentStatus">Status</label>
+              <select
+                id="contentStatus"
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="contentBody">Content</label>
+              <textarea
+                id="contentBody"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                placeholder="Enter content"
+                required
+                rows={4}
+              ></textarea>
+            </div>
+
+            <div className="form-actions">
+              <AdminButton 
+                type="button" 
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingContent(null);
+                }}
+              >
+                Cancel
+              </AdminButton>
+              <AdminButton type="submit">
+                {editingContent ? 'Update Content' : 'Add Content'}
+              </AdminButton>
+            </div>
+          </form>
+        </AdminCard>
+      )}
+
       <AdminCard>
-        <h3>Edit Content</h3>
-        <p>Modify site content, images, and text here.</p>
+        <h3>Content Items</h3>
+        <div className="table-responsive">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contentItems.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.id}</td>
+                  <td>{item.title}</td>
+                  <td>
+                    <span className={`badge ${item.type}`}>
+                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${item.status}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        className="btn secondary"
+                        onClick={() => handleEdit(item)}
+                        style={{marginRight: '10px'}}
+                      >
+                        <i className="fas fa-edit"></i> Edit
+                      </button>
+                      <button
+                        className="btn danger"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <i className="fas fa-trash"></i> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </AdminCard>
     </div>
   );

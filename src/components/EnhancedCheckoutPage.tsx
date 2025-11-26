@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import Header from './Header';
 import '../App.css'; // Import the main CSS file
-import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, calculateOriginalCartTotal, calculateDiscountSavings } from '../utils/cartUtils';
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -22,7 +22,7 @@ const CheckoutPage = () => {
     address: '',
     city: '',
     zipCode: '',
-    paymentMethod: 'credit-card'
+    paymentMethod: 'razorpay'
   });
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -284,15 +284,36 @@ const CheckoutPage = () => {
               
               <div className="form-group">
                 <label htmlFor="city">City *</label>
-                <input
-                  type="text"
+                <select
                   id="city"
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
                   className={errors['city'] ? 'error' : ''}
                   required
-                />
+                >
+                  <option value="">Select City</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Bangalore">Bangalore</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Ahmedabad">Ahmedabad</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Jaipur">Jaipur</option>
+                  <option value="Surat">Surat</option>
+                  <option value="Lucknow">Lucknow</option>
+                  <option value="Kanpur">Kanpur</option>
+                  <option value="Nagpur">Nagpur</option>
+                  <option value="Indore">Indore</option>
+                  <option value="Thane">Thane</option>
+                  <option value="Bhopal">Bhopal</option>
+                  <option value="Visakhapatnam">Visakhapatnam</option>
+                  <option value="Pimpri-Chinchwad">Pimpri-Chinchwad</option>
+                  <option value="Patna">Patna</option>
+                  <option value="Vadodara">Vadodara</option>
+                </select>
                 {errors['city'] && <span className="error-text">{errors['city']}</span>}
               </div>
             </div>
@@ -301,7 +322,9 @@ const CheckoutPage = () => {
               <h2>Payment Method</h2>
               <div className="payment-options">
                 {[
-                  { id: 'credit-card', label: 'Credit Card', icon: 'fas fa-credit-card' },
+                  { id: 'razorpay', label: 'Credit/Debit Card (Razorpay)', icon: 'fas fa-credit-card' },
+                  { id: 'upi', label: 'UPI (Razorpay)', icon: 'fas fa-qrcode' },
+                  { id: 'netbanking', label: 'Net Banking (Razorpay)', icon: 'fas fa-university' },
                   { id: 'paypal', label: 'PayPal', icon: 'fab fa-paypal' },
                   { id: 'cod', label: 'Cash on Delivery', icon: 'fas fa-money-bill-wave' }
                 ].map(method => (
@@ -326,18 +349,11 @@ const CheckoutPage = () => {
               </div>
             </div>
             
-            <button 
-              type="submit" 
-              className="btn primary checkout-button"
-              disabled={loading.orders}
-            >
-              {loading.orders ? 'Processing Order...' : `Complete Order - ₹${total.toLocaleString()}`}
-            </button>
           </form>
         </div>
         
         <div className="checkout-summary-section">
-          <div className="checkout-summary">
+          <div className="checkout-summary checkout-summary-sticky">
             <h2>Order Summary</h2>
             <div className="summary-items">
               {cartItems.map(item => (
@@ -357,6 +373,14 @@ const CheckoutPage = () => {
             
             <div className="summary-totals">
               <div className="total-row">
+                <span>Original Price</span>
+                <span>₹{calculateOriginalCartTotal(cartItems).toLocaleString()}</span>
+              </div>
+              <div className="total-row" style={{ color: '#28a745', fontWeight: '600' }}>
+                <span>You saved</span>
+                <span>-₹{calculateDiscountSavings(cartItems).toLocaleString()}</span>
+              </div>
+              <div className="total-row">
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
@@ -371,6 +395,20 @@ const CheckoutPage = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Move payment button below the summary */}
+      <div className="checkout-payment-section">
+        <button
+          type="submit"
+          className="btn primary checkout-button"
+          disabled={loading.orders}
+        >
+          {loading.orders ? 'Processing Order...' : 
+           (['razorpay', 'upi', 'netbanking'].includes(formData.paymentMethod) 
+            ? `Pay with ${formData.paymentMethod === 'razorpay' ? 'Card' : formData.paymentMethod === 'upi' ? 'UPI' : 'Net Banking'} - ₹${total.toLocaleString()}`
+            : `Complete Order - ₹${total.toLocaleString()}`)}
+        </button>
       </div>
     </div>
   );

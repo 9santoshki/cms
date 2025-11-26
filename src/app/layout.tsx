@@ -2,6 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display, Montserrat } from 'next/font/google'
 import { AppProvider } from '@/context/AppContext'
+import { NextAuthProvider } from '@/components/NextAuthProvider';
+import Script from 'next/script';
 
 // Import Font Awesome CSS
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -28,10 +30,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Note: Replace with your actual Google Client ID
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+  
   return (
     <html lang="en">
       <body className={`${inter.className} ${playfair.variable} ${montserrat.variable}`}>
-        <AppProvider>{children}</AppProvider>
+        <NextAuthProvider>
+          <AppProvider>{children}</AppProvider>
+        </NextAuthProvider>
       </body>
     </html>
   )

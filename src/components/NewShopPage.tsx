@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import Header from './Header';
 import Footer from './Footer';
@@ -29,13 +30,15 @@ import {
 } from '../styles/NewShopStyles';
 
 const NewShopPage = () => {
+  const router = useRouter();
 
   const {
     products,
     loading,
     error,
-    fetchProducts, 
-    addToCart
+    fetchProducts,
+    addToCartWithAuth,
+    cartItems
   } = useAppContext();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -49,10 +52,12 @@ const NewShopPage = () => {
 
   // Fetch products when component mounts
   useEffect(() => {
-    if (products.length === 0 && !loading.products) {
+    // Fetch products to ensure we have current data
+    // Only fetch if not already loading to avoid conflicts
+    if (!loading.products) {
       fetchProducts();
     }
-  }, [fetchProducts, products.length, loading.products]);
+  }, []); // Empty dependency array to run once on mount
 
   // Filter and sort products based on selected filters
   const filteredProducts = products
@@ -85,10 +90,6 @@ const NewShopPage = () => {
     setSelectedProduct(product);
   };
 
-  const closeProductDetail = () => {
-    setSelectedProduct(null);
-  };
-
   const handleFilterChange = (filterType: string, value: string | undefined) => {
     setFilters(prev => ({
       ...prev,
@@ -97,12 +98,23 @@ const NewShopPage = () => {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
-  
+
 
   const handleAddToCart = (product: any) => {
-    // Using context's addToCart function which takes a product and optional quantity
-    // The context will handle creating the proper cart item structure
-    addToCart(product, 1);
+    // Using context's addToCartWithAuth function which checks authentication
+    const result = addToCartWithAuth(product, 1);
+    if (!result.success && result.requiresLogin) {
+      // Store the pending cart action in localStorage
+      localStorage.setItem('pendingCartAction', JSON.stringify({
+        product: result.product,
+        quantity: result.quantity
+      }));
+      // Trigger a global event or callback to show login modal
+      window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
+    } else if (result.success && !result.requiresLogin && result.action) {
+      // User is authenticated, proceed with adding to cart
+      result.action();
+    }
   };
 
   if (loading.products) {
@@ -126,19 +138,11 @@ const NewShopPage = () => {
 
   return (
     <ShopContainer>
-      {/* Navigation Bar */}
+      {/* Navigation Bar with Search Overlay */}
       <Header activePage="shop" />
 
-      {/* Shop Hero Section */}
-      <ShopHero>
-        <div className="hero-content">
-          <h1>Elegant Collection</h1>
-          <p>Discover our curated collection of premium interior design pieces and decor items</p>
-        </div>
-      </ShopHero>
-
-      {/* Main Content */}
-      <MainContent>
+      {/* Main Content with reduced margins */}
+      <MainContent style={{ marginTop: '0' }}>
         <ProductFilters>
           {/* Category Filter */}
           <FilterSection>
@@ -147,8 +151,8 @@ const NewShopPage = () => {
             </FilterHeader>
             <FilterContent>
               {categories.map(category => (
-                <FilterOption 
-                  key={category} 
+                <FilterOption
+                  key={category}
                   $active={filters.category === category}
                   onClick={() => handleFilterChange('category', category)}
                 >
@@ -164,25 +168,25 @@ const NewShopPage = () => {
               <h3>PRICE RANGE</h3>
             </FilterHeader>
             <FilterContent>
-              <FilterOption 
+              <FilterOption
                   $active={filters.priceRange === 'All'}
                   onClick={() => handleFilterChange('priceRange', 'All')}
                 >
                   All Prices
                 </FilterOption>
-                <FilterOption 
+                <FilterOption
                   $active={filters.priceRange === 'Under ₹5,000'}
                   onClick={() => handleFilterChange('priceRange', 'Under ₹5,000')}
                 >
                   Under ₹5,000
                 </FilterOption>
-                <FilterOption 
+                <FilterOption
                   $active={filters.priceRange === '₹5,000 - ₹15,000'}
                   onClick={() => handleFilterChange('priceRange', '₹5,000 - ₹15,000')}
                 >
                   ₹5,000 - ₹15,000
                 </FilterOption>
-                <FilterOption 
+                <FilterOption
                   $active={filters.priceRange === 'Over ₹15,000'}
                   onClick={() => handleFilterChange('priceRange', 'Over ₹15,000')}
                 >
@@ -197,19 +201,19 @@ const NewShopPage = () => {
               <h3>SORT BY</h3>
             </FilterHeader>
             <FilterContent>
-              <FilterOption 
+              <FilterOption
                   $active={filters.sortBy === 'name'}
                   onClick={() => handleFilterChange('sortBy', 'name')}
                 >
                   Name A-Z
                 </FilterOption>
-                <FilterOption 
+                <FilterOption
                   $active={filters.sortBy === 'price-low'}
                   onClick={() => handleFilterChange('sortBy', 'price-low')}
                 >
                   Price: Low to High
                 </FilterOption>
-                <FilterOption 
+                <FilterOption
                   $active={filters.sortBy === 'price-high'}
                   onClick={() => handleFilterChange('sortBy', 'price-high')}
                 >
@@ -221,45 +225,109 @@ const NewShopPage = () => {
 
         {/* Products Grid */}
         <ProductsSection>
-          
-          <ProductsGrid>
-            {currentItems.map(product => (
-              <ProductCard key={product.id}>
-                <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
-                </ProductImage>
-                <ProductInfo>
-                  <h3>{product.name}</h3>
-                  <p>{product.description}</p>
-                  <ProductPrice>₹{product.price.toLocaleString()}</ProductPrice>
-                  <div className="product-actions">
-                    <button 
-                      className="btn primary" 
-                      onClick={() => openProductDetail(product)}
-                    >
-                      View Details
-                    </button>
-                    <button 
-                      className="btn secondary" 
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </ProductInfo>
-              </ProductCard>
-            ))}
-          </ProductsGrid>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
+            gap: '20px', 
+            padding: '20px' 
+          }}>
+            {currentItems && currentItems.length > 0 ? (
+              currentItems.map(product => (
+                <div 
+                  key={product.id} 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    height: '100%', 
+                    minWidth: '250px',
+                    maxWidth: '300px',
+                    margin: '0 auto'
+                  }}
+                >
+                  <ProductCard 
+                    onClick={() => router.push(`/products/${product.slug || product.id}`)} 
+                    style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+                  >
+                    <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
+                    </ProductImage>
+                    <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <h4 style={{ fontSize: '1rem', margin: '8px 0 4px 0' }}>{product.name}</h4>
+                        <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0' }}>{product.description}</p>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '8px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 'bold', color: '#e74c3c', fontSize: '1.1rem', marginRight: '6px' }}>
+                              ₹{product.price?.toLocaleString()}
+                            </span>
+                            <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
+                              ₹{product.price ? (product.price * 1.2).toLocaleString() : product.price?.toLocaleString()}
+                            </span>
+                          </div>
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <button
+                              className="btn secondary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(product);
+                              }}
+                              style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minWidth: '40px', position: 'relative', zIndex: 1 }}
+                              aria-label="Add to cart"
+                            >
+                              <i className="fas fa-shopping-cart"></i>
+                            </button>
+                            {(() => {
+                              const cartItem = cartItems.find(item => item.product_id === product.id);
+                              return cartItem ? (
+                                <span style={{
+                                  position: 'absolute',
+                                  top: '-10px',
+                                  right: '-10px',
+                                  backgroundColor: '#e74c3c',
+                                  color: 'white',
+                                  borderRadius: '50%',
+                                  width: '20px',
+                                  height: '20px',
+                                  fontSize: '0.7rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 'bold',
+                                  border: '2px solid white',
+                                  zIndex: 2,
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}>
+                                  {cartItem.quantity}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    </ProductInfo>
+                  </ProductCard>
+                </div>
+              ))
+            ) : (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+                <h3>No products available</h3>
+                <p>Check back later for new products.</p>
+              </div>
+            )}
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <Pagination>
-              <PageButton 
+              <PageButton
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
               >
                 Previous
               </PageButton>
-              
+
               {[...Array(totalPages)].map((_, i) => (
                 <PageButton
                 $active={currentPage === i + 1}
@@ -268,8 +336,8 @@ const NewShopPage = () => {
                 {i + 1}
               </PageButton>
               ))}
-              
-              <PageButton 
+
+              <PageButton
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
               >
@@ -282,13 +350,7 @@ const NewShopPage = () => {
 
       <Footer />
 
-      {/* Product Detail Modal */}
-      {selectedProduct && (
-        <ProductDetail 
-          product={selectedProduct} 
-          onBack={closeProductDetail} 
-        />
-      )}
+      {/* Product Detail Modal - Not used, now navigates to individual product page */}
     </ShopContainer>
   );
 };

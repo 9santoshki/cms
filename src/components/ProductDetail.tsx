@@ -21,12 +21,25 @@ interface ProductDetailProps {
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
-  const { loading, error, addToCart } = useAppContext();
+  const { loading, error, addToCartWithAuth } = useAppContext();
 
   if (!product) return null;
 
   const handleAddToCart = () => {
-    addToCart(product);
+    const result = addToCartWithAuth(product);
+    if (!result.success && result.requiresLogin) {
+      // Store the pending cart action in localStorage
+      localStorage.setItem('pendingCartAction', JSON.stringify({
+        product: result.product,
+        quantity: result.quantity
+      }));
+      // Trigger a global event or callback to show login modal
+      // We'll handle this by creating a custom event that Header can listen to
+      window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
+    } else if (result.success && !result.requiresLogin && result.action) {
+      // User is authenticated, proceed with adding to cart
+      result.action();
+    }
   };
 
   return (
@@ -63,3 +76,4 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
 };
 
 export default ProductDetail;
+export { ProductDetail };

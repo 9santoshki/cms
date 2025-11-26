@@ -351,7 +351,7 @@ export const ProjectImage = styled.div.withConfig({
   `}
   
   ${props => props.imageClass === 'classic' && `
-    background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://images.unsplash.com/photo-1586040487971-52b1ca5b205b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
   `}
   
   ${props => props.imageClass === 'coastal' && `

@@ -21,6 +21,14 @@
   },
   "dynamicRoutes": [
     {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+    {
       "page": "/api/cart/[productId]",
       "regex": "^/api/cart/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -35,6 +43,14 @@
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/products/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/products/[slug]",
+      "regex": "^/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/products/(?<nxtPslug>[^/]+?)(?:/)?$"
     }
   ],
   "staticRoutes": [
@@ -63,6 +79,12 @@
       "namedRegex": "^/about(?:/)?$"
     },
     {
+      "page": "/account",
+      "regex": "^/account(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/account(?:/)?$"
+    },
+    {
       "page": "/admin",
       "regex": "^/admin(?:/)?$",
       "routeKeys": {},
@@ -75,10 +97,28 @@
       "namedRegex": "^/admin/login(?:/)?$"
     },
     {
+      "page": "/api/auth/google",
+      "regex": "^/api/auth/google(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/google(?:/)?$"
+    },
+    {
+      "page": "/api/auth/google/code",
+      "regex": "^/api/auth/google/code(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/google/code(?:/)?$"
+    },
+    {
       "page": "/api/auth/login",
       "regex": "^/api/auth/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/auth/login(?:/)?$"
+    },
+    {
+      "page": "/api/auth/moderator",
+      "regex": "^/api/auth/moderator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/moderator(?:/)?$"
     },
     {
       "page": "/api/auth/register",
@@ -93,6 +133,12 @@
       "namedRegex": "^/api/cart(?:/)?$"
     },
     {
+      "page": "/api/moderator/update",
+      "regex": "^/api/moderator/update(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/moderator/update(?:/)?$"
+    },
+    {
       "page": "/api/orders",
       "regex": "^/api/orders(?:/)?$",
       "routeKeys": {},
@@ -105,10 +151,46 @@
       "namedRegex": "^/api/products(?:/)?$"
     },
     {
+      "page": "/api/profile",
+      "regex": "^/api/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/profile(?:/)?$"
+    },
+    {
+      "page": "/api/razorpay/create-order",
+      "regex": "^/api/razorpay/create\\-order(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/razorpay/create\\-order(?:/)?$"
+    },
+    {
+      "page": "/api/razorpay/webhook",
+      "regex": "^/api/razorpay/webhook(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/razorpay/webhook(?:/)?$"
+    },
+    {
+      "page": "/api/search",
+      "regex": "^/api/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/search(?:/)?$"
+    },
+    {
+      "page": "/api/update-product-slugs",
+      "regex": "^/api/update\\-product\\-slugs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/update\\-product\\-slugs(?:/)?$"
+    },
+    {
       "page": "/auth",
       "regex": "^/auth(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/auth(?:/)?$"
+    },
+    {
+      "page": "/booking",
+      "regex": "^/booking(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/booking(?:/)?$"
     },
     {
       "page": "/cart",
@@ -135,6 +217,12 @@
       "namedRegex": "^/contact(?:/)?$"
     },
     {
+      "page": "/moderator",
+      "regex": "^/moderator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/moderator(?:/)?$"
+    },
+    {
       "page": "/orders",
       "regex": "^/orders(?:/)?$",
       "routeKeys": {},
@@ -145,6 +233,12 @@
       "regex": "^/portfolio(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/portfolio(?:/)?$"
+    },
+    {
+      "page": "/search",
+      "regex": "^/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/search(?:/)?$"
     },
     {
       "page": "/services",

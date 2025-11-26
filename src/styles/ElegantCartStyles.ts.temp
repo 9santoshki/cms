@@ -1,0 +1,37 @@
+// ... other imports ...
+import styled, { css } from 'styled-components';
+
+// ... other styled components ...
+
+// Define the image URLs
+const getImageUrl = (imageClass: string = 'modern') => {
+  switch(imageClass) {
+    case 'classic':
+      return 'https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80';
+    case 'coastal':
+      return 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80';
+    case 'modern':
+    default:
+      return 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80';
+  }
+};
+
+// Create a function to get the correct URL based on imageClass
+const getImageStyle = (imageClass: string = 'modern') => css`
+  background-image: url('${getImageUrl(imageClass)}');
+`;
+
+// Item image with different styling based on imageClass
+export const ItemImage = styled.div<{ imageClass?: string }>`
+  width: 120px;
+  height: 120px;
+  background-color: #f8f8f8;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0;
+  position: relative;
+  
+  ${(props) => getImageStyle(props.imageClass || 'modern')}
+`;
+
+// ... rest of the styled components remain the same ...

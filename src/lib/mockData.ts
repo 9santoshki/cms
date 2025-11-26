@@ -6,6 +6,8 @@ export const mockProducts = [
     description: "Elegant glass and steel coffee table with minimalist design",
     price: 399.99,
     image_url: "modern-coffee-table",
+    images: ["modern-coffee-table", "modern-coffee-table-2", "modern-coffee-table-3"],
+    primary_image: "modern-coffee-table",
     category: "Furniture"
   },
   {
@@ -14,6 +16,8 @@ export const mockProducts = [
     description: "Comfortable and stylish armchair with premium fabric",
     price: 599.99,
     image_url: "designer-armchair",
+    images: ["designer-armchair", "designer-armchair-2"],
+    primary_image: "designer-armchair",
     category: "Furniture"
   },
   {
@@ -22,6 +26,8 @@ export const mockProducts = [
     description: "Beautiful vintage table lamp with brass finish",
     price: 149.99,
     image_url: "vintage-lamp",
+    images: ["vintage-lamp", "vintage-lamp-2", "vintage-lamp-3"],
+    primary_image: "vintage-lamp",
     category: "Lighting"
   },
   {
@@ -30,6 +36,8 @@ export const mockProducts = [
     description: "Luxurious three-seater sofa with modern design",
     price: 1299.99,
     image_url: "contemporary-sofa",
+    images: ["contemporary-sofa", "contemporary-sofa-2"],
+    primary_image: "contemporary-sofa",
     category: "Furniture"
   },
   {
@@ -38,6 +46,8 @@ export const mockProducts = [
     description: "Handwoven rug with intricate pattern and soft texture",
     price: 249.99,
     image_url: "decorative-rug",
+    images: ["decorative-rug", "decorative-rug-2"],
+    primary_image: "decorative-rug",
     category: "Decor"
   },
   {
@@ -46,6 +56,8 @@ export const mockProducts = [
     description: "Set of three abstract art pieces for modern interiors",
     price: 199.99,
     image_url: "wall-art",
+    images: ["wall-art", "wall-art-2", "wall-art-3"],
+    primary_image: "wall-art",
     category: "Decor"
   },
   {
@@ -54,6 +66,8 @@ export const mockProducts = [
     description: "Six-seater dining table with matching chairs",
     price: 1799.99,
     image_url: "dining-table",
+    images: ["dining-table", "dining-table-2", "dining-table-3"],
+    primary_image: "dining-table",
     category: "Furniture"
   },
   {
@@ -62,6 +76,8 @@ export const mockProducts = [
     description: "Spacious dresser with six drawers and elegant handles",
     price: 799.99,
     image_url: "bedroom-dresser",
+    images: ["bedroom-dresser", "bedroom-dresser-2"],
+    primary_image: "bedroom-dresser",
     category: "Furniture"
   }
 ];
@@ -101,4 +117,11 @@ export const mockUser = {
   name: "John Doe",
   email: "john@example.com",
   role: "customer"
+};
+
+export const mockAdminUser = {
+  id: 2,
+  name: "Admin User",
+  email: "admin@example.com",
+  role: "admin"
 };

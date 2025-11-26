@@ -26,7 +26,7 @@ const Slider: React.FC = () => {
       id: 2,
       title: 'CLASSIC ELEGANCE',
       subtitle: 'SOPHISTICATED SPACES THAT COMBINE TRADITIONAL ELEGANCE WITH MODERN COMFORT',
-      imageUrl: 'https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1586040487971-52b1ca5b205b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
     },
     {
       id: 3,
@@ -124,17 +124,7 @@ const Slider: React.FC = () => {
         <i className="fas fa-chevron-right"></i>
       </button>
 
-      {/* Slider indicators */}
-      <div className="slider-indicators">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            className={`indicator ${index === currentSlide ? 'active' : ''}`}
-            onClick={() => goToSlide(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          ></button>
-        ))}
-      </div>
+
     </div>
   );
 };

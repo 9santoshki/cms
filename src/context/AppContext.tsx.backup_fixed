@@ -1,0 +1,1008 @@
+'use client';
+
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import { User, Product, CartItem, Order, LoadingState, ErrorState, State } from '@/types';
+
+// Action types
+
+interface Action {
+  type: string;
+  payload?: any;
+}
+
+// Initial state
+const initialState: State = {
+  user: null,
+  token: null,
+  products: [],
+  cartItems: [],
+  orders: [],
+  loading: {
+    products: false,
+    cart: false,
+    orders: false,
+    auth: false,
+    user: false
+  },
+  error: {
+    products: null,
+    cart: null,
+    orders: null,
+    auth: null,
+    user: null
+  }
+};
+
+// Action types
+const ACTIONS = {
+  SET_USER: 'SET_USER',
+  SET_TOKEN: 'SET_TOKEN',
+  SET_PRODUCTS: 'SET_PRODUCTS',
+  SET_CART_ITEMS: 'SET_CART_ITEMS',
+  SET_ORDERS: 'SET_ORDERS',
+  SET_LOADING: 'SET_LOADING',
+  SET_ERROR: 'SET_ERROR',
+  ADD_TO_CART: 'ADD_TO_CART',
+  REMOVE_FROM_CART: 'REMOVE_FROM_CART',
+  UPDATE_CART_ITEM: 'UPDATE_CART_ITEM',
+  CLEAR_CART: 'CLEAR_CART',
+  ADD_ORDER: 'ADD_ORDER'
+};
+
+// Reducer
+const appReducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case ACTIONS.SET_USER:
+      return {
+        ...state,
+        user: action.payload
+      };
+    
+    case ACTIONS.SET_TOKEN:
+      return {
+        ...state,
+        token: action.payload
+      };
+    
+    case ACTIONS.SET_PRODUCTS:
+      return {
+        ...state,
+        products: action.payload
+      };
+    
+    case ACTIONS.SET_CART_ITEMS:
+      return {
+        ...state,
+        cartItems: action.payload
+      };
+    
+    case ACTIONS.SET_ORDERS:
+      return {
+        ...state,
+        orders: action.payload
+      };
+    
+    case ACTIONS.SET_LOADING:
+      return {
+        ...state,
+        loading: {
+          ...state.loading,
+          [action.payload.type]: action.payload.value
+        },
+      };
+    
+    case ACTIONS.SET_ERROR:
+      return {
+        ...state,
+        error: {
+          ...state.error,
+          [action.payload.type]: action.payload.value
+        }
+      };
+    
+    case ACTIONS.ADD_TO_CART:
+      const existingItem = state.cartItems.find(item => item.id === action.payload.id);
+      let updatedCartItems: CartItem[];
+      
+      if (existingItem) {
+        updatedCartItems = state.cartItems.map(item =>
+          item.id === action.payload.id
+            ? { ...item, quantity: item.quantity + action.payload.quantity }
+            : item
+        );
+      } else {
+        updatedCartItems = [...state.cartItems, action.payload];
+      }
+      
+      return {
+        ...state,
+        cartItems: updatedCartItems
+      };
+    
+    case ACTIONS.UPDATE_CART_ITEM:
+      return {
+        ...state,
+        cartItems: state.cartItems.map(item =>
+          item.id === action.payload.id
+            ? { ...item, quantity: action.payload.quantity }
+            : item
+        )
+      };
+    
+    case ACTIONS.REMOVE_FROM_CART:
+      return {
+        ...state,
+        cartItems: state.cartItems.filter(item => item.id !== action.payload)
+      };
+    
+    case ACTIONS.CLEAR_CART:
+      return {
+        ...state,
+        cartItems: []
+      };
+    
+    case ACTIONS.ADD_ORDER:
+      return {
+        ...state,
+        orders: [action.payload, ...state.orders]
+      };
+    
+    default:
+      return state;
+  }
+};
+
+// Create context
+const AppContext = createContext<{ 
+  // State
+  user: User | null;
+  token: string | null;
+  products: Product[];
+  cartItems: CartItem[];
+  orders: Order[];
+  loading: LoadingState;
+  error: ErrorState;
+  // Actions
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  setLoading: (type: keyof LoadingState, value: boolean) => void;
+  setError: (type: keyof ErrorState, value: string | null) => void;
+  fetchProducts: () => Promise<void>;
+  fetchCartItems: () => Promise<void>;
+  addToCart: (product: Product, quantity?: number) => Promise<void>;
+  updateCartItem: (productId: number, quantity: number) => Promise<void>;
+  removeFromCart: (productId: number) => Promise<void>;
+  clearCart: () => Promise<void>;
+  fetchOrders: () => Promise<void>;
+  createOrder: (orderData: any) => Promise<any>;
+  login: (credentials: any) => Promise<any>;
+  register: (userData: any) => Promise<any>;
+  logout: () => void;
+  verifyToken: () => Promise<boolean>;
+  fetchUserProfile: () => Promise<any>;
+  updateUserProfile: (profileData: any) => Promise<any>;
+  createProduct: (productData: any) => Promise<any>;
+  updateProduct: (id: number, productData: any) => Promise<any>;
+  fetchProductBySlug,
+    addToCartWithAuth: (slug: string) => Promise<Product>;
+} | undefined>(undefined);
+
+// Provider component
+interface AppProviderProps {
+  children: React.ReactNode;
+}
+
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  
+  // Load user and token from localStorage on initial render
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+
+      if (token) {
+        dispatch({ type: ACTIONS.SET_TOKEN, payload: token });
+        
+        // Verify token and restore user if valid
+        if (user) {
+          try {
+            const parsedUser = JSON.parse(user);
+            dispatch({ type: ACTIONS.SET_USER, payload: parsedUser });
+          } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+            localStorage.removeItem('user');
+            
+            // If user data is corrupted, try to fetch user profile using the token
+            try {
+              const response = await fetch('/api/profile', {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              
+              const result = await response.json();
+              if (result.success && result.data) {
+                dispatch({ type: ACTIONS.SET_USER, payload: result.data });
+                localStorage.setItem('user', JSON.stringify(result.data));
+              } else {
+                // Token might be invalid, clear it
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                dispatch({ type: ACTIONS.SET_TOKEN, payload: null });
+                dispatch({ type: ACTIONS.SET_USER, payload: null });
+              }
+            } catch (fetchError) {
+              console.error('Error fetching user profile during initialization:', fetchError);
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              dispatch({ type: ACTIONS.SET_TOKEN, payload: null });
+              dispatch({ type: ACTIONS.SET_USER, payload: null });
+            }
+          }
+        } else {
+          // User data is missing but token exists, try to fetch user profile
+          try {
+            const response = await fetch('/api/profile', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            const result = await response.json();
+            if (result.success && result.data) {
+              dispatch({ type: ACTIONS.SET_USER, payload: result.data });
+              localStorage.setItem('user', JSON.stringify(result.data));
+            } else {
+              // Token might be invalid, clear it
+              localStorage.removeItem('token');
+              dispatch({ type: ACTIONS.SET_TOKEN, payload: null });
+              dispatch({ type: ACTIONS.SET_USER, payload: null });
+            }
+          } catch (fetchError) {
+            console.error('Error fetching user profile during initialization:', fetchError);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            dispatch({ type: ACTIONS.SET_TOKEN, payload: null });
+            dispatch({ type: ACTIONS.SET_USER, payload: null });
+          }
+        }
+      } else if (user) {
+        // User exists without token, clear user data
+        localStorage.removeItem('user');
+      }
+    };
+
+    initializeAuth();
+  }, []);
+  
+  // Load cart from localStorage based on login state
+  useEffect(() => {
+    if (!state.token) {
+      // User is not logged in, load guest cart
+      const savedCart = localStorage.getItem('cartItems');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: parsedCart });
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error);
+          localStorage.removeItem('cartItems');
+        }
+      }
+    } else {
+      // User is logged in, fetch their cart from the server after login
+      // Use a delay and double-check the token exists to avoid race conditions
+      const timer = setTimeout(() => {
+        // Check if token is still present after the delay
+        const tokenStillPresent = localStorage.getItem('token');
+        if (tokenStillPresent) {
+          fetchCartItems();
+        }
+      }, 800); // Increase delay to ensure state is properly updated
+
+      return () => clearTimeout(timer);
+    }
+  }, [state.token]); // Re-run when token changes
+
+  // Save cart to localStorage only when not logged in
+  useEffect(() => {
+    // Only save guest cart to localStorage if not logged in
+    if (!state.token) {
+      localStorage.setItem('cartItems', JSON.stringify(state.cartItems));
+    }
+  }, [state.cartItems, state.token]);
+  
+  // Actions
+  const setUser = (user: User | null) => {
+    dispatch({ type: ACTIONS.SET_USER, payload: user });
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  };
+  
+  const setToken = (token: string | null) => {
+    dispatch({ type: ACTIONS.SET_TOKEN, payload: token });
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+  };
+  
+  const setLoading = (type: keyof LoadingState, value: boolean) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: { type, value } });
+  };
+  
+  const setError = (type: keyof ErrorState, value: string | null) => {
+    dispatch({ type: ACTIONS.SET_ERROR, payload: { type, value } });
+  };
+  
+  // Fetch products
+  const fetchProducts = async () => {
+    // Don't fetch if already loading to prevent race conditions
+    if (state.loading.products) return;
+    
+    setLoading('products', true);
+    setError('products', null);
+    
+    try {
+      const response = await apiClient.getProducts();
+      if (response.success && response.data) {
+        // Convert price strings to numbers for proper formatting
+        // Map mock image_url identifiers to appropriate imageClass values
+        const mapImageIdentifierToClass = (identifier: string) => {
+          if (!identifier) return 'modern';
+          
+          const lowerIdentifier = identifier.toLowerCase();
+          if (lowerIdentifier.includes('modern') || lowerIdentifier.includes('coffee') || lowerIdentifier.includes('sofa')) {
+            return 'modern';
+          } else if (lowerIdentifier.includes('classic') || lowerIdentifier.includes('armchair')) {
+            return 'classic';
+          } else if (lowerIdentifier.includes('vintage') || lowerIdentifier.includes('lamp')) {
+            return 'coastal'; // Using coastal for lighting items
+          } else if (lowerIdentifier.includes('dining') || lowerIdentifier.includes('dresser')) {
+            return 'office'; // Using office for furniture items
+          } else if (lowerIdentifier.includes('wall') || lowerIdentifier.includes('art')) {
+            return 'hotel'; // Using hotel for decor items
+          } else if (lowerIdentifier.includes('rug')) {
+            return 'restaurant'; // Using restaurant for decor items
+          } else {
+            return 'modern'; // default
+          }
+        };
+
+        const formattedProducts = response.data.map((product: any) => ({
+          ...product,
+          price: typeof product.price === 'number' ? product.price : parseFloat(product.price),
+          // Only set image_url to undefined if it's not a proper URL
+          // If it looks like an actual URL (contains http), keep it
+          image_url: product.image_url && (product.image_url.startsWith('http') || product.image_url.startsWith('/')) 
+            ? product.image_url 
+            : undefined,
+          // Use the identifier to determine the appropriate CSS class
+          imageClass: mapImageIdentifierToClass(product.image_url) || product.imageClass || 'modern'
+        }));
+        dispatch({ type: ACTIONS.SET_PRODUCTS, payload: formattedProducts });
+      } else {
+        throw new Error(response.error || 'Failed to load products');
+      }
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      setError('products', error.message || 'Failed to load products. Please try again later.');
+    } finally {
+      setLoading('products', false);
+    }
+  };
+  
+  // Fetch cart items
+  const fetchCartItems = async () => {
+    if (!state.token) {
+      // For guest users, load from localStorage
+      const savedCart = localStorage.getItem('cartItems');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: parsedCart });
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error);
+          localStorage.removeItem('cartItems');
+          dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: [] });
+        }
+      } else {
+        dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: [] });
+      }
+      return;
+    }
+    
+    setLoading('cart', true);
+    setError('cart', null);
+    
+    try {
+      const response = await apiClient.getCartItems();
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: response.data });
+      } else {
+        // Don't throw an error for empty cart, just log and handle gracefully
+        console.warn('No cart items found for user:', response.error);
+        dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: [] });
+      }
+    } catch (error: any) {
+      // Handle network errors, etc.
+      console.error('Error fetching cart items:', error);
+      setError('cart', error.message || 'Failed to load cart items. Please try again later.');
+      // Still set empty cart to avoid breaking the UI
+      dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: [] });
+    } finally {
+      setLoading('cart', false);
+    }
+  };
+  
+  // Add item to cart
+  const addToCart = async (product: Product, quantity = 1) => {
+    if (state.token) {
+      setLoading('cart', true);
+      setError('cart', null);
+      
+      try {
+        const response = await apiClient.addToCart(product.id, quantity);
+        if (response.success && response.data) {
+          dispatch({ type: ACTIONS.ADD_TO_CART, payload: response.data });
+        } else {
+          throw new Error(response.error || 'Failed to add item to cart');
+        }
+      } catch (error: any) {
+        console.error('Error adding to cart:', error);
+        setError('cart', error.message || 'Failed to add item to cart. Please try again.');
+      } finally {
+        setLoading('cart', false);
+      }
+    } else {
+      // For users without token (guests), add to local storage cart
+      // Use the product id for consistency with API response
+      const cartItem = {
+        id: product.id,
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity,
+        image_url: product.image_url,
+        user_id: null // Null for guest carts
+      };
+      
+      dispatch({ type: ACTIONS.ADD_TO_CART, payload: cartItem });
+      
+      // Persist guest cart to localStorage
+      const currentCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      const existingItemIndex = currentCart.findIndex((item: any) => item.product_id === product.id);
+      
+      if (existingItemIndex !== -1) {
+        // Update quantity if already exists
+        currentCart[existingItemIndex].quantity += quantity;
+      } else {
+        // Add new item to cart
+        currentCart.push(cartItem);
+      }
+      
+      localStorage.setItem('cartItems', JSON.stringify(currentCart));
+    }
+  };
+  
+  // Update cart item
+  const updateCartItem = async (productId: number, quantity: number) => {
+    if (state.token) {
+      setLoading('cart', true);
+      setError('cart', null);
+      
+      try {
+        const response = await apiClient.updateCartItem(productId, quantity);
+        if (response.success && response.data) {
+          dispatch({ type: ACTIONS.UPDATE_CART_ITEM, payload: response.data });
+        } else if (quantity <= 0 && response.success) {
+          // When quantity is 0, the item was removed
+          dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+        } else {
+          throw new Error(response.error || 'Failed to update cart item');
+        }
+      } catch (error: any) {
+        console.error('Error updating cart item:', error);
+        setError('cart', error.message || 'Failed to update cart item. Please try again.');
+      } finally {
+        setLoading('cart', false);
+      }
+    } else {
+      if (quantity <= 0) {
+        dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+      } else {
+        dispatch({ type: ACTIONS.UPDATE_CART_ITEM, payload: { id: productId, quantity } });
+      }
+      
+      // Update localStorage for guest cart
+      const currentCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      const existingItemIndex = currentCart.findIndex((item: any) => item.product_id === productId);
+      
+      if (existingItemIndex !== -1) {
+        if (quantity <= 0) {
+          // Remove item from localStorage
+          currentCart.splice(existingItemIndex, 1);
+        } else {
+          // Update quantity in localStorage
+          currentCart[existingItemIndex].quantity = quantity;
+        }
+      } else if (quantity > 0) {
+        // Find the product to get its details and add to localStorage
+        const product = state.products.find(p => p.id === productId);
+        if (product) {
+          currentCart.push({
+            id: product.id,
+            product_id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity,
+            image_url: product.image_url,
+            user_id: null
+          });
+        }
+      }
+      
+      localStorage.setItem('cartItems', JSON.stringify(currentCart));
+    }
+  };
+  
+  // Remove item from cart
+  const removeFromCart = async (productId: number) => {
+    if (state.token) {
+      setLoading('cart', true);
+      setError('cart', null);
+      
+      try {
+        const response = await apiClient.removeFromCart(productId);
+        if (response.success) {
+          dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+        } else {
+          throw new Error(response.error || 'Failed to remove item from cart');
+        }
+      } catch (error: any) {
+        console.error('Error removing from cart:', error);
+        setError('cart', error.message || 'Failed to remove item from cart. Please try again.');
+      } finally {
+        setLoading('cart', false);
+      }
+    } else {
+      dispatch({ type: ACTIONS.REMOVE_FROM_CART, payload: productId });
+      
+      // Update localStorage for guest cart
+      const currentCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      const updatedCart = currentCart.filter((item: any) => item.product_id !== productId);
+      localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+    }
+  };
+  
+  // Clear cart
+  const clearCart = async () => {
+    if (state.token) {
+      setLoading('cart', true);
+      setError('cart', null);
+      
+      try {
+        const response = await apiClient.clearCart();
+        if (response.success) {
+          dispatch({ type: ACTIONS.CLEAR_CART });
+        } else {
+          throw new Error(response.error || 'Failed to clear cart');
+        }
+      } catch (error: any) {
+        console.error('Error clearing cart:', error);
+        setError('cart', error.message || 'Failed to clear cart. Please try again.');
+      } finally {
+        setLoading('cart', false);
+      }
+    } else {
+      dispatch({ type: ACTIONS.CLEAR_CART });
+      // Clear localStorage for guest cart
+      localStorage.removeItem('cartItems');
+    }
+  };
+  
+  // Fetch orders
+  const fetchOrders = async () => {
+    if (!state.token) return;
+    
+    setLoading('orders', true);
+    setError('orders', null);
+    
+    try {
+      const response = await apiClient.getOrders();
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.SET_ORDERS, payload: response.data });
+      } else {
+        throw new Error(response.error || 'Failed to load orders');
+      }
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      setError('orders', error.message || 'Failed to load orders. Please try again later.');
+    } finally {
+      setLoading('orders', false);
+    }
+  };
+  
+  // Create order
+  const createOrder = async (orderData: any) => {
+    if (!state.token) return;
+    
+    setLoading('orders', true);
+    setError('orders', null);
+    
+    try {
+      const response = await apiClient.createOrder(orderData);
+      if (response.success && response.data) {
+        dispatch({ type: ACTIONS.ADD_ORDER, payload: response.data });
+        dispatch({ type: ACTIONS.CLEAR_CART });
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to create order');
+      }
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      
+      // Handle validation errors from backend
+      if (error.message && error.message.includes('Validation Error')) {
+        setError('orders', 'Please check your order details and try again.');
+      } else {
+        setError('orders', error.message || 'Failed to create order. Please try again.');
+      }
+      
+      throw error;
+    } finally {
+      setLoading('orders', false);
+    }
+  };
+  
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    if (!state.token) return;
+
+    setLoading('user', true);
+    setError('user', null);
+
+    try {
+      const response = await fetch('/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${state.token}`
+        }
+      });
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        // Update user in context
+        setUser(result.data);
+        return result.data;
+      } else {
+        throw new Error(result.error || 'Failed to fetch user profile');
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+      setError('user', error.message || 'Failed to fetch user profile. Please try again later.');
+    } finally {
+      setLoading('user', false);
+    }
+  };
+
+  // Update user profile
+  const updateUserProfile = async (profileData: any) => {
+    if (!state.token) return;
+
+    setLoading('user', true);
+    setError('user', null);
+
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token}`
+        },
+        body: JSON.stringify(profileData)
+      });
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        // Update user in context
+        setUser(result.data);
+        return result.data;
+      } else {
+        throw new Error(result.error || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      setError('user', error.message || 'Failed to update profile. Please try again.');
+      throw error;
+    } finally {
+      setLoading('user', false);
+    }
+  };
+
+  // Login
+  const login = async (credentials: any) => {
+    setLoading('auth', true);
+    setError('auth', null);
+    
+    try {
+      const response = await apiClient.login(credentials);
+      if (response.success && response.data) {
+        apiClient.setToken(response.data.token);
+        setToken(response.data.token);
+        setUser(response.data.user);
+        
+        // After login, fetch user's cart from the server directly
+        // Using the token directly since state might not be updated yet
+        setLoading('cart', true);
+        try {
+          const cartResponse = await apiClient.getCartItems();
+          if (cartResponse.success && cartResponse.data) {
+            dispatch({ type: ACTIONS.SET_CART_ITEMS, payload: cartResponse.data });
+          }
+        } catch (error) {
+          console.error('Error fetching cart items after login:', error);
+          setError('cart', 'Could not load cart items after login. Items may be available after refresh.');
+        } finally {
+          setLoading('cart', false);
+        }
+        
+        // Then merge any guest cart items that weren't synced
+        const guestCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+        if (guestCart.length > 0) {
+          // Process each guest cart item
+          for (const guestItem of guestCart) {
+            // Check if the same product already exists in the user's cart
+            const existingCartItem = state.cartItems.find(item => item.product_id === guestItem.product_id);
+            
+            if (existingCartItem) {
+              // If item exists, update quantity (add the guest quantity to existing)
+              await updateCartItem(guestItem.product_id, existingCartItem.quantity + guestItem.quantity);
+            } else {
+              // If item doesn't exist, add it to the authenticated user's cart
+              const product = state.products.find(p => p.id === guestItem.product_id);
+              if (product) {
+                await addToCart(product, guestItem.quantity);
+              }
+            }
+          }
+          // Clear guest cart after merging
+          localStorage.removeItem('cartItems');
+        }
+        
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // Handle specific error messages from backend
+      if (error.message) {
+        setError('auth', error.message);
+      } else {
+        setError('auth', 'Login failed. Please check your credentials.');
+      }
+      
+      throw error;
+    } finally {
+      setLoading('auth', false);
+    }
+  };
+  
+  
+  
+  // Register
+  const register = async (userData: any) => {
+    setLoading('auth', true);
+    setError('auth', null);
+    
+    try {
+      const response = await apiClient.register(userData);
+      if (response.success && response.data) {
+        apiClient.setToken(response.data.token);
+        setToken(response.data.token);
+        setUser(response.data.user);
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Registration failed. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      // Handle validation errors from backend
+      if (error.message) {
+        setError('auth', error.message);
+      } else {
+        setError('auth', 'Registration failed. Please try again.');
+      }
+      
+      throw error;
+    } finally {
+      setLoading('auth', false);
+    }
+  };
+  
+  // Logout
+  const logout = () => {
+    // Preserve cart items in localStorage before clearing from state
+    if (state.cartItems && state.cartItems.length > 0) {
+      localStorage.setItem('cartItems', JSON.stringify(state.cartItems));
+    }
+    
+    setToken(null);
+    setUser(null);
+    dispatch({ type: ACTIONS.CLEAR_CART });
+    dispatch({ type: ACTIONS.SET_ORDERS, payload: [] });
+  };
+
+  // Create product
+  const createProduct = async (productData: any) => {
+    if (!state.token) return;
+
+    setLoading('products', true);
+    setError('products', null);
+
+    try {
+      const response = await apiClient.createProduct(productData);
+      if (response.success && response.data) {
+        // Update products list to include the new product
+        dispatch({ type: ACTIONS.SET_PRODUCTS, payload: [...state.products, response.data] });
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to create product');
+      }
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      setError('products', error.message || 'Failed to create product. Please try again.');
+      throw error;
+    } finally {
+      setLoading('products', false);
+    }
+  };
+
+  // Update product
+  const updateProduct = async (id: number, productData: any) => {
+    if (!state.token) return;
+
+    setLoading('products', true);
+    setError('products', null);
+
+    try {
+      const response = await apiClient.updateProduct(id, productData);
+      if (response.success && response.data) {
+        // Update products list to reflect the changes
+        const updatedProducts = state.products.map(product => 
+          product.id === id ? response.data : product
+        );
+        dispatch({ type: ACTIONS.SET_PRODUCTS, payload: updatedProducts });
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to update product');
+      }
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      setError('products', error.message || 'Failed to update product. Please try again.');
+      throw error;
+    } finally {
+      setLoading('products', false);
+    }
+  };
+  
+  // Fetch specific product by slug
+  const fetchProductBySlug,
+    addToCartWithAuth = async (slug: string): Promise<Product> => {
+    setLoading('products', true);
+    setError('products', null);
+
+    try {
+      const response = await apiClient.getProductBySlug(slug);
+      if (response.success && response.data) {
+        // Ensure slug is present in the returned product
+        const productData: Product = {
+          ...response.data,
+          slug: response.data.slug || slug
+        };
+        
+        // Add the fetched product to the products list
+        const updatedProducts = [...state.products];
+        const existingIndex = updatedProducts.findIndex(p => p.id === productData.id);
+        
+        if (existingIndex !== -1) {
+          // Update existing product
+          updatedProducts[existingIndex] = productData;
+        } else {
+          // Add new product
+          updatedProducts.push(productData);
+        }
+        
+        dispatch({ type: ACTIONS.SET_PRODUCTS, payload: updatedProducts });
+        return productData;
+      } else {
+        throw new Error(response.error || 'Failed to fetch product');
+      }
+    } catch (error: any) {
+      console.error('Error fetching product by slug:', error);
+      setError('products', error.message || 'Failed to fetch product. Please try again.');
+      throw error;
+    } finally {
+      setLoading('products', false);
+    }
+  };
+  
+  // Verify token - we can use any authenticated endpoint to verify the token
+  const verifyToken = async () => {
+    if (!state.token) return false;
+    
+    try {
+      // Using the getOrders endpoint as a way to verify the token
+      const response = await apiClient.getOrders();
+      if (response.success) {
+        return true;
+      } else {
+        throw new Error('Token verification failed');
+      }
+    } catch (error: any) {
+      console.error('Token verification failed:', error);
+      logout();
+  // Add item to cart or request login if guest
+  const addToCartWithAuth = async (product: Product, quantity = 1) => {
+    if (state.token) {
+      // User is logged in, proceed with adding to cart
+      await addToCart(product, quantity);
+      return { success: true, requiresLogin: false };
+    } else {
+      // User is not logged in, indicate they need to log in
+      return { success: false, requiresLogin: true, product, quantity };
+    }
+  };
+      return false;
+    }
+  };
+  
+  const value = {
+    ...state,
+    setUser,
+    setToken,
+    setLoading,
+    setError,
+    fetchProducts,
+    fetchCartItems,
+    addToCart,
+    updateCartItem,
+    removeFromCart,
+    clearCart,
+    fetchOrders,
+    createOrder,
+    login,
+    register,
+    logout,
+    verifyToken,
+    fetchUserProfile,
+    updateUserProfile,
+    createProduct,
+    updateProduct,
+    fetchProductBySlug,
+    addToCartWithAuth
+  };
+  
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// Custom hook to use the context
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};

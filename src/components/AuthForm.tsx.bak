@@ -1,0 +1,305 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppContext } from '../context/AppContext';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import '../App.css'; // Import the main CSS file
+
+interface AuthFormProps {
+  onClose?: () => void;
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ onClose: _onClose = () => {} }) => {
+  const { error, loading, setError, login, register } = useAppContext();
+  const router = useRouter();
+  const [redirect, setRedirect] = useState('/');
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+  const navigate = (path: string) => {
+    router.push(path);
+  };
+
+
+  
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    // Clear error when user starts typing
+    if (error.auth) setError('auth', '');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (isLogin) {
+        // Login validation
+        if (!formData.email || !formData.password) {
+          throw new Error('Please fill in all fields');
+        }
+
+        await login({
+          email: formData.email,
+          password: formData.password
+        });
+
+        // Close modal and navigate to redirect URL or home page after login
+        const targetPath = redirect && redirect !== '/' ? decodeURIComponent(redirect) : '/';
+        if (targetPath === '/') {
+          // If redirecting to home, just close the modal
+          _onClose();
+        } else {
+          // Otherwise navigate to the redirect page
+          navigate(targetPath);
+        }
+      } else {
+        // Registration validation
+        if (!formData.name || !formData.email || !formData.password) {
+          throw new Error('Please fill in all fields');
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+
+        // Password strength validation
+        if (formData.password.length < 6) {
+          throw new Error('Password must be at least 6 characters long');
+        }
+
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+          throw new Error('Password must contain at least one lowercase letter, one uppercase letter, and one digit');
+        }
+
+        await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        });
+
+        // Close modal and navigate to redirect URL or home page after registration
+        const targetPath = redirect && redirect !== '/' ? decodeURIComponent(redirect) : '/';
+        if (targetPath === '/') {
+          // If redirecting to home, just close the modal
+          _onClose();
+        } else {
+          // Otherwise navigate to the redirect page
+          navigate(targetPath);
+        }
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      // Error is handled by the context
+    }
+  };
+
+  // Google Sign In handler
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse | any) => {
+    try {
+      // Handle response from GoogleLogin button and direct credential response
+      let credential;
+      if (typeof credentialResponse === 'string') {
+        // Direct credential response (e.g., from Header One Tap)
+        credential = credentialResponse;
+      } else if (credentialResponse.credential) {
+        // Response from GoogleLogin button
+        credential = credentialResponse.credential;
+      } else if (credentialResponse.detail?.credential) {
+        // Alternative format
+        credential = credentialResponse.detail.credential;
+      }
+      
+      if (!credential) {
+        throw new Error('Google login failed: No credential received');
+      }
+
+      // Send the credential to our backend for processing
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+      });
+      
+      // Check if the response is ok before parsing JSON
+      if (!response.ok) {
+        console.error('Google auth API error:', response.status, await response.text());
+        setError('auth', 'Google authentication failed. Please try again.');
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update context with user and token
+        const { user, token } = result.data;
+        
+        // Close modal and navigate to redirect URL or home page after Google login
+        const targetPath = redirect && redirect !== '/' ? decodeURIComponent(redirect) : '/';
+        if (targetPath === '/') {
+          // If redirecting to home, just close the modal
+          _onClose();
+        } else {
+          // Otherwise navigate to the redirect page
+          navigate(targetPath);
+        }
+      } else {
+        setError('auth', result.error || 'Google authentication failed');
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError('auth', 'Google authentication failed. Please try again.');
+    }
+  };
+
+  // Handle Google One Tap callback globally
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).handleGoogleSuccess = handleGoogleSuccess;
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        (window as any).handleGoogleSuccess = undefined;
+      }
+    };
+  }, [handleGoogleSuccess]);
+
+  // Read redirect param from URL on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setRedirect(params.get('redirect') || '/');
+    }
+  }, []);
+
+  const handleGoogleError = () => {
+    console.error('Google Login Failed');
+    // Provide a more user-friendly error message
+    setError('auth', 'Google authentication failed. This might be due to a configuration issue. Please try regular login or contact support.');
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-header">
+          <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+          <p>{isLogin ? 'Sign in to continue' : 'Join us today'}</p>
+        </div>
+
+        {error.auth && <div className="error-message">{error.auth}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {!isLogin && (
+            <div className="form-group">
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+                required={!isLogin}
+              />
+            </div>
+          )}
+
+          <div className="form-group">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            {!isLogin && (
+              <div className="password-hint">
+                Password must be at least 6 characters and contain uppercase, lowercase, and digit
+              </div>
+            )}
+          </div>
+
+          {!isLogin && (
+            <div className="form-group">
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required={!isLogin}
+              />
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn primary auth-button"
+            disabled={loading.auth}
+          >
+            {loading.auth ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+          </button>
+        </form>
+
+
+
+        {/* Google Sign In Button */}
+        <div className="google-auth-section">
+          <div className="divider">OR</div>
+          {googleClientId ? (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              type="standard"
+              theme="outline"
+              size="large"
+              text={isLogin ? "signin_with" : "signup_with"}
+              shape="rectangular"
+            />
+          ) : (
+            <div className="text-center text-red-500 text-sm">
+              Google login is not configured. Please check your environment variables.
+            </div>
+          )}
+        </div>
+
+        <div className="auth-toggle">
+          <p>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => {
+              setIsLogin(!isLogin);
+              setError('auth', '');
+            }}>
+              {isLogin ? 'Sign Up' : 'Sign In'}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthForm;

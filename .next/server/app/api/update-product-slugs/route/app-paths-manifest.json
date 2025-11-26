@@ -1,0 +1,3 @@
+{
+  "/api/update-product-slugs/route": "app/api/update-product-slugs/route.js"
+}
