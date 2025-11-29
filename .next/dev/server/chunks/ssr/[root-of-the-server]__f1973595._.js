@@ -38,15 +38,19 @@ function AuthCallback() {
             // For Supabase OAuth, we don't explicitly need to do anything here
             // because Supabase handles the authentication state automatically
             // The session will be available through the auth state change listener
-            // Redirect to home or previous page
+            // Redirect to home or previous page (use router.replace for cleaner navigation)
             // Check if there's a redirect parameter in the URL
             const urlParams = new URLSearchParams(window.location.search);
             const redirectParam = urlParams.get('redirect');
             // Wait a moment to ensure the session state is updated
             setTimeout(()=>{
-                const targetPath = redirectParam ? decodeURIComponent(redirectParam) : '/';
-                router.push(targetPath);
-            }, 1000);
+                // Use router.replace for better UX (no back button issues)
+                if (redirectParam) {
+                    router.replace(decodeURIComponent(redirectParam));
+                } else {
+                    router.replace('/');
+                }
+            }, 800); // Reduced delay for faster UX
         };
         // Handle the callback
         handleAuthCallback();
@@ -62,7 +66,7 @@ function AuthCallback() {
                     className: "animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"
                 }, void 0, false, {
                     fileName: "[project]/src/app/auth/callback/page.tsx",
-                    lineNumber: 31,
+                    lineNumber: 35,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -70,7 +74,7 @@ function AuthCallback() {
                     children: "Completing authentication..."
                 }, void 0, false, {
                     fileName: "[project]/src/app/auth/callback/page.tsx",
-                    lineNumber: 32,
+                    lineNumber: 36,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -78,18 +82,18 @@ function AuthCallback() {
                     children: "You will be redirected shortly"
                 }, void 0, false, {
                     fileName: "[project]/src/app/auth/callback/page.tsx",
-                    lineNumber: 33,
+                    lineNumber: 37,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/auth/callback/page.tsx",
-            lineNumber: 30,
+            lineNumber: 34,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/auth/callback/page.tsx",
-        lineNumber: 29,
+        lineNumber: 33,
         columnNumber: 10
     }, this);
 }

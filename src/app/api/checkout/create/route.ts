@@ -2,20 +2,37 @@ import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role to bypass RLS
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Razorpay client inside the function to handle missing env vars gracefully
+    const razorpayKey = process.env.RAZORPAY_KEY_ID;
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKey || !razorpaySecret) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Payment gateway not configured. Please contact the site administrator.' 
+        },
+        { status: 500 }
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id: razorpayKey,
+      key_secret: razorpaySecret,
+    });
+
     const body = await request.json();
     const { items, shipping_address } = body;
 

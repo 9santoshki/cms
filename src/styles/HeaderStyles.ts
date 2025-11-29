@@ -2,7 +2,7 @@
 import styled from 'styled-components';
 
 // Shared header styles
-export const SharedHeader = styled.nav`
+export const SharedHeader = styled.div`
   background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);

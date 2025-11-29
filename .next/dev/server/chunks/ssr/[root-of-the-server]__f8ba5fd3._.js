@@ -44,7 +44,7 @@ class ApiClient {
         const config = {
             ...options,
             headers,
-            // Include credentials to support NextAuth cookie authentication
+            // Include credentials for authentication
             credentials: 'include'
         };
         try {
@@ -58,19 +58,6 @@ class ApiClient {
                 error: 'Network error or server unavailable'
             };
         }
-    }
-    // Authentication
-    async login(credentials) {
-        return this.request('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify(credentials)
-        });
-    }
-    async register(userData) {
-        return this.request('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify(userData)
-        });
     }
     // Products
     async getProducts() {
@@ -93,6 +80,20 @@ class ApiClient {
             method: 'PUT',
             body: JSON.stringify(productData)
         });
+    }
+    // Search
+    async searchProducts(params) {
+        const searchParams = new URLSearchParams();
+        if (params.q) searchParams.append('q', params.q);
+        if (params.search) searchParams.append('search', params.search);
+        if (params.category) searchParams.append('category', params.category);
+        if (params.minPrice !== undefined) searchParams.append('minPrice', params.minPrice.toString());
+        if (params.maxPrice !== undefined) searchParams.append('maxPrice', params.maxPrice.toString());
+        if (params.page) searchParams.append('page', params.page.toString());
+        if (params.limit) searchParams.append('limit', params.limit.toString());
+        const queryString = searchParams.toString();
+        const endpoint = queryString ? `/search/products?${queryString}` : '/search/products';
+        return this.request(endpoint);
     }
     // Cart
     async getCartItems() {
@@ -149,6 +150,50 @@ class ApiClient {
             body: JSON.stringify(orderData)
         });
     }
+    // Checkout
+    async createCheckoutSession(cartData) {
+        return this.request('/checkout/create', {
+            method: 'POST',
+            body: JSON.stringify(cartData)
+        });
+    }
+    async verifyPayment(paymentData) {
+        return this.request('/checkout/verify', {
+            method: 'POST',
+            body: JSON.stringify(paymentData)
+        });
+    }
+    // Appointments
+    async getAppointments(filters) {
+        const searchParams = new URLSearchParams();
+        if (filters?.status) searchParams.append('status', filters.status);
+        if (filters?.date) searchParams.append('date', filters.date);
+        if (filters?.page) searchParams.append('page', filters.page.toString());
+        if (filters?.limit) searchParams.append('limit', filters.limit.toString());
+        const queryString = searchParams.toString();
+        const endpoint = queryString ? `/appointments?${queryString}` : '/appointments';
+        return this.request(endpoint);
+    }
+    async createAppointment(appointmentData) {
+        return this.request('/appointments', {
+            method: 'POST',
+            body: JSON.stringify(appointmentData)
+        });
+    }
+    async getAppointment(id) {
+        return this.request(`/appointments/${id}`);
+    }
+    async updateAppointment(id, updateData) {
+        return this.request(`/appointments/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+    }
+    async deleteAppointment(id) {
+        return this.request(`/appointments/${id}`, {
+            method: 'DELETE'
+        });
+    }
 }
 const apiClient = new ApiClient();
 }),
@@ -168,6 +213,8 @@ const createClient = ()=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$nod
 "use strict";
 
 __turbopack_context__.s([
+    "getAllUserProfiles",
+    ()=>getAllUserProfiles,
     "getCurrentSession",
     ()=>getCurrentSession,
     "getCurrentUser",
@@ -187,11 +234,18 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$cl
 ;
 const signInWithGoogle = async ()=>{
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createClient"])();
+    // Use the current window location as the redirect URL to ensure we return to the same origin
+    // This ensures the auth state change event fires properly in the same session
     const redirectTo = `${window.location.origin}/auth/callback`;
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: redirectTo
+            redirectTo: redirectTo,
+            // Ensure we get full user profile data
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent'
+            }
         }
     });
     if (error) {
@@ -207,6 +261,9 @@ const signOut = async ()=>{
         console.error('Error signing out:', error.message);
         throw error;
     }
+    return {
+        success: true
+    };
 };
 const getCurrentSession = async ()=>{
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createClient"])();
@@ -229,10 +286,28 @@ const getUserProfile = async ()=>{
         console.error('Error getting user:', userError);
         return null;
     }
+    // First, try to get the existing profile
     const { data: profile, error: profileError } = await supabase.from('profiles').select('id, role').eq('id', user.id).single();
     if (profileError) {
-        console.error('Error getting user profile:', profileError);
-        return null;
+        // Profile doesn't exist, create it with default customer role
+        console.warn('Profile not found, creating new profile for user:', user.id);
+        const { error: insertError } = await supabase.from('profiles').insert([
+            {
+                id: user.id,
+                role: 'customer'
+            }
+        ]);
+        if (insertError) {
+            console.error('Error creating user profile:', insertError);
+            return null;
+        }
+        // Now fetch the profile that was just created
+        const { data: newProfile, error: fetchError } = await supabase.from('profiles').select('id, role').eq('id', user.id).single();
+        if (fetchError) {
+            console.error('Error fetching newly created user profile:', fetchError);
+            return null;
+        }
+        return newProfile;
     }
     return profile;
 };
@@ -245,6 +320,17 @@ const updateUserRole = async (userId, newRole)=>{
         console.error('Error updating user role:', error);
         throw error;
     }
+};
+const getAllUserProfiles = async ()=>{
+    const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createClient"])();
+    const { data, error } = await supabase.from('profiles').select('id, role, created_at, updated_at').order('created_at', {
+        ascending: false
+    });
+    if (error) {
+        console.error('Error fetching user profiles:', error);
+        throw error;
+    }
+    return data;
 };
 const onAuthStateChange = (callback)=>{
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createClient"])();
@@ -281,10 +367,12 @@ const initialState = {
     products: [],
     cartItems: [],
     orders: [],
+    appointments: [],
     loading: {
         products: false,
         cart: false,
         orders: false,
+        appointments: false,
         auth: false,
         user: false
     },
@@ -292,6 +380,7 @@ const initialState = {
         products: null,
         cart: null,
         orders: null,
+        appointments: null,
         auth: null,
         user: null
     }
@@ -303,6 +392,7 @@ const ACTIONS = {
     SET_PRODUCTS: 'SET_PRODUCTS',
     SET_CART_ITEMS: 'SET_CART_ITEMS',
     SET_ORDERS: 'SET_ORDERS',
+    SET_APPOINTMENTS: 'SET_APPOINTMENTS',
     SET_LOADING: 'SET_LOADING',
     SET_ERROR: 'SET_ERROR',
     ADD_TO_CART: 'ADD_TO_CART',
@@ -338,6 +428,11 @@ const appReducer = (state, action)=>{
             return {
                 ...state,
                 orders: action.payload
+            };
+        case ACTIONS.SET_APPOINTMENTS:
+            return {
+                ...state,
+                appointments: action.payload
             };
         case ACTIONS.SET_LOADING:
             return {
@@ -540,6 +635,10 @@ const AppProvider = ({ children })=>{
                 type: ACTIONS.SET_CART_ITEMS,
                 payload: []
             });
+            // Sync Zustand cart with empty array
+            __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                module.useCartStore.getState().clearCart();
+            });
             return;
         }
         setLoading('cart', true);
@@ -551,12 +650,23 @@ const AppProvider = ({ children })=>{
                     type: ACTIONS.SET_CART_ITEMS,
                     payload: response.data
                 });
+                // Sync Zustand cart with fetched data
+                __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                    module.useCartStore.getState().clearCart();
+                    response.data.forEach((item)=>{
+                        module.useCartStore.getState().addItem(item);
+                    });
+                });
             } else {
                 // Don't throw an error for empty cart, just log and handle gracefully
                 console.warn('No cart items found for user:', response.error);
                 dispatch({
                     type: ACTIONS.SET_CART_ITEMS,
                     payload: []
+                });
+                // Sync Zustand cart with empty array
+                __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                    module.useCartStore.getState().clearCart();
                 });
             }
         } catch (error) {
@@ -567,6 +677,10 @@ const AppProvider = ({ children })=>{
             dispatch({
                 type: ACTIONS.SET_CART_ITEMS,
                 payload: []
+            });
+            // Sync Zustand cart with empty array
+            __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                module.useCartStore.getState().clearCart();
             });
         } finally{
             setLoading('cart', false);
@@ -587,6 +701,27 @@ const AppProvider = ({ children })=>{
     }, [
         state.user
     ]); // Re-run when user changes
+    // Sync Zustand cart with AppContext cart
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        // Initialize Zustand cart from AppContext
+        __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+            const { items } = module.useCartStore.getState();
+            if (items.length === 0 && state.cartItems.length > 0) {
+                // If Zustand store is empty but AppContext has items, populate Zustand
+                state.cartItems.forEach((item)=>{
+                    module.useCartStore.getState().addItem(item);
+                });
+            } else if (items.length > 0 && state.cartItems.length === 0) {
+                // If Zustand has items but AppContext is empty, populate AppContext
+                dispatch({
+                    type: ACTIONS.SET_CART_ITEMS,
+                    payload: items
+                });
+            }
+        });
+    }, [
+        state.cartItems
+    ]);
     // Save cart to localStorage only when not logged in
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         // Only save guest cart to localStorage if not logged in
@@ -647,6 +782,8 @@ const AppProvider = ({ children })=>{
         try {
             const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiClient"].getProducts();
             if (response.success && response.data) {
+                // Handle the new response structure with pagination
+                const productsData = Array.isArray(response.data) ? response.data : response.data?.products || [];
                 // Convert price strings to numbers for proper formatting
                 // Map mock image_url identifiers to appropriate imageClass values
                 const mapImageIdentifierToClass = (identifier)=>{
@@ -668,7 +805,7 @@ const AppProvider = ({ children })=>{
                         return 'modern'; // default
                     }
                 };
-                const formattedProducts = response.data.map((product)=>({
+                const formattedProducts = productsData.map((product)=>({
                         ...product,
                         price: typeof product.price === 'number' ? product.price : parseFloat(product.price),
                         // Only set image_url to undefined if it's not a proper URL
@@ -710,6 +847,10 @@ const AppProvider = ({ children })=>{
                         type: ACTIONS.ADD_TO_CART,
                         payload: response.data
                     });
+                    // Sync with Zustand store
+                    __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                        module.useCartStore.getState().addItem(response.data);
+                    });
                 } else {
                     throw new Error(response.error || 'Failed to add item to cart');
                 }
@@ -721,16 +862,19 @@ const AppProvider = ({ children })=>{
                 setLoading('cart', false);
             }
         } else {
-            // For users without token (guests), trigger login modal instead of adding to cart
-            // Store the pending cart action in localStorage
-            localStorage.setItem('pendingCartAction', JSON.stringify({
-                product: product,
-                quantity: quantity
-            }));
-            // Dispatch a custom event to trigger the login modal
-            if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-            ;
-        // Don't add to cart for non-authenticated users
+            // For non-authenticated users, add to Zustand cart directly
+            const cartItem = {
+                id: Date.now(),
+                // Temporary ID
+                product_id: product.id,
+                quantity,
+                name: product.name,
+                price: product.price,
+                image_url: product.image_url
+            };
+            __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                module.useCartStore.getState().addItem(cartItem);
+            });
         }
     };
     // Update cart item
@@ -752,11 +896,19 @@ const AppProvider = ({ children })=>{
                         type: ACTIONS.ADD_TO_CART,
                         payload: response.data
                     });
+                    // Sync with Zustand store
+                    __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                        module.useCartStore.getState().updateItem(product_id, quantity);
+                    });
                 } else if (quantity <= 0 && response.success) {
                     // When quantity is 0, the item was removed
                     dispatch({
                         type: ACTIONS.REMOVE_FROM_CART,
-                        payload: productId
+                        payload: product_id
+                    });
+                    // Sync with Zustand store
+                    __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                        module.useCartStore.getState().removeItem(product_id);
                     });
                 } else {
                     throw new Error(response.error || 'Failed to update cart item');
@@ -773,6 +925,10 @@ const AppProvider = ({ children })=>{
                     type: ACTIONS.REMOVE_FROM_CART,
                     payload: productId
                 });
+                // Sync with Zustand store
+                __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                    module.useCartStore.getState().removeItem(productId);
+                });
             } else {
                 dispatch({
                     type: ACTIONS.UPDATE_CART_ITEM,
@@ -780,6 +936,10 @@ const AppProvider = ({ children })=>{
                         product_id: productId,
                         quantity
                     }
+                });
+                // Sync with Zustand store
+                __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                    module.useCartStore.getState().updateItem(productId, quantity);
                 });
             }
             // Update localStorage for guest cart
@@ -828,6 +988,10 @@ const AppProvider = ({ children })=>{
                         type: ACTIONS.REMOVE_FROM_CART,
                         payload: productId
                     });
+                    // Sync with Zustand store
+                    __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                        module.useCartStore.getState().removeItem(productId);
+                    });
                 } else {
                     throw new Error(response.error || 'Failed to remove item from cart');
                 }
@@ -841,6 +1005,10 @@ const AppProvider = ({ children })=>{
             dispatch({
                 type: ACTIONS.REMOVE_FROM_CART,
                 payload: productId
+            });
+            // Sync with Zustand store
+            __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                module.useCartStore.getState().removeItem(productId);
             });
             // Update localStorage for guest cart
             const currentCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
@@ -859,6 +1027,10 @@ const AppProvider = ({ children })=>{
                     dispatch({
                         type: ACTIONS.CLEAR_CART
                     });
+                    // Sync with Zustand store
+                    __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                        module.useCartStore.getState().clearCart();
+                    });
                 } else {
                     throw new Error(response.error || 'Failed to clear cart');
                 }
@@ -871,6 +1043,10 @@ const AppProvider = ({ children })=>{
         } else {
             dispatch({
                 type: ACTIONS.CLEAR_CART
+            });
+            // Sync with Zustand store
+            __turbopack_context__.A("[project]/src/store/cartStore.ts [app-ssr] (ecmascript, async loader)").then((module)=>{
+                module.useCartStore.getState().clearCart();
             });
             // Clear localStorage for guest cart
             localStorage.removeItem('cartItems');
@@ -1007,22 +1183,60 @@ const AppProvider = ({ children })=>{
         throw new Error('Email/password registration is not supported. Please use Google OAuth.');
     };
     // Logout
-    const logout = ()=>{
-        // Store the current cart in temp ref for potential restoration on login
-        tempSavedCart.current = [
-            ...state.cartItems
-        ];
-        // Clear cart items from localStorage to ensure cart appears empty after logout
-        localStorage.removeItem('cartItems');
-        setUser(null);
-        setToken(null);
-        dispatch({
-            type: ACTIONS.CLEAR_CART
-        });
-        dispatch({
-            type: ACTIONS.SET_ORDERS,
-            payload: []
-        });
+    const logout = async ()=>{
+        try {
+            // Store the current cart in temp ref for potential restoration on login
+            tempSavedCart.current = [
+                ...state.cartItems
+            ];
+            // Clear cart items from localStorage to ensure cart appears empty after logout
+            localStorage.removeItem('cartItems');
+            // Clear user from app context
+            setUser(null);
+            setToken(null);
+            // Clear all user-related data from localStorage
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            // Dispatch actions to clear state
+            dispatch({
+                type: ACTIONS.CLEAR_CART
+            });
+            dispatch({
+                type: ACTIONS.SET_ORDERS,
+                payload: []
+            });
+            // Also logout from Supabase to clear all session cookies
+            try {
+                const { createClient } = await __turbopack_context__.A("[project]/src/lib/supabase/client.ts [app-ssr] (ecmascript, async loader)");
+                const supabase = createClient();
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Supabase sign out error:', error);
+                }
+            } catch (supabaseSignOutError) {
+                console.error('Error with main Supabase sign out:', supabaseSignOutError);
+            }
+            // For good measure, also try to clear any possible remaining session data
+            // by calling the signOut function from auth utils which we updated
+            try {
+                const { signOut } = await __turbopack_context__.A("[project]/src/lib/supabase/auth.ts [app-ssr] (ecmascript, async loader)");
+                await signOut();
+            } catch (authSignOutError) {
+                // If auth signOut fails, that's ok as long as the main signOut worked
+                console.warn('Additional signOut failed (this is ok):', authSignOutError);
+            }
+            // Reset the API client token to ensure it doesn't hold any auth data
+            try {
+                const { apiClient } = await __turbopack_context__.A("[project]/src/lib/api.ts [app-ssr] (ecmascript, async loader)");
+                apiClient.setToken(null);
+            } catch (apiClientError) {
+                console.warn('Error resetting API client token:', apiClientError);
+            }
+            // Add a small delay to ensure all async operations complete
+            await new Promise((resolve)=>setTimeout(resolve, 300));
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
     };
     // Create product
     const createProduct = async (productData)=>{
@@ -1118,6 +1332,66 @@ const AppProvider = ({ children })=>{
             setLoading('products', false);
         }
     };
+    // Search products
+    const searchProducts = async (params)=>{
+        setLoading('products', true);
+        setError('products', null);
+        try {
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiClient"].searchProducts(params);
+            if (response.success && response.data) {
+                // Handle both response formats (old direct array and new with pagination object)
+                const productsData = Array.isArray(response.data) ? response.data : response.data?.products || [];
+                // Map imageClass to products
+                const mapImageIdentifierToClass = (identifier)=>{
+                    if (!identifier) return 'modern';
+                    const lowerIdentifier = identifier.toLowerCase();
+                    if (lowerIdentifier.includes('modern') || lowerIdentifier.includes('coffee') || lowerIdentifier.includes('sofa')) {
+                        return 'modern';
+                    } else if (lowerIdentifier.includes('classic') || lowerIdentifier.includes('armchair')) {
+                        return 'classic';
+                    } else if (lowerIdentifier.includes('vintage') || lowerIdentifier.includes('lamp')) {
+                        return 'coastal'; // Using coastal for lighting items
+                    } else if (lowerIdentifier.includes('dining') || lowerIdentifier.includes('dresser')) {
+                        return 'office'; // Using office for furniture items
+                    } else if (lowerIdentifier.includes('wall') || lowerIdentifier.includes('art')) {
+                        return 'hotel'; // Using hotel for decor items
+                    } else if (lowerIdentifier.includes('rug')) {
+                        return 'restaurant'; // Using restaurant for decor items
+                    } else {
+                        return 'modern'; // default
+                    }
+                };
+                const formattedProducts = productsData.map((product)=>({
+                        ...product,
+                        price: typeof product.price === 'number' ? product.price : parseFloat(product.price),
+                        image_url: product.image_url && (product.image_url.startsWith('http') || product.image_url.startsWith('/')) ? product.image_url : undefined,
+                        imageClass: mapImageIdentifierToClass(product.image_url) || product.imageClass || 'modern'
+                    }));
+                dispatch({
+                    type: ACTIONS.SET_PRODUCTS,
+                    payload: formattedProducts
+                });
+                // Return pagination data if it exists
+                if (response.data.pagination) {
+                    return {
+                        products: formattedProducts,
+                        pagination: response.data.pagination,
+                        filters: response.data.filters
+                    };
+                } else {
+                    return formattedProducts;
+                }
+            } else {
+                throw new Error(response.error || 'Failed to search products');
+            }
+        } catch (error) {
+            console.error('Error searching products:', error);
+            setError('products', error.message || 'Failed to search products. Please try again.');
+            throw error;
+        } finally{
+            setLoading('products', false);
+        }
+    };
     // Verify token - we can use any authenticated endpoint to verify the token
     const verifyToken = async ()=>{
         if (!state.user) return false;
@@ -1133,6 +1407,64 @@ const AppProvider = ({ children })=>{
             console.error('Token verification failed:', error);
             logout();
             return false;
+        }
+    };
+    // Fetch appointments
+    const fetchAppointments = async (filters)=>{
+        if (!state.user) return;
+        setLoading('appointments', true);
+        setError('appointments', null);
+        try {
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiClient"].getAppointments(filters);
+            if (response.success && response.data) {
+                dispatch({
+                    type: ACTIONS.SET_APPOINTMENTS,
+                    payload: response.data.appointments
+                });
+                return response.data;
+            } else {
+                throw new Error(response.error || 'Failed to fetch appointments');
+            }
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+            setError('appointments', error.message || 'Failed to fetch appointments. Please try again.');
+            throw error;
+        } finally{
+            setLoading('appointments', false);
+        }
+    };
+    // Create appointment
+    const createAppointment = async (appointmentData)=>{
+        if (!state.user) return;
+        try {
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiClient"].createAppointment(appointmentData);
+            if (response.success && response.data) {
+                // Refresh appointments list after creating new one
+                await fetchAppointments();
+                return response.data;
+            } else {
+                throw new Error(response.error || 'Failed to create appointment');
+            }
+        } catch (error) {
+            console.error('Error creating appointment:', error);
+            throw error;
+        }
+    };
+    // Update appointment
+    const updateAppointment = async (id, updateData)=>{
+        if (!state.user) return;
+        try {
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiClient"].updateAppointment(id, updateData);
+            if (response.success && response.data) {
+                // Refresh appointments list after updating
+                await fetchAppointments();
+                return response.data;
+            } else {
+                throw new Error(response.error || 'Failed to update appointment');
+            }
+        } catch (error) {
+            console.error('Error updating appointment:', error);
+            throw error;
         }
     };
     // Clear pending cart action
@@ -1174,6 +1506,9 @@ const AppProvider = ({ children })=>{
         clearCart,
         fetchOrders,
         createOrder,
+        fetchAppointments,
+        createAppointment,
+        updateAppointment,
         login,
         register,
         logout,
@@ -1183,6 +1518,7 @@ const AppProvider = ({ children })=>{
         createProduct,
         updateProduct,
         fetchProductBySlug,
+        searchProducts,
         addToCartWithAuth,
         clearPendingCartAction
     };
@@ -1191,7 +1527,7 @@ const AppProvider = ({ children })=>{
         children: children
     }, void 0, false, {
         fileName: "[project]/src/context/AppContext.tsx",
-        lineNumber: 998,
+        lineNumber: 1307,
         columnNumber: 10
     }, ("TURBOPACK compile-time value", void 0));
 };
@@ -1233,8 +1569,27 @@ function SessionContextProvider({ supabaseClient, children }) {
                 // Fetch user profile from profiles table
                 const { data: profileData, error: profileError } = await supabaseClient.from('profiles').select('id, role').eq('id', session.user.id).single();
                 if (profileError) {
-                    console.error('Error getting user profile:', profileError);
-                    setProfile(null);
+                    // Profile doesn't exist, try to create it with default role
+                    console.warn('User profile not found, creating new profile for user:', session.user.id);
+                    const { error: insertError } = await supabaseClient.from('profiles').insert([
+                        {
+                            id: session.user.id,
+                            role: 'customer'
+                        }
+                    ]);
+                    if (insertError) {
+                        console.error('Error creating user profile:', insertError);
+                        setProfile(null);
+                    } else {
+                        // Now fetch the profile that was just created
+                        const { data: newProfile, error: fetchError } = await supabaseClient.from('profiles').select('id, role').eq('id', session.user.id).single();
+                        if (fetchError) {
+                            console.error('Error fetching newly created user profile:', fetchError);
+                            setProfile(null);
+                        } else {
+                            setProfile(newProfile);
+                        }
+                    }
                 } else {
                     setProfile(profileData);
                 }
@@ -1242,19 +1597,37 @@ function SessionContextProvider({ supabaseClient, children }) {
                 setProfile(null);
             }
             setLoading(false);
-            const { data: { subscription } } = await supabaseClient.auth.onAuthStateChange((_event, session)=>{
+            const { data: { subscription } } = await supabaseClient.auth.onAuthStateChange(async (_event, session)=>{
                 setSession(session);
                 setUser(session?.user || null);
                 if (session?.user) {
                     // Fetch user profile from profiles table
-                    supabaseClient.from('profiles').select('id, role').eq('id', session.user.id).single().then(({ data: profileData, error: profileError })=>{
-                        if (profileError) {
-                            console.error('Error getting user profile:', profileError);
+                    const { data: profileData, error: profileError } = await supabaseClient.from('profiles').select('id, role').eq('id', session.user.id).single();
+                    if (profileError) {
+                        // Profile doesn't exist, try to create it with default role
+                        console.warn('User profile not found during auth state change, creating new profile for user:', session.user.id);
+                        const { error: insertError } = await supabaseClient.from('profiles').insert([
+                            {
+                                id: session.user.id,
+                                role: 'customer'
+                            }
+                        ]);
+                        if (insertError) {
+                            console.error('Error creating user profile:', insertError);
                             setProfile(null);
                         } else {
-                            setProfile(profileData);
+                            // Now fetch the profile that was just created
+                            const { data: newProfile, error: fetchError } = await supabaseClient.from('profiles').select('id, role').eq('id', session.user.id).single();
+                            if (fetchError) {
+                                console.error('Error fetching newly created user profile:', fetchError);
+                                setProfile(null);
+                            } else {
+                                setProfile(newProfile);
+                            }
                         }
-                    });
+                    } else {
+                        setProfile(profileData);
+                    }
                 } else {
                     setProfile(null);
                 }
@@ -1277,7 +1650,7 @@ function SessionContextProvider({ supabaseClient, children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/lib/supabase/SessionContextProvider.tsx",
-        lineNumber: 84,
+        lineNumber: 127,
         columnNumber: 10
     }, this);
 }
@@ -1297,30 +1670,20 @@ __turbopack_context__.s([
     ()=>NextAuthProvider
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next-auth/react/index.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$SessionContextProvider$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/supabase/SessionContextProvider.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/supabase/client.ts [app-ssr] (ecmascript)");
 'use client';
 ;
 ;
 ;
-;
-function NextAuthProvider({ children, ...props }) {
+function NextAuthProvider({ children }) {
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createClient"])();
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2f$SessionContextProvider$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SessionContextProvider"], {
         supabaseClient: supabase,
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SessionProvider"], {
-            ...props,
-            basePath: "/api/auth",
-            children: children
-        }, void 0, false, {
-            fileName: "[project]/src/components/NextAuthProvider.tsx",
-            lineNumber: 13,
-            columnNumber: 7
-        }, this)
+        children: children
     }, void 0, false, {
         fileName: "[project]/src/components/NextAuthProvider.tsx",
-        lineNumber: 12,
+        lineNumber: 11,
         columnNumber: 10
     }, this);
 }

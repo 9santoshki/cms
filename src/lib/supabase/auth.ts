@@ -4,12 +4,19 @@ import { createClient } from '@/lib/supabase/client';
 export const signInWithGoogle = async () => {
   const supabase = createClient();
 
+  // Use the current window location as the redirect URL to ensure we return to the same origin
+  // This ensures the auth state change event fires properly in the same session
   const redirectTo = `${window.location.origin}/auth/callback`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: redirectTo,
+      // Ensure we get full user profile data
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      }
     },
   });
 
@@ -31,6 +38,8 @@ export const signOut = async () => {
     console.error('Error signing out:', error.message);
     throw error;
   }
+  
+  return { success: true };
 };
 
 // Get current session
@@ -56,7 +65,7 @@ export const getCurrentUser = async () => {
   return user;
 };
 
-// Get user profile from the profiles table
+// Get user profile from the profiles table, creating it if it doesn't exist
 export const getUserProfile = async () => {
   const supabase = createClient();
 
@@ -70,6 +79,7 @@ export const getUserProfile = async () => {
     return null;
   }
 
+  // First, try to get the existing profile
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, role')
@@ -77,8 +87,31 @@ export const getUserProfile = async () => {
     .single();
 
   if (profileError) {
-    console.error('Error getting user profile:', profileError);
-    return null;
+    // Profile doesn't exist, create it with default customer role
+    console.warn('Profile not found, creating new profile for user:', user.id);
+    
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert([{ id: user.id, role: 'customer' }]);
+
+    if (insertError) {
+      console.error('Error creating user profile:', insertError);
+      return null;
+    }
+    
+    // Now fetch the profile that was just created
+    const { data: newProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching newly created user profile:', fetchError);
+      return null;
+    }
+    
+    return newProfile;
   }
 
   return profile;

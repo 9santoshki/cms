@@ -13,16 +13,20 @@ export default function AuthCallback() {
       // because Supabase handles the authentication state automatically
       // The session will be available through the auth state change listener
       
-      // Redirect to home or previous page
+      // Redirect to home or previous page (use router.replace for cleaner navigation)
       // Check if there's a redirect parameter in the URL
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get('redirect');
       
       // Wait a moment to ensure the session state is updated
       setTimeout(() => {
-        const targetPath = redirectParam ? decodeURIComponent(redirectParam) : '/';
-        router.push(targetPath);
-      }, 1000);
+        // Use router.replace for better UX (no back button issues)
+        if (redirectParam) {
+          router.replace(decodeURIComponent(redirectParam));
+        } else {
+          router.replace('/');
+        }
+      }, 800); // Reduced delay for faster UX
     };
 
     // Handle the callback

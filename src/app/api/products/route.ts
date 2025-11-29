@@ -1,34 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generateUniqueSlug } from '@/lib/slug';
 
-// Initialize Supabase client
+// Initialize Supabase client with environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  console.error('⚠️ Missing Supabase environment variables. The app may not function correctly.');
+  // Don't throw error here as it would crash the server; handle gracefully in functions
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Handle preflight requests
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-      "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
-    },
-  });
-}
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export async function GET(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not properly configured' },
+        { status: 500 }
+      );
+    }
+
     // Extract search, filter, and pagination parameters from query
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search') || '';
+    const search = searchParams.get('search') || searchParams.get('q') || '';
     const category = searchParams.get('category') || '';
     const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : null;
     const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : null;
@@ -44,8 +39,8 @@ export async function GET(request: NextRequest) {
         name,
         description,
         price,
-        category,
         images,
+        category,
         stock_quantity,
         created_at,
         updated_at,
@@ -54,7 +49,7 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (search) {
-      query = query.or(`name.ilike.${`%${search}%`},description.ilike.${`%${search}%`}`);
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
     if (category) {
@@ -70,14 +65,14 @@ export async function GET(request: NextRequest) {
     }
 
     query = query.order('created_at', { ascending: false });
-    
+
     // Execute the main query
     const { data: productsResult, error: productsError } = await query;
 
     if (productsError) {
       console.error('Error fetching products:', productsError);
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch products' },
+        { success: false, error: productsError.message || 'Failed to fetch products' },
         { status: 500 }
       );
     }
@@ -117,7 +112,7 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact', head: true });
 
     if (search) {
-      countQuery = countQuery.or(`name.ilike.${`%${search}%`},description.ilike.${`%${search}%`}`);
+      countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
     if (category) {
@@ -154,12 +149,6 @@ export async function GET(request: NextRequest) {
           total,
           pages: Math.ceil(total / limit),
           hasMore: page < Math.ceil(total / limit)
-        },
-        filters: {
-          search,
-          category,
-          minPrice,
-          maxPrice
         }
       }
     }, {
@@ -171,7 +160,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error in products GET API:', error);
     return NextResponse.json(
       {
         success: false,
@@ -192,8 +181,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not properly configured' },
+        { status: 500 }
+      );
+    }
+
+    // For admin users only - check authentication
+    // In a real implementation you'd verify the user has admin privileges
     const body = await request.json();
-    const { name, description, price, image_url, image_urls, category } = body;
+    const { name, description, price, image_url, image_urls, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -214,13 +212,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a unique slug for the product
-    const slug = await generateUniqueSlug(name);
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
 
     // Create the product first
     const { data: product, error: productError } = await supabase
       .from('products')
       .insert([
-        { name, description, price, image_url, category, slug }
+        {
+          name,
+          description,
+          price,
+          image_url,
+          images: image_urls || (image_url ? [image_url] : null),
+          category,
+          stock_quantity,
+          slug
+        }
       ])
       .select()
       .single();
@@ -314,12 +321,12 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error'
+        error: error.message || 'Internal server error'
       },
       {
         status: 500,
@@ -332,4 +339,16 @@ export async function POST(request: NextRequest) {
       }
     );
   }
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, {
+    headers: {
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
+      "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+    },
+  });
 }

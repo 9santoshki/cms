@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppContext } from '../context/AppContext';
+import { useProduct } from '../context/ProductContext';
+import { useUI } from '../context/UIContext';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
@@ -60,14 +63,9 @@ import {
 
 const NewHomepage = () => {
   const router = useRouter();
-  const {
-    products,
-    loading,
-    error,
-    fetchProducts,
-    addToCartWithAuth,
-    cartItems
-  } = useAppContext();
+  const { products, fetchProducts, loading, error } = useProduct();
+  const { items: cartItems } = useCart();
+  const { user } = useAuth();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -168,7 +166,7 @@ const NewHomepage = () => {
 
 
 
-  if (loading.products) {
+  if (loading) {
     return (
       <HomepageContainer>
         <LoadingSpinner />
@@ -176,10 +174,11 @@ const NewHomepage = () => {
     );
   }
 
-  if (error.products) {
+  if (error) {
+    console.error('Error loading products:', error);
     return (
       <ErrorContainer>
-        <p>{error.products}</p>
+        <p>{error}</p>
         <button className="btn primary" onClick={() => window.location.reload()}>
           Retry
         </button>
@@ -281,19 +280,27 @@ const NewHomepage = () => {
                           className="btn secondary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const result = addToCartWithAuth(product, 1);
-                            if (!result.success && result.requiresLogin) {
-                              // Store the pending cart action in localStorage
-                              localStorage.setItem('pendingCartAction', JSON.stringify({
-                                product: result.product,
-                                quantity: result.quantity
-                              }));
-                              // Trigger a global event or callback to show login modal
-                              window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
-                            } else if (result.success && !result.requiresLogin && result.action) {
-                              // User is authenticated, proceed with adding to cart
-                              result.action();
-                            }
+                            if (!user) {
+                            // Store the pending cart action in localStorage
+                            localStorage.setItem('pendingCartAction', JSON.stringify({
+                              product: product,
+                              quantity: 1
+                            }));
+                            // Trigger a global event or callback to show login modal
+                            window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: 1 } }));
+                          } else {
+                            // User is authenticated, proceed with adding to cart using Zustand
+                            import('@/store/cartStore').then((module) => {
+                              module.useCartStore.getState().addItem({
+                                id: Date.now(), // Temporary ID
+                                product_id: product.id,
+                                quantity: 1,
+                                name: product.name,
+                                price: product.price,
+                                image_url: product.image_url,
+                              });
+                            });
+                          }
                           }}
                           style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minWidth: '40px', position: 'relative', zIndex: 1 }}
                           aria-label="Add to cart"

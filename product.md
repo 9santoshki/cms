@@ -138,8 +138,44 @@ Create a premium, user-friendly online platform for an Indian interior furnishin
 -   **Image Handling:** Use Supabase Storage for product images and store the public URLs in the `images` JSONB array in the `products` table.
 -   **Environment Variables:** All secrets (Supabase keys, Razorpay keys) and the site URL must be loaded from a `.env.local` file.
 
+**5. More details:**
+- **Split context into modules like separate services Small, predictable providers = stable UI hydration.**
+Module-	Responsibility
+AuthContext	- login, logout, user session
+CartContext	- cart state & API
+ProductContext	- products & search
+UIContext	- errors, loading
 
+- **Let Zustand handle cart alone.**
+Cart = stateful, high-frequency updates → Zustand
+Auth = session-based → Context
+Products = cached, low-frequency → SWR or TanStack Query
+Never sync Context ↔ Zustand manually — this causes re-renders.
 
+-- **Use React Query or SWR for fetching.**
+Instead of fetchProducts() in the provider, use:
+const { data: products } = useQuery(["products"], apiClient.getProducts)
+
+-- **Move Supabase session restore OUTSIDE the provider.**
+Use Next.js recommended approach:
+middleware.ts
+layout.tsx
+supabaseServerClient
+
+-- **Keep provider lean.**
+Your provider should only expose:
+State
+Dispatchers
+No async fetching
+No localStorage logic
+
+- **Split header into smaller components**
+Like modular Java classes:
+UserMenu.tsx
+MobileMenu.tsx
+SearchBar.tsx
+NavLinks.tsx
+Less render overhead → stable styling.
 
 ### **Part 4: Testing Principles & Requirements**
 
@@ -176,3 +212,35 @@ Create a premium, user-friendly online platform for an Indian interior furnishin
         -   **Role-Based Access:** Write steps to verify that an Admin, Moderator, and Customer each see the correct UI and have the correct permissions when navigating the site, especially the `/dashboard`.
         -   **E-commerce Flow:** Write steps to test adding an item to the cart, the cart persisting, and completing a full checkout cycle using Razorpay's test mode.
         -   **Lead Capture:** Write steps to test the submission of the consultation request form and the confirmation notifications.
+
+
+Of course. That is a critical requirement that should be explicitly stated. A modern web application is expected to work flawlessly on any device, and specifying this ensures the development agent prioritizes it from the start.
+
+Instead of just adding a single line, it's best practice to create a dedicated section for this. This makes the requirement prominent and allows for more specific details.
+
+I have created a new section, **"5. UI/UX & Design Principles,"** and updated the subsequent numbering. Here is the new section you can insert into `Part 2: Product & Feature Specifications`.
+
+---
+
+### **5. UI/UX & Design Principles**
+
+**Guiding Principle:** The application must provide a seamless, intuitive, and high-quality user experience regardless of the device used. The design should be clean, modern, and consistent with the premium quality of the furnishing products.
+
+-   **a. Responsive & Mobile-First Design:**
+    -   **Requirement:** The UI must be fully responsive and adapt gracefully to all screen sizes, including mobile phones, tablets, and desktops.
+    -   **Methodology:** You must adopt a **mobile-first** development approach. This means styling and layout should be designed for mobile screens first, and then scaled up for larger screens using responsive breakpoints (e.g., using Tailwind CSS's `sm:`, `md:`, `lg:` prefixes).
+    -   **Validation:** All features, especially the product grid, image galleries, forms, and dashboard, must be easily viewable and usable on a small mobile screen without horizontal scrolling.
+
+-   **b. Performance & Speed:**
+    -   **Requirement:** The application must be fast and feel responsive to user interactions.
+    -   **Implementation:**
+        -   Leverage Next.js features like Server-Side Rendering (SSR) for fast initial page loads.
+        -   Use the Next.js `<Image>` component for automatic image optimization to ensure high-resolution product images do not slow down the site.
+        -   Implement loading states (e.g., skeletons or spinners) for any action that involves fetching data, so the user is never left looking at a blank or unresponsive screen.
+
+-   **c. Accessibility (A11y):**
+    -   **Requirement:** The application should be usable by as many people as possible.
+    -   **Implementation:**
+        -   Use semantic HTML5 tags (`<nav>`, `<main>`, `<header>`, etc.).
+        -   Ensure all interactive elements (buttons, links) are clearly distinguishable and have proper focus states.
+        -   Ensure sufficient color contrast between text and background.

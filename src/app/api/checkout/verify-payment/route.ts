@@ -4,17 +4,15 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role to bypass RLS
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Verify JWT token and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
@@ -36,7 +34,7 @@ async function getUserIdFromRequest(request: NextRequest) {
 
     // Verify that the user actually exists
     const { data: user, error } = await supabase
-      .from('users')
+      .from('profiles') // Changed from 'users' to 'profiles' to match our schema
       .select('id')
       .eq('id', decoded.id)
       .single();
@@ -54,6 +52,25 @@ async function getUserIdFromRequest(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Razorpay client inside the function to handle missing env vars gracefully
+    const razorpayKey = process.env.RAZORPAY_KEY_ID;
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKey || !razorpaySecret) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Payment gateway not configured. Please contact the site administrator.' 
+        },
+        { status: 500 }
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id: razorpayKey,
+      key_secret: razorpaySecret,
+    });
+
     // Verify user authentication
     const userId = await getUserIdFromRequest(request);
 
@@ -76,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Verify the payment signature
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .createHmac('sha256', razorpaySecret!) // Using the local variable instead of env var
       .update(body)
       .digest('hex');
 
@@ -95,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Verify the payment with Razorpay
     try {
       const payment = await razorpay.payments.fetch(razorpay_payment_id);
-      
+
       if (payment.status !== 'captured') {
         return NextResponse.json(
           { success: false, error: 'Payment not captured' },
@@ -114,7 +131,7 @@ export async function POST(request: NextRequest) {
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('id, user_id, status')
-      .eq('external_id', razorpay_order_id)
+      .eq('external_id', razorpay_order_id) // Changed to external_id to match our schema
       .single();
 
     if (orderError || !order) {
@@ -136,7 +153,7 @@ export async function POST(request: NextRequest) {
     // Update order status to 'paid'
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'paid',
         external_payment_id: razorpay_payment_id,
         updated_at: new Date().toISOString()

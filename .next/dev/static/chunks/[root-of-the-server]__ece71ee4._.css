@@ -212,6 +212,10 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-3px);
 }
 
+body.overflow-hidden {
+  overflow: hidden;
+}
+
 /* [next]/internal/font/google/inter_5972bc34.module.css [app-client] (css) */
 @font-face {
   font-family: Inter;

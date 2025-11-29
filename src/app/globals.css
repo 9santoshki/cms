@@ -219,4 +219,9 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-3px);
 }
 
+/* Prevent body scroll when modal is open */
+body.overflow-hidden {
+  overflow: hidden;
+}
+
 /* Add any other global styles here */

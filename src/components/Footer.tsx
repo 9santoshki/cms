@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { 
   FooterContainer, 
   FooterContent, 
@@ -20,7 +20,7 @@ import {
 
 const Footer = () => {
   const router = useRouter();
-  const { user } = useAppContext();
+  const { user } = useAuth();
   
   const navigate = (path: string) => {
     router.push(path);

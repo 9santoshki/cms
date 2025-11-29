@@ -1,45 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-// Initialize Supabase client with service role for bypassing RLS
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role key to bypass RLS
-);
-
-// Verify JWT token and get user ID
+// Verify user session and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  
-  const token = authHeader.replace('Bearer ', '');
-  const jwtSecret = process.env.JWT_SECRET;
+  // Create a Supabase server client using SSR pattern to read cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+      },
+    }
+  );
 
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not set in environment variables');
-  }
-  
   try {
-    const decoded = jwt.verify(token, jwtSecret) as { id: number; email: string; role: string };
-    
-    // Verify that the user actually exists
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', decoded.id)
-      .single();
+    // Get the current session
+    const {
+      data: { session },
+      error: sessionError
+    } = await supabase.auth.getSession();
 
-    if (error || !user) {
+    if (sessionError || !session) {
+      console.error('Session error:', sessionError);
       return null;
     }
-    
-    return decoded.id;
+
+    // Return the user ID from the session
+    return session.user.id;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('Error getting user session:', error);
     return null;
   }
 }
@@ -49,12 +41,24 @@ export async function GET(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
 
     if (userId) {
-      // Authenticated user - get database cart with service role client
+      // Authenticated user - get database cart
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return request.cookies.get(name)?.value;
+            },
+          },
+        }
+      );
+
       const { data: cartItems, error: cartError } = await supabase
         .from('cart_items')
         .select(`
-          id, 
-          product_id, 
+          id,
+          product_id,
           quantity,
           products (id, name, price, image_url)
         `)
@@ -103,13 +107,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
+
+    // Create Supabase client for database operations
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+        },
+      }
+    );
 
     const { product_id, quantity = 1 } = await request.json();
 
@@ -138,7 +155,7 @@ export async function POST(request: NextRequest) {
     if (existingItem) {
       // Item exists, update quantity by adding to existing quantity
       const newQuantity = existingItem.quantity + quantity;
-      
+
       const { data, error: updateError } = await supabase
         .from('cart_items')
         .update({ quantity: newQuantity })
@@ -183,7 +200,7 @@ export async function POST(request: NextRequest) {
         if (insertError.code === '23505' || // Unique violation
             insertError.message?.toLowerCase().includes('duplicate') ||
             insertError.message?.toLowerCase().includes('unique')) {
-          
+
           // Try updating the item that was added by the other request
           const { data: updateData, error: updateError2 } = await supabase
             .from('cart_items')
@@ -250,13 +267,26 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
+
+    // Create Supabase client for database operations
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+        },
+      }
+    );
 
     const { product_id, quantity } = await request.json();
 
@@ -341,6 +371,19 @@ export async function DELETE(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
 
     if (userId) {
+      // Create Supabase client for database operations
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return request.cookies.get(name)?.value;
+            },
+          },
+        }
+      );
+
       // Authenticated user - clear database cart
       const { error } = await supabase
         .from('cart_items')
