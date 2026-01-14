@@ -1,100 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { getSessionFromCookie } from '@/lib/db/auth';
+import {
+  getAppointmentById,
+  updateAppointment,
+  deleteAppointment,
+} from '@/lib/db/appointments';
 
-// Initialize Supabase client using environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Verify JWT token and get user ID
+// Verify user session and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get('sb-access-token')?.value;
-
-  if (!accessToken) {
-    return null;
-  }
-
-  // Get user from Supabase auth
-  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-
-  if (authError || !user) {
-    return null;
-  }
-
-  return user.id;
-}
-
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Verify user authentication
-    const userId = await getUserIdFromRequest(request);
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { id } = params;
-
-    // Fetch the specific appointment
-    const { data: appointment, error } = await supabase
-      .from('appointments')
-      .select(`
-        id,
-        user_id,
-        appointment_date,
-        status,
-        notes,
-        created_at,
-        updated_at
-      `)
-      .eq('id', id)
-      .eq('user_id', userId) // Ensure user can only access their own appointments
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') { // No rows found
-        return NextResponse.json(
-          { success: false, error: 'Appointment not found' },
-          { status: 404 }
-        );
-      }
-      
-      console.error('Error fetching appointment:', error);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch appointment' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: appointment
-    });
+    const session = await getSessionFromCookie();
+    return session?.userId || null;
   } catch (error) {
-    console.error('Error fetching appointment:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error'
-      },
-      { status: 500 }
-    );
+    console.error('Error getting user session:', error);
+    return null;
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    // Verify user authentication
     const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
@@ -104,67 +31,88 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
+    const params = await context.params;
     const { id } = params;
-    const { status, notes } = await request.json();
 
-    // Verify the appointment exists and belongs to the user
-    const { data: existingAppointment, error: fetchError } = await supabase
-      .from('appointments')
-      .select('id, user_id, status')
-      .eq('id', id)
-      .eq('user_id', userId)
-      .single();
+    const appointment = await getAppointmentById(id);
 
-    if (fetchError || !existingAppointment) {
+    if (!appointment) {
       return NextResponse.json(
         { success: false, error: 'Appointment not found' },
         { status: 404 }
       );
     }
 
+    // Ensure user can only access their own appointments
+    if (appointment.user_id !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'Appointment not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: appointment,
+    });
+  } catch (error) {
+    console.error('Error fetching appointment:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const userId = await getUserIdFromRequest(request);
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const params = await context.params;
+    const { id } = params;
+    const { status, notes, service_type, appointment_date } = await request.json();
+
+    // Verify the appointment exists and belongs to the user
+    const existingAppointment = await getAppointmentById(id);
+
+    if (!existingAppointment || existingAppointment.user_id !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'Appointment not found' },
+        { status: 404 }
+      );
+    }
+
+    // Validate status if provided
+    if (status && !['scheduled', 'completed', 'cancelled'].includes(status)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid status' },
+        { status: 400 }
+      );
+    }
+
     // Prepare update data
     const updateData: any = {};
-    if (status) {
-      // Only allow valid status transitions
-      if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid status' },
-          { status: 400 }
-        );
-      }
-      
-      // Prevent unauthorized status changes (admin/moderator can change any status)
-      // For now, only allow users to cancel their own appointments
-      if (status === 'cancelled' && (existingAppointment.status !== 'cancelled' || existingAppointment.status !== 'completed')) {
-        updateData.status = status;
-      } else if (status === 'pending' && existingAppointment.status === 'cancelled') {
-        // Allow rescheduling from cancelled to pending
-        updateData.status = status;
-      } else {
-        // For other status changes, the user may need to go through admin/moderator
-        // For now, we'll limit to what users can do directly
-        return NextResponse.json(
-          { success: false, error: 'You cannot change the appointment status to ' + status },
-          { status: 400 }
-        );
-      }
-    }
-    
-    if (notes !== undefined) {
-      updateData.notes = notes;
-    }
+    if (status) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
+    if (service_type) updateData.service_type = service_type;
+    if (appointment_date) updateData.appointment_date = appointment_date;
 
-    // Update the appointment
-    const { data: updatedAppointment, error } = await supabase
-      .from('appointments')
-      .update(updateData)
-      .eq('id', id)
-      .eq('user_id', userId)
-      .select()
-      .single();
+    const updatedAppointment = await updateAppointment(id, updateData);
 
-    if (error) {
-      console.error('Error updating appointment:', error);
+    if (!updatedAppointment) {
       return NextResponse.json(
         { success: false, error: 'Failed to update appointment' },
         { status: 500 }
@@ -173,23 +121,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({
       success: true,
-      data: updatedAppointment
+      data: updatedAppointment,
     });
   } catch (error) {
     console.error('Error updating appointment:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    // Verify user authentication
     const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
@@ -199,41 +149,30 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
+    const params = await context.params;
     const { id } = params;
 
     // Verify the appointment exists and belongs to the user
-    const { data: existingAppointment, error: fetchError } = await supabase
-      .from('appointments')
-      .select('id, user_id, status')
-      .eq('id', id)
-      .eq('user_id', userId)
-      .single();
+    const existingAppointment = await getAppointmentById(id);
 
-    if (fetchError || !existingAppointment) {
+    if (!existingAppointment || existingAppointment.user_id !== userId) {
       return NextResponse.json(
         { success: false, error: 'Appointment not found' },
         { status: 404 }
       );
     }
 
-    // Only allow deletion for pending or cancelled appointments
-    // Don't allow deletion of confirmed/completed appointments
-    if (existingAppointment.status === 'confirmed' || existingAppointment.status === 'completed') {
+    // Only allow deletion for scheduled or cancelled appointments
+    if (existingAppointment.status === 'completed') {
       return NextResponse.json(
-        { success: false, error: 'Cannot delete a confirmed or completed appointment' },
+        { success: false, error: 'Cannot delete a completed appointment' },
         { status: 400 }
       );
     }
 
-    // Delete the appointment
-    const { error } = await supabase
-      .from('appointments')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
+    const success = await deleteAppointment(id);
 
-    if (error) {
-      console.error('Error deleting appointment:', error);
+    if (!success) {
       return NextResponse.json(
         { success: false, error: 'Failed to delete appointment' },
         { status: 500 }
@@ -242,14 +181,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     return NextResponse.json({
       success: true,
-      message: 'Appointment deleted successfully'
+      message: 'Appointment deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting appointment:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
       },
       { status: 500 }
     );

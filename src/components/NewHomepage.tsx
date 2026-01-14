@@ -110,13 +110,13 @@ const NewHomepage = () => {
     },
     {
       id: 2,
-      text: "Working with Elegant Spaces was a game-changer for our restaurant. The design elevated our brand and created an atmosphere that our customers love. Revenue has increased by 30% since the redesign!",
+      text: "Working with Colour My Space was a game-changer for our restaurant. The design elevated our brand and created an atmosphere that our customers love. Revenue has increased by 30% since the redesign!",
       author: "David Chen, Bistro 45 Owner",
       rating: 5
     },
     {
       id: 3,
-      text: "The team at Elegant Spaces understood our vision perfectly. They created a home office that inspires productivity while maintaining the warmth of our family space. Truly exceptional work!",
+      text: "The team at Colour My Space understood our vision perfectly. They created a home office that inspires productivity while maintaining the warmth of our family space. Truly exceptional work!",
       author: "Priya Sharma, Architect",
       rating: 5
     }
@@ -212,9 +212,6 @@ const NewHomepage = () => {
                   <div className="project-content">
                     <h3>{project.title || 'Project Title'}</h3>
                     <p>{project.description || 'Project Description'}</p>
-                    <button className="btn primary" onClick={() => navigate('/portfolio')}>
-                      View Project
-                    </button>
                   </div>
                 </div>
               </PortfolioCard>
@@ -258,7 +255,7 @@ const NewHomepage = () => {
                 onClick={() => router.push(`/products/${product.slug || product.id}`)} 
                 style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
               >
-                <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
+                <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url}>
                 </ProductImage>
                 <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
@@ -297,7 +294,7 @@ const NewHomepage = () => {
                                 quantity: 1,
                                 name: product.name,
                                 price: product.price,
-                                image_url: product.image_url,
+                                image_url: product.primary_image || product.image_url,
                               });
                             });
                           }
@@ -394,7 +391,7 @@ const NewHomepage = () => {
         <div className="section-content">
           <h2>Ready to transform your space?</h2>
           <p>Schedule a complimentary 30-minute consultation to discuss your project vision.</p>
-          <button className="btn primary" onClick={() => navigate('/contact')}>
+          <button className="btn primary" onClick={() => navigate('/booking')}>
             Schedule Now
           </button>
         </div>

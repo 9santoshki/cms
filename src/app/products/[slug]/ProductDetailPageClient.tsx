@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useProduct } from '@/context/ProductContext';
 import { apiClient } from '@/lib/api';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -15,7 +15,12 @@ interface ProductDetailPageClientProps {
 
 const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
   const { slug } = props.params || {};
-  const { products, loading: contextLoading, error: contextError, fetchProducts } = useAppContext();
+  const {
+    products,
+    loading: contextLoading,
+    error: contextError,
+    fetchProducts
+  } = useProduct();
   const [product, setProduct] = useState<any>(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [productError, setProductError] = useState<string | null>(null);
@@ -92,10 +97,10 @@ const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
 
   // If products haven't been loaded at all, fetch them
   useEffect(() => {
-    if (products.length === 0 && !contextLoading?.products) {
+    if (products.length === 0 && !contextLoading) {
       fetchProducts();
     }
-  }, [products.length, fetchProducts, contextLoading?.products]);
+  }, [products.length, fetchProducts, contextLoading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white product-detail-page">

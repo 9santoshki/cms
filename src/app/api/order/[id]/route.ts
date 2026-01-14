@@ -1,55 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSessionFromCookie } from '@/lib/db/auth';
+import { getOrderById, getOrderItems } from '@/lib/db/orders';
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role to bypass RLS
-);
-
-// Verify JWT token and get user ID
+// Verify user session and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.replace('Bearer ', '');
-  const jwtSecret = process.env.JWT_SECRET;
-
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not set in environment variables');
-  }
-
   try {
-    const decoded = await import('jsonwebtoken').then(jwt => 
-      jwt.verify(token, jwtSecret!) as { id: number; email: string; role: string }
-    );
-
-    // Verify that the user actually exists
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', decoded.id)
-      .single();
-
-    if (error || !user) {
-      return null;
-    }
-
-    return decoded.id;
+    const session = await getSessionFromCookie();
+    return session?.userId || null;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('Error getting user session:', error);
     return null;
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    // Get the order ID from query parameters
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get('orderId');
+    const params = await context.params;
+    const orderId = params.id;
 
     if (!orderId) {
       return NextResponse.json(
@@ -68,30 +38,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch order details from the database
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (
-          id,
-          product_id,
-          quantity,
-          price,
-          products (name, image_url)
-        )
-      `)
-      .eq('id', orderId)
-      .eq('user_id', userId)
-      .single();
-
-    if (orderError) {
-      console.error('Error fetching order:', orderError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch order details' },
-        { status: 500 }
-      );
-    }
+    // Fetch order details
+    const order = await getOrderById(orderId);
 
     if (!order) {
       return NextResponse.json(
@@ -100,19 +48,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Format the response to include both order and order items with product details
+    // Verify the order belongs to the user
+    if (order.user_id !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get order items
+    const items = await getOrderItems(orderId);
+
+    // Format the response
     const formattedOrder = {
       ...order,
-      items: order.order_items?.map((item: any) => ({
+      items: items.map((item: any) => ({
         ...item,
-        product_name: item.products?.name,
-        product_image: item.products?.image_url
-      }))
+        product_name: item.name,
+        product_image: item.image_url,
+      })),
     };
 
     return NextResponse.json({
       success: true,
-      data: formattedOrder
+      data: formattedOrder,
     });
   } catch (error: any) {
     console.error('Error in order details API:', error);

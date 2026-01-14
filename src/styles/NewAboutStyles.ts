@@ -159,8 +159,8 @@ export const AboutHeader = styled.header`
 
 // Hero section with elegant overlay
 export const AboutHero = styled.section`
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-              url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+              url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767928799547-5xb59u8o1aa-about-hero.jpg');
   background-size: cover;
   background-position: center;
   height: 50vh;

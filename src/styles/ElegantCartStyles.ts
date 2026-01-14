@@ -159,17 +159,18 @@ export const CartHeader = styled.div`
 
 // Cart header with elegant styling
 export const CartHeaderSection = styled.div`
-  padding: 60px 0 40px;
+  padding: 10px 0 20px;
   text-align: center;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin-top: 0;
 
   h1 {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
     color: #222;
     position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
@@ -177,10 +178,10 @@ export const CartHeaderSection = styled.div`
   h1::after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 80px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 25px auto;
+    margin: 15px auto 0;
     opacity: 0.7;
   }
 `;
@@ -190,14 +191,14 @@ export const EmptyCartSection = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 60vh;
+  min-height: 50vh;
   padding: 40px 20px;
 `;
 
 export const EmptyCartContent = styled.div`
   text-align: center;
   max-width: 600px;
-  padding: 60px 40px;
+  padding: 40px 30px;
   background: white;
   border-radius: 0;
   box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
@@ -219,14 +220,14 @@ export const EmptyCartContent = styled.div`
   }
 
   .empty-cart-icon {
-    font-size: 6rem;
+    font-size: 5rem;
     color: #c19a6b;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
   }
 
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+    font-size: 2rem;
+    margin-bottom: 15px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
@@ -234,18 +235,31 @@ export const EmptyCartContent = styled.div`
 
   p {
     color: #666;
-    margin-bottom: 30px;
-    font-size: 1.2rem;
-    line-height: 1.7;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    line-height: 1.6;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  }
+`;
+
+// Cart content wrapper - two column layout
+export const CartContentWrapper = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 100px 40px 40px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 30px;
+  align-items: start;
+
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+    padding: 0 20px 40px;
   }
 `;
 
 // Cart items container
 export const CartItemsSection = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 40px 80px;
   flex: 1;
 `;
 
@@ -253,15 +267,24 @@ export const CartItemsSection = styled.div`
 export const CartItemsHeader = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
-  padding: 20px 0;
+  padding: 15px 20px;
   border-bottom: 2px solid #eee;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   font-weight: 600;
   color: #555;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.9rem;
+
+  div {
+    &:nth-child(2), &:nth-child(3), &:nth-child(4) {
+      text-align: center;
+    }
+    &:nth-child(5) {
+      text-align: center;
+    }
+  }
 
   @media (max-width: 768px) {
     display: none;
@@ -272,7 +295,7 @@ export const CartItemsHeader = styled.div`
 export const CartItemsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 15px;
 `;
 
 // Cart item
@@ -280,7 +303,7 @@ export const CartItem = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
   align-items: center;
-  padding: 30px;
+  padding: 20px;
   background: white;
   border-radius: 0;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
@@ -317,7 +340,9 @@ export const ItemProduct = styled.div`
   }
 `;
 
-export const ItemImage = styled.div<{ $imageClass?: string }>`
+export const ItemImage = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$imageClass', '$imageUrl'].includes(prop),
+})<{ $imageClass?: string; $imageUrl?: string }>`
   width: 120px;
   height: 120px;
   background-color: #f8f8f8;
@@ -326,29 +351,37 @@ export const ItemImage = styled.div<{ $imageClass?: string }>`
   border-radius: 0;
   position: relative;
 
-  ${props => props.$imageClass === 'modern' && `
-    background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+  /* If imageUrl is provided, use it (takes priority) */
+  ${props => props.$imageUrl && !props.$imageUrl.includes('r2-placeholder.com') ? `
+    background-image: url('${props.$imageUrl}');
+  ` : ''}
 
-  ${props => props.$imageClass === 'classic' && `
-    background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+  /* Otherwise, fall back to imageClass */
+  ${props => !props.$imageUrl || props.$imageUrl.includes('r2-placeholder.com') ? `
+    ${props.$imageClass === 'modern' ? `
+      background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
 
-  ${props => props.$imageClass === 'coastal' && `
-    background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+    ${props.$imageClass === 'classic' ? `
+      background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
 
-  ${props => props.$imageClass === 'office' && `
-    background-image: url('https://images.unsplash.com/photo-1442323822296-a34ce0d5fbc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+    ${props.$imageClass === 'coastal' ? `
+      background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
 
-  ${props => props.$imageClass === 'hotel' && `
-    background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+    ${props.$imageClass === 'office' ? `
+      background-image: url('https://images.unsplash.com/photo-1442323822296-a34ce0d5fbc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
 
-  ${props => props.$imageClass === 'restaurant' && `
-    background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
-  `}
+    ${props.$imageClass === 'hotel' ? `
+      background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
+
+    ${props.$imageClass === 'restaurant' ? `
+      background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    ` : ''}
+  ` : ''}
 
   @media (max-width: 768px) {
     width: 80px;
@@ -432,6 +465,7 @@ export const ItemQuantity = styled.div`
   .quantity {
     font-weight: 600;
     font-size: 1.2rem;
+    color: #222;
   }
 
   @media (max-width: 768px) {
@@ -480,32 +514,25 @@ export const ItemActions = styled.div`
 
 // Cart summary section
 export const CartSummarySection = styled.div`
-  max-width: 1400px;
-  margin: 80px auto 0;
-  padding: 0 40px 80px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
   gap: 20px;
+  position: sticky;
+  top: 100px;
 
   @media (max-width: 992px) {
-    align-items: center;
-    padding: 0 20px 80px;
+    position: static;
   }
 `;
 
 // Cart summary
 export const CartSummary = styled.div`
   width: 100%;
-  max-width: 450px;
   background: white;
   border-radius: 0;
-  padding: 30px; /* Reduced padding */
+  padding: 25px;
   box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
   border: 1px solid #f0f0f0;
-  position: sticky;
-  top: 20px;
-  z-index: 1;
 
   &::before {
     content: '';
@@ -527,53 +554,150 @@ export const CartSummary = styled.div`
   }
 
   h2 {
-    font-size: 1.6rem; /* Reduced size */
-    margin-bottom: 20px; /* Reduced margin */
+    font-size: 1.5rem;
+    margin-bottom: 20px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-    position: relative;
-    padding-bottom: 10px; /* Reduced padding */
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+`;
+
+// Summary items list
+export const SummaryItemsList = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
   }
 
-  h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 60px;
-    height: 2px;
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  &::-webkit-scrollbar-thumb {
     background: #c19a6b;
+    border-radius: 3px;
+  }
+`;
+
+export const SummaryItem = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .item-image {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    min-height: 50px;
+    max-width: 50px;
+    max-height: 50px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    background: #f5f5f5;
+    background-size: cover;
+    background-position: center;
+    object-fit: cover;
+    border-radius: 6px;
+    margin: 0;
+    padding: 0;
+  }
+
+  img.item-image {
+    display: block;
+    border-radius: 6px;
+  }
+
+  .item-placeholder {
+    background: #e8d5c4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c19a6b;
+    font-size: 18px;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0;
+
+    h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #222;
+      margin: 0 0 6px 0;
+      padding: 0;
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .item-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+
+      .price {
+        color: #c19a6b;
+        font-weight: 600;
+      }
+
+      .qty {
+        color: #666;
+      }
+    }
   }
 `;
 
 // Summary details
 export const SummaryDetails = styled.div`
-  margin-bottom: 20px; /* Reduced margin */
+  padding: 12px 0;
+  border-top: 2px solid #f0f0f0;
+  border-bottom: 2px solid #f0f0f0;
+  margin: 12px 0;
 
   .summary-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0; /* Reduced padding */
-    border-bottom: 1px solid #eee;
+    padding: 5px 0;
+    font-size: 14px;
 
     span:first-child {
       color: #666;
-      font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     }
 
     span:last-child {
       font-weight: 500;
       color: #222;
-      font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     }
 
     &.total {
+      font-size: 17px;
       font-weight: 600;
-      font-size: 1.2rem;
-      border-top: 2px solid #eee;
-      margin-top: 10px;
-      padding-top: 12px; /* Reduced padding */
+      padding-top: 10px;
+      border-top: 2px solid #f0f0f0;
+      margin-top: 5px;
 
       span:first-child {
         color: #222;

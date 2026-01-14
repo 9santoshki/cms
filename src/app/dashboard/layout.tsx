@@ -1,31 +1,26 @@
 // Layout for dashboard that applies role-based access control
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionFromCookieWithDB, getUserProfile } from '@/lib/db/auth';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  // Use database-backed session validation
+  const session = await getSessionFromCookieWithDB();
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    // Redirect to login if not authenticated
-    redirect('/auth?redirect=/dashboard');
+  if (!session) {
+    // Redirect to home if not authenticated
+    redirect('/?error=unauthorized');
   }
 
   // Get user profile to check role
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  const profile = await getUserProfile(session.userId);
 
-  if (profileError || !profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
     // Redirect to home if user doesn't have admin or moderator role
-    redirect('/');
+    redirect('/?error=forbidden');
   }
 
   // Pass user and role to child components

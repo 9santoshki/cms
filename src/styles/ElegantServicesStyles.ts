@@ -159,8 +159,8 @@ export const ServicesHeader = styled.nav`
 
 // Services hero section with elegant overlay
 export const ServicesHero = styled.section`
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-              url('https://images.unsplash.com/photo-1512474985975-3deb0e7b2431?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+              url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767928400633-5ag0gec9a4i-services-hero.jpg');
   background-size: cover;
   background-position: center;
   height: 50vh;

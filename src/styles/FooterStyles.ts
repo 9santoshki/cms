@@ -3,209 +3,189 @@ import styled from 'styled-components';
 export const FooterContainer = styled.footer`
   background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
   color: #fff;
-  padding: 80px 0 0;
   margin-top: auto;
   font-family: 'Montserrat', sans-serif;
-  
-  @media (max-width: 768px) {
-    padding: 60px 0 0;
-  }
 `;
 
 export const FooterContent = styled.div`
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 40px 40px;
-  
+  padding: 60px 40px 30px;
+
   @media (max-width: 768px) {
-    padding: 0 20px 30px;
+    padding: 50px 20px 25px;
   }
 `;
 
-export const FooterGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 50px;
-  margin-bottom: 60px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: repeat(2, 1fr);
+export const FooterMain = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 60px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
     gap: 40px;
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 30px;
+    text-align: center;
+    align-items: center;
   }
 `;
 
-export const FooterColumn = styled.div`
-  &:nth-child(1) {
-    grid-column: span 1;
-    
-    @media (max-width: 992px) {
-      grid-column: span 2;
-    }
+export const FooterBrand = styled.div`
+  max-width: 320px;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
   }
 `;
 
 export const FooterLogo = styled.h3`
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  margin-bottom: 20px;
+  font-family: var(--font-playfair), 'Playfair Display', serif;
+  font-size: 24px;
+  margin-bottom: 15px;
   color: #fff;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 `;
 
-export const FooterDescription = styled.p`
-  color: #ccc;
+export const FooterTagline = styled.p`
+  color: rgba(255, 255, 255, 0.6);
   line-height: 1.7;
-  margin-bottom: 25px;
-  font-size: 15px;
+  font-size: 14px;
+  margin-bottom: 20px;
 `;
 
 export const SocialIcons = styled.div`
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
+
   a {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 16px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
     transition: all 0.3s ease;
-    
+
     &:hover {
       background-color: #c19a6b;
-      transform: translateY(-3px);
+      color: #fff;
+      transform: translateY(-2px);
     }
   }
 `;
 
-export const FooterSubsection = styled.div`
-  h4 {
-    font-size: 16px;
-    margin-bottom: 15px;
-    color: #c19a6b;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-  }
-  
-  p {
-    color: #aaa;
-    font-size: 14px;
-    line-height: 1.6;
+export const FooterNav = styled.nav`
+  display: flex;
+  gap: 50px;
+
+  @media (max-width: 768px) {
+    gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 `;
 
-export const FooterHeading = styled.h4`
-  font-size: 18px;
-  margin-bottom: 25px;
-  color: #fff;
-  position: relative;
-  padding-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 40px;
-    height: 2px;
-    background: linear-gradient(to right, #c19a6b, transparent);
-  }
-`;
+export const FooterLinks = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
-export const FooterList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-export const FooterListItem = styled.li`
-  margin-bottom: 15px;
-  
   a {
-    color: #ccc;
+    color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
-    transition: all 0.3s ease;
-    position: relative;
-    padding-left: 15px;
-    font-size: 15px;
-    
-    &::before {
-      content: '→';
-      position: absolute;
-      left: 0;
-      color: #c19a6b;
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-    
+    font-size: 14px;
+    transition: color 0.3s ease;
+
     &:hover {
       color: #c19a6b;
-      padding-left: 20px;
-      
-      &::before {
-        opacity: 1;
-        left: 5px;
-      }
+    }
+  }
+`;
+
+export const FooterCTA = styled.div`
+  text-align: right;
+
+  @media (max-width: 768px) {
+    text-align: center;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  button {
+    background: linear-gradient(135deg, #c19a6b, #a8825f);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(193, 154, 107, 0.3);
     }
   }
 `;
 
 export const FooterBottom = styled.div`
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 25px 0;
-  text-align: center;
-  margin-top: 40px;
-  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 25px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
   p {
-    color: #aaa;
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
     margin: 0;
   }
-`;
 
-export const NewsletterSection = styled.div`
-  margin-bottom: 30px;
-  
-  h4 {
-    margin-bottom: 15px;
-  }
-  
-  .newsletter-form {
+  .footer-links {
     display: flex;
-    gap: 10px;
-    
-    input {
-      flex: 1;
-      padding: 12px 15px;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    
-    button {
-      background: #c19a6b;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-      
+    gap: 25px;
+
+    a {
+      color: rgba(255, 255, 255, 0.4);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.3s ease;
+
       &:hover {
-        background: #a8825f;
+        color: #c19a6b;
       }
     }
   }
 `;
+
+// Keep these for backward compatibility but they won't be used
+export const FooterGrid = styled.div``;
+export const FooterColumn = styled.div``;
+export const FooterDescription = styled.p``;
+export const FooterSubsection = styled.div``;
+export const FooterHeading = styled.h4``;
+export const FooterList = styled.ul``;
+export const FooterListItem = styled.li``;
+export const NewsletterSection = styled.div``;

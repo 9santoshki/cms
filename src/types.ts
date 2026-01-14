@@ -31,6 +31,8 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
+  original_price?: number;
+  sale_price?: number;
   category?: string;
   image_url?: string;
   imageClass?: string;
@@ -42,6 +44,22 @@ export interface Product {
   assembly_required?: boolean;
   images?: string[];
   primary_image?: string;
+  stock_quantity?: number;
+}
+
+export interface Review {
+  id: string;
+  user_id: string;
+  product_id: string;
+  rating: number;
+  comment: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  user_name?: string;
+  user_email?: string;
+  user_avatar?: string;
+  product_name?: string;
 }
 
 export interface CartItem {

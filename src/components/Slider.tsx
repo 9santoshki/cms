@@ -20,26 +20,26 @@ const Slider: React.FC = () => {
       id: 1,
       title: 'MODERN LIVING ROOM DESIGN',
       subtitle: 'ELEVATING INTERIORS WITH TIMELESS ELEGANCE AND FUNCTIONAL DESIGN',
-      imageUrl: 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927653531-x2pjprnjaw-slider-modern-living-room.jpg'
     },
     {
       id: 2,
       title: 'CLASSIC ELEGANCE',
       subtitle: 'SOPHISTICATED SPACES THAT COMBINE TRADITIONAL ELEGANCE WITH MODERN COMFORT',
-      imageUrl: 'https://images.unsplash.com/photo-1586040487971-52b1ca5b205b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927655512-p6cyjrf7cy-slider-classic-elegance.jpg'
     },
     {
       id: 3,
       title: 'COASTAL RETREAT',
       subtitle: 'BREATHE EASY WITH AIRY SPACES INSPIRED BY THE NATURAL COASTLINE',
-      imageUrl: 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656389-9s5gz1zz4c4-slider-coastal-retreat.jpg'
     }
   ];
 
   // All 3 buttons to show on each slide
   const buttons = [
     { text: 'VIEW PORTFOLIO', link: '/portfolio' },
-    { text: 'BOOK CONSULTATION', link: '/contact' },
+    { text: 'BOOK CONSULTATION', link: '/booking' },
     { text: 'SHOP NOW', link: '/shop' }
   ];
 

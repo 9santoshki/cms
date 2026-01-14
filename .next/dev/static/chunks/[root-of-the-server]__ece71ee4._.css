@@ -25,10 +25,38 @@
   }
 }
 
+html {
+  width: 100%;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(to bottom, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb)));
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+#__next {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -80,20 +108,55 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .container-custom {
+  box-sizing: border-box;
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 40px;
 }
 
+@media (max-width: 992px) {
+  .container-custom {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container-custom {
+    padding: 0 12px;
+  }
+}
+
 .footer {
+  width: 100%;
+  max-width: 100vw;
   margin-top: auto;
+  overflow-x: hidden;
 }
 
 .footer-grid {
+  box-sizing: border-box;
   grid-template-columns: repeat(4, 1fr);
   gap: 50px;
+  width: 100%;
   padding: 60px 40px 40px;
   display: grid;
+}
+
+@media (max-width: 992px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    padding: 40px 20px 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 30px 12px 20px;
+  }
 }
 
 .footer-col h3, .footer-col h4 {
@@ -145,9 +208,23 @@ h1, h2, h3, h4, h5, h6 {
 
 .footer-bottom {
   text-align: center;
+  box-sizing: border-box;
   background: #0003;
   border-top: 1px solid #ffffff1a;
+  width: 100%;
   padding: 25px 40px;
+}
+
+@media (max-width: 992px) {
+  .footer-bottom {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-bottom {
+    padding: 15px 12px;
+  }
 }
 
 .footer-bottom p {
@@ -163,8 +240,24 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-playfair), "Playfair Display", serif;
   text-transform: uppercase;
   text-align: center;
+  overflow-wrap: break-word;
+  max-width: 100%;
   margin-bottom: 20px;
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    letter-spacing: 2px;
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    letter-spacing: 1px;
+    font-size: 1.5rem;
+  }
 }
 
 .section-title:after {
@@ -185,7 +278,21 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: .5px;
   text-align: center;
   margin: 0 auto 30px;
+  padding: 0 15px;
   line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .section-subtitle {
+    max-width: 100%;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-subtitle {
+    font-size: .9rem;
+  }
 }
 
 .social-icons {

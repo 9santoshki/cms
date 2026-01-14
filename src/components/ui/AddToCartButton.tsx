@@ -36,26 +36,22 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     if (disabled) return;
 
     setIsLoading(true);
-    console.log(`AddToCartButton clicked for product: ${product.name}`);
 
     try {
       const result = addToCartWithAuth(product, quantity);
-      
+
       if (result.success && result.action) {
-        console.log('User authenticated, adding to cart');
         result.action().then(() => {
           setIsLoading(false);
           if (onSuccess) onSuccess();
         });
       } else if (!result.success && result.requiresLogin) {
-        console.log('User not authenticated, showing login modal');
-        
         // Store the pending cart action for after login
         storeLegacyPendingCartAction(product, quantity);
-        
+
         // Show the login modal
         showLoginModal();
-        
+
         setIsLoading(false);
       }
     } catch (error) {

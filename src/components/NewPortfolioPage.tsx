@@ -18,7 +18,6 @@ import {
   ProjectCategory,
   ProjectTitle,
   ProjectDescription,
-  ProjectButton,
   PortfolioCTA,
   LoadingSpinner,
   FilterButton
@@ -146,7 +145,6 @@ const NewPortfolioPage = () => {
                       <ProjectCategory>{project.category}</ProjectCategory>
                       <ProjectTitle>{project.title}</ProjectTitle>
                       <ProjectDescription>{project.description}</ProjectDescription>
-                      <ProjectButton>View Project</ProjectButton>
                     </ProjectInfo>
                   </ProjectOverlay>
                 </ProjectCard>
@@ -165,7 +163,7 @@ const NewPortfolioPage = () => {
         <div className="cta-content">
           <h2>Ready to Transform Your Space?</h2>
           <p>Let our expert designers create a space that reflects your unique style and meets your needs.</p>
-          <button className="cta-button">Schedule a Consultation</button>
+          <button className="cta-button" onClick={() => window.location.href = '/booking'}>Schedule a Consultation</button>
         </div>
       </PortfolioCTA>
 

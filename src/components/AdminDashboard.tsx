@@ -391,8 +391,8 @@ const ProductManagement = () => {
     // Set image previews to the existing images if available
     if (product.images && product.images.length > 0) {
       setImagePreviews(product.images);
-    } else if (product.image_url) {
-      setImagePreviews([product.image_url]);
+    } else if (product.primary_image || product.image_url) {
+      setImagePreviews([product.primary_image || product.image_url]);
     }
     setIsAdding(true);
   };

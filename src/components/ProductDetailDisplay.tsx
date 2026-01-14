@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
-import { Product } from '@/types';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useCartStore } from '@/store/cartStore';
+import { useRouter } from 'next/navigation';
+import { Product, Review } from '@/types';
 import {
   ProductDetailContainer,
   ProductDetailContent,
@@ -50,6 +52,125 @@ const StockBadge = styled.div`
   font-size: 0.75rem;
   font-weight: 600;
   z-index: 10;
+`;
+
+const DiscountBadge = styled.div`
+  position: absolute;
+  top: 3.5rem;
+  left: 1rem;
+  background-color: #e74c3c;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 10;
+`;
+
+const OriginalPriceText = styled.span`
+  font-size: 1.25rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+  margin-left: 0.75rem;
+`;
+
+const DiscountPercentage = styled.span`
+  font-size: 0.875rem;
+  color: #e74c3c;
+  font-weight: 600;
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #fef2f2;
+  border-radius: 4px;
+`;
+
+// Review form components
+const ReviewForm = styled.form`
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+`;
+
+const ReviewFormTitle = styled.h4`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+`;
+
+const StarRatingInput = styled.div`
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+`;
+
+const StarButton = styled.button<{ $filled: boolean }>`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: ${props => props.$filled ? '#f59e0b' : '#d1d5db'};
+    transition: fill 0.2s;
+  }
+
+  &:hover svg {
+    fill: #f59e0b;
+  }
+`;
+
+const ReviewTextarea = styled.textarea`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 100px;
+  margin-bottom: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+  }
+`;
+
+const SubmitReviewButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(90deg, #d97706, #b45309);
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: linear-gradient(90deg, #b45309, #92400e);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const ReviewStatusBadge = styled.span<{ $status: string }>`
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: ${props =>
+    props.$status === 'approved' ? '#dcfce7' :
+    props.$status === 'rejected' ? '#fee2e2' : '#fef3c7'};
+  color: ${props =>
+    props.$status === 'approved' ? '#166534' :
+    props.$status === 'rejected' ? '#991b1b' : '#92400e'};
 `;
 
 // Category tag
@@ -425,16 +546,172 @@ interface ProductDetailDisplayProps {
   product: Product;
 }
 
+// Helper function to safely parse price (handles string or number)
+const parsePrice = (price: any): number => {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') return parseFloat(price) || 0;
+  return 0;
+};
+
+// Helper function to calculate discount percentage
+const getDiscountPercentage = (originalPrice: number, salePrice: number): number => {
+  if (!originalPrice || originalPrice <= salePrice) return 0;
+  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+};
+
 const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) => {
-  const { loading: appLoading, error: appError, addToCart } = useAppContext();
+  const { user } = useAuth();
+  const router = useRouter();
+  const addItem = useCartStore(state => state.addItem);
+  const isLoading = useCartStore(state => state.isLoading);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const loading = appLoading;
-  const error = appError;
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart(product, quantity);
+  // Review form state
+  const [newRating, setNewRating] = useState(0);
+  const [newComment, setNewComment] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+
+  // Related products state
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+
+  // Fetch reviews for this product
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await fetch(`/api/reviews?product_id=${product.id}&include_rating=true`);
+        const data = await response.json();
+        if (data.success) {
+          setReviews(data.data.reviews || []);
+          setAverageRating(data.data.rating || 0);
+          setReviewCount(data.data.reviewCount || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch reviews:', err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    if (product?.id) {
+      fetchReviews();
+    }
+  }, [product?.id]);
+
+  // Fetch related products (same category, excluding current product)
+  useEffect(() => {
+    const fetchRelatedProducts = async () => {
+      try {
+        const categoryParam = product.category ? `&category=${encodeURIComponent(product.category)}` : '';
+        const response = await fetch(`/api/products?limit=4${categoryParam}`);
+        const data = await response.json();
+        if (data.success && data.data?.products) {
+          // Filter out current product and take up to 4
+          const related = data.data.products
+            .filter((p: Product) => p.id !== product.id)
+            .slice(0, 4);
+          setRelatedProducts(related);
+        }
+      } catch (err) {
+        console.error('Failed to fetch related products:', err);
+      }
+    };
+
+    if (product?.id) {
+      fetchRelatedProducts();
+    }
+  }, [product?.id, product?.category]);
+
+  // Submit review
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    if (newRating === 0) {
+      setReviewError('Please select a rating');
+      return;
+    }
+
+    if (!newComment.trim()) {
+      setReviewError('Please write a comment');
+      return;
+    }
+
+    setSubmitLoading(true);
+    setReviewError(null);
+    setReviewSuccess(null);
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.id,
+          rating: newRating,
+          comment: newComment.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setReviewSuccess('Review submitted! It will be visible after moderation.');
+        setNewRating(0);
+        setNewComment('');
+      } else {
+        setReviewError(data.error || 'Failed to submit review');
+      }
+    } catch (err) {
+      setReviewError('Failed to submit review. Please try again.');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // Get display price (sale_price or price) - parse to ensure numeric comparison
+  const displayPrice = parsePrice(product.sale_price) || parsePrice(product.price);
+  const originalPrice = parsePrice(product.original_price);
+  const hasDiscount = originalPrice > 0 && originalPrice > displayPrice;
+  const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    // Clear any previous errors
+    setError(null);
+
+    // Check if user is authenticated
+    if (!user) {
+      // Redirect to auth page with return URL
+      router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    try {
+      // Add to cart using the display price (sale price if available)
+      await addItem({
+        id: Date.now(),
+        product_id: product.id,
+        quantity: quantity,
+        name: product.name,
+        price: displayPrice,
+        description: product.description || '',
+        image_url: product.image_url || '',
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to add item to cart');
     }
   };
 
@@ -444,29 +721,15 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     }
   };
 
-  const customerReviews = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      rating: 5,
-      date: "2023-10-15",
-      comment: "Absolutely stunning piece! The craftsmanship is exceptional and it perfectly matches my living room decor."
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      rating: 4,
-      date: "2023-09-22",
-      comment: "Great quality and arrived well packaged. Assembly was straightforward with the provided instructions."
-    },
-    {
-      id: 3,
-      name: "Emma Rodriguez",
-      rating: 5,
-      date: "2023-11-05",
-      comment: "This has transformed my space! The attention to detail is remarkable and it's incredibly comfortable too."
-    }
-  ];
+
+  // Get all available images
+  const productImages = product.images && product.images.length > 0
+    ? product.images
+    : [{ url: product.primary_image || product.image_url }];
+
+  // Get the currently selected image
+  const selectedImage = productImages[selectedImageIndex] || productImages[0];
+  const selectedImageUrl = selectedImage.url || selectedImage;
 
   return (
     <ProductDetailContainer>
@@ -477,23 +740,28 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <ProductImageContainer>
             <ProductDetailImage
               imageClass={product.imageClass}
-              imageUrl={product.image_url || ''}
+              imageUrl={selectedImageUrl}
               style={{ width: '100%', height: '500px' } as React.CSSProperties}
             />
             <ShippingBadge>✓ Free Shipping</ShippingBadge>
             <StockBadge>In Stock</StockBadge>
+            {hasDiscount && (
+              <DiscountBadge>{discountPercentage}% OFF</DiscountBadge>
+            )}
           </ProductImageContainer>
 
           {/* Thumbnail Gallery */}
           <ThumbnailGallery>
-            {[1, 2, 3, 4].map((item) => (
+            {productImages.slice(0, 4).map((image: any, index: number) => (
               <ThumbnailButton
-                key={item}
-                active={item === 1}
+                key={index}
+                active={index === selectedImageIndex}
+                onClick={() => setSelectedImageIndex(index)}
+                style={{ cursor: 'pointer' }}
               >
                 <ProductDetailImage
                   imageClass={product.imageClass}
-                  imageUrl={product.image_url || ''}
+                  imageUrl={image.url || image}
                   style={{ width: '100%', height: '100%' } as React.CSSProperties}
                 />
               </ThumbnailButton>
@@ -516,27 +784,30 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <RatingContainer>
             <div style={{ display: 'flex', gap: '0.25rem' }}>
               {[...Array(5)].map((_, i) => (
-                <svg key={i} style={{ width: '1.25rem', height: '1.25rem', fill: '#f59e0b' }} viewBox="0 0 24 24">
+                <svg key={i} style={{ width: '1.25rem', height: '1.25rem', fill: i < Math.round(averageRating) ? '#f59e0b' : '#d1d5db' }} viewBox="0 0 24 24">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                 </svg>
               ))}
             </div>
             <ReviewsCount>
-              <span style={{ fontWeight: '600', color: '#1f2937' }}>4.8</span>
-              <span style={{ color: '#6b7280' }}> (42 reviews)</span>
-            </ReviewsCount>
-            <Separator>|</Separator>
-            <ReviewsCount>
-              <span style={{ fontWeight: '600', color: '#1f2937' }}>150+</span>
-              <span style={{ color: '#6b7280' }}> sold</span>
+              <span style={{ fontWeight: '600', color: '#1f2937' }}>{averageRating.toFixed(1)}</span>
+              <span style={{ color: '#6b7280' }}> ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
             </ReviewsCount>
           </RatingContainer>
 
           <div style={{ marginBottom: '2rem' }}>
             <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Price</div>
-            <ProductDetailPrice>
-              ₹{product.price.toLocaleString()}
-            </ProductDetailPrice>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+              <ProductDetailPrice>
+                ₹{displayPrice.toLocaleString()}
+              </ProductDetailPrice>
+              {hasDiscount && (
+                <>
+                  <OriginalPriceText>₹{originalPrice.toLocaleString()}</OriginalPriceText>
+                  <DiscountPercentage>{discountPercentage}% OFF</DiscountPercentage>
+                </>
+              )}
+            </div>
             <p style={{ fontSize: '0.875rem', color: '#16a34a', fontWeight: '500', marginTop: '0.75rem' }}>✓ Best Price Guarantee</p>
           </div>
 
@@ -571,9 +842,9 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <ActionButtons>
             <AddToCartButton
               onClick={handleAddToCart}
-              disabled={loading.cart}
+              disabled={isLoading}
             >
-              {loading.cart ? (
+              {isLoading ? (
                 <>
                   <svg style={{ width: '1.25rem', height: '1.25rem', animation: 'spin 1s linear infinite' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -582,7 +853,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                   Adding to Cart...
                 </>
               ) : (
-                `Add to Cart — ₹${(product.price * quantity).toLocaleString()}`
+                `Add to Cart — ₹${(displayPrice * quantity).toLocaleString()}`
               )}
             </AddToCartButton>
             <WishlistButton>
@@ -590,9 +861,9 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </WishlistButton>
           </ActionButtons>
 
-          {error.cart && (
+          {error && (
             <ErrorMessage>
-              {error.cart}
+              {error}
             </ErrorMessage>
           )}
 
@@ -661,87 +932,157 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <ReviewStarsContainer>
               {[...Array(5)].map((_, i) => (
-                <svg key={i} style={{ width: '1.25rem', height: '1.25rem', fill: '#f59e0b' }} viewBox="0 0 24 24">
+                <svg key={i} style={{ width: '1.25rem', height: '1.25rem', fill: i < Math.round(averageRating) ? '#f59e0b' : '#d1d5db' }} viewBox="0 0 24 24">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                 </svg>
               ))}
             </ReviewStarsContainer>
-            <span style={{ color: '#4b5563', fontWeight: '500', marginLeft: '0.5rem' }}>4.8 out of 5</span>
+            <span style={{ color: '#4b5563', fontWeight: '500', marginLeft: '0.5rem' }}>
+              {averageRating.toFixed(1)} out of 5 ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+            </span>
           </div>
         </ReviewsHeader>
 
-        <div style={{ maxHeight: '24rem', overflowY: 'auto', paddingRight: '1rem' }}>
-          {customerReviews.map((review) => (
-            <ReviewItem key={review.id}>
-              <ReviewHeader>
-                <ReviewName>{review.name}</ReviewName>
-                <ReviewDate>{review.date}</ReviewDate>
-              </ReviewHeader>
-              <ReviewStarsSmall>
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    style={{ 
-                      width: '1rem', 
-                      height: '1rem', 
-                      fill: i < review.rating ? '#f59e0b' : '#d1d5db' 
-                    }}
-                    viewBox="0 0 24 24"
-                  >
+        {/* Write a Review Form */}
+        <ReviewForm onSubmit={handleSubmitReview}>
+          <ReviewFormTitle>
+            {user ? 'Write a Review' : 'Sign in to Write a Review'}
+          </ReviewFormTitle>
+
+          {reviewError && (
+            <p style={{ color: '#dc2626', marginBottom: '1rem', fontSize: '0.875rem' }}>{reviewError}</p>
+          )}
+          {reviewSuccess && (
+            <p style={{ color: '#16a34a', marginBottom: '1rem', fontSize: '0.875rem' }}>{reviewSuccess}</p>
+          )}
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#374151' }}>Rating</label>
+            <StarRatingInput>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <StarButton
+                  key={star}
+                  type="button"
+                  $filled={star <= newRating}
+                  onClick={() => user && setNewRating(star)}
+                  disabled={!user}
+                >
+                  <svg viewBox="0 0 24 24">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                   </svg>
-                ))}
-              </ReviewStarsSmall>
-              <ReviewComment>{review.comment}</ReviewComment>
-            </ReviewItem>
-          ))}
-        </div>
+                </StarButton>
+              ))}
+            </StarRatingInput>
+          </div>
 
-        <SeeAllReviewsButton>
-          See all reviews
-        </SeeAllReviewsButton>
-      </ReviewsSection>
+          <ReviewTextarea
+            placeholder={user ? "Share your experience with this product..." : "Please sign in to write a review"}
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            disabled={!user}
+          />
 
-      {/* Related Products */}
-      <RelatedProductsSection>
-        <RelatedProductsTitle>You May Also Like</RelatedProductsTitle>
-        <RelatedProductsGrid>
-          {Array.from({ length: 4 }, (_, i) => ({
-            id: product.id + i + 100,
-            name: `${product.category || 'Furniture'} ${i + 1}`,
-            price: product.price * (0.8 + i * 0.1),
-            imageClass: product.imageClass,
-            image_url: undefined,
-            description: `Elegant ${product.category || 'item'} with premium quality craftsmanship`
-          })).map((relatedProduct) => (
-            <RelatedProductCard key={relatedProduct.id}>
-              <RelatedProductImageContainer>
-                <ProductDetailImage
-                  imageClass={relatedProduct.imageClass}
-                  imageUrl={relatedProduct.image_url || ''}
-                  style={{ width: '100%', height: '100%' } as React.CSSProperties}
-                />
-                <WishlistIcon>
-                  <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </WishlistIcon>
-              </RelatedProductImageContainer>
-              <RelatedProductInfo>
-                <RelatedProductName>{relatedProduct.name}</RelatedProductName>
-                <RelatedProductStars>
+          <SubmitReviewButton type="submit" disabled={!user || submitLoading}>
+            {submitLoading ? 'Submitting...' : user ? 'Submit Review' : 'Sign In to Review'}
+          </SubmitReviewButton>
+        </ReviewForm>
+
+        {/* Reviews List */}
+        {reviewsLoading ? (
+          <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>Loading reviews...</p>
+        ) : reviews.length > 0 ? (
+          <div style={{ maxHeight: '24rem', overflowY: 'auto', paddingRight: '1rem' }}>
+            {reviews.map((review) => (
+              <ReviewItem key={review.id}>
+                <ReviewHeader>
+                  <ReviewName>{review.user_name || 'Anonymous'}</ReviewName>
+                  <ReviewDate>{new Date(review.created_at).toLocaleDateString()}</ReviewDate>
+                </ReviewHeader>
+                <ReviewStarsSmall>
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} style={{ width: '1rem', height: '1rem', fill: '#f59e0b' }} viewBox="0 0 24 24">
+                    <svg
+                      key={i}
+                      style={{
+                        width: '1rem',
+                        height: '1rem',
+                        fill: i < review.rating ? '#f59e0b' : '#d1d5db'
+                      }}
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                     </svg>
                   ))}
-                </RelatedProductStars>
-                <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>₹{relatedProduct.price.toLocaleString()}</p>
-              </RelatedProductInfo>
-            </RelatedProductCard>
-          ))}
-        </RelatedProductsGrid>
-      </RelatedProductsSection>
+                </ReviewStarsSmall>
+                <ReviewComment>{review.comment}</ReviewComment>
+              </ReviewItem>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
+            No reviews yet. Be the first to review this product!
+          </p>
+        )}
+      </ReviewsSection>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <RelatedProductsSection>
+          <RelatedProductsTitle>You May Also Like</RelatedProductsTitle>
+          <RelatedProductsGrid>
+            {relatedProducts.map((relatedProduct) => (
+              <RelatedProductCard
+                key={relatedProduct.id}
+                onClick={() => router.push(`/products/${relatedProduct.slug || relatedProduct.id}`)}
+              >
+                <RelatedProductImageContainer>
+                  <ProductDetailImage
+                    imageClass={relatedProduct.imageClass}
+                    imageUrl={relatedProduct.primary_image || relatedProduct.image_url || ''}
+                    style={{ width: '100%', height: '100%' } as React.CSSProperties}
+                  />
+                  {(() => {
+                    const relOriginal = parsePrice(relatedProduct.original_price);
+                    const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
+                    const relHasDiscount = relOriginal > 0 && relOriginal > relDisplay;
+                    return relHasDiscount ? (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        left: '0.5rem',
+                        backgroundColor: '#e74c3c',
+                        color: 'white',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.7rem',
+                        fontWeight: '600'
+                      }}>
+                        {getDiscountPercentage(relOriginal, relDisplay)}% OFF
+                      </div>
+                    ) : null;
+                  })()}
+                </RelatedProductImageContainer>
+                <RelatedProductInfo>
+                  <RelatedProductName>{relatedProduct.name}</RelatedProductName>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#c19a6b' }}>
+                      ₹{(parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price)).toLocaleString()}
+                    </p>
+                    {(() => {
+                      const relOriginal = parsePrice(relatedProduct.original_price);
+                      const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
+                      return relOriginal > 0 && relOriginal > relDisplay ? (
+                        <span style={{ fontSize: '0.875rem', color: '#9ca3af', textDecoration: 'line-through' }}>
+                          ₹{relOriginal.toLocaleString()}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                </RelatedProductInfo>
+              </RelatedProductCard>
+            ))}
+          </RelatedProductsGrid>
+        </RelatedProductsSection>
+      )}
     </ProductDetailContainer>
   );
 };

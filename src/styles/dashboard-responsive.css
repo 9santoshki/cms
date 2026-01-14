@@ -1,0 +1,95 @@
+/* Dashboard Responsive Styles */
+
+@media (max-width: 768px) {
+  /* Grid layouts - stack on mobile */
+  .responsive-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .responsive-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .responsive-grid-auto {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Action bars - stack on mobile */
+  .responsive-action-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  /* Buttons - full width on mobile */
+  .responsive-button-group {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .responsive-button-group > * {
+    width: 100% !important;
+  }
+
+  /* Cards - reduce padding on mobile */
+  .responsive-card {
+    padding: 16px !important;
+  }
+
+  /* Hide on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Show only on mobile */
+  .show-mobile {
+    display: block !important;
+  }
+
+  /* Text sizes */
+  .responsive-title {
+    font-size: 20px !important;
+  }
+
+  .responsive-subtitle {
+    font-size: 16px !important;
+  }
+
+  /* Overflow scroll for tables */
+  .responsive-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Form inputs - full width */
+  .responsive-form input,
+  .responsive-form select,
+  .responsive-form textarea {
+    width: 100% !important;
+  }
+
+  /* Flex reverse on mobile for priority content */
+  .responsive-flex-reverse {
+    flex-direction: column-reverse !important;
+  }
+
+  /* Image grids */
+  .responsive-image-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-mobile {
+    display: none !important;
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (pointer: coarse) {
+  button,
+  a {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}

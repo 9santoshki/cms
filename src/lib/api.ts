@@ -90,6 +90,12 @@ class ApiClient {
     });
   }
 
+  async deleteProduct(id: number) {
+    return this.request<void>(`/products/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Search
   async searchProducts(params: {
     q?: string;

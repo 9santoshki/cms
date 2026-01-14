@@ -43,7 +43,6 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
               src="/logo.svg"
               alt="Colour My Space Logo"
               className="logo-image"
-              style={{ height: '40px', width: 'auto', maxHeight: '40px' }}
             />
           </a>
         </HeaderLogo>
@@ -52,9 +51,21 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
         <NavLinks activePage={activePage} onNavigate={navigate} />
 
         <HeaderIcons>
-          <button 
+          <button
             onClick={toggleSearch}
-            style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#333' }}
+            className="search-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '20px',
+              cursor: 'pointer',
+              color: '#333',
+              padding: '8px',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
           >
             <i className="fas fa-search"></i>
           </button>
@@ -69,6 +80,21 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
             <span></span>
           </MobileMenuToggle>
         </HeaderIcons>
+
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .search-btn {
+              font-size: 18px !important;
+              padding: 5px !important;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .search-btn {
+              display: none !important;
+            }
+          }
+        `}</style>
       </HeaderContainer>
 
       {/* Mobile Menu */}

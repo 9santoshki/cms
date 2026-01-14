@@ -1,178 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client with environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('⚠️ Missing Supabase environment variables. The app may not function correctly.');
-  // Don't throw error here as it would crash the server; handle gracefully in functions
-}
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+import { getProductsWithImages, createProduct } from '@/lib/db/products';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!supabase) {
-      return NextResponse.json(
-        { success: false, error: 'Supabase is not properly configured' },
-        { status: 500 }
-      );
-    }
-
-    // Extract search, filter, and pagination parameters from query
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || searchParams.get('q') || '';
     const category = searchParams.get('category') || '';
-    const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : null;
-    const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : null;
+    const minPrice = searchParams.get('minPrice')
+      ? parseFloat(searchParams.get('minPrice')!)
+      : undefined;
+    const maxPrice = searchParams.get('maxPrice')
+      ? parseFloat(searchParams.get('maxPrice')!)
+      : undefined;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
-    const offset = (page - 1) * limit;
 
-    // Build the query using Supabase client
-    let query = supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        description,
-        price,
-        images,
-        category,
-        stock_quantity,
-        created_at,
-        updated_at,
-        slug
-      `)
-      .range(offset, offset + limit - 1);
-
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-    }
-
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    if (minPrice !== null && !isNaN(minPrice)) {
-      query = query.gte('price', minPrice);
-    }
-
-    if (maxPrice !== null && !isNaN(maxPrice)) {
-      query = query.lte('price', maxPrice);
-    }
-
-    query = query.order('created_at', { ascending: false });
-
-    // Execute the main query
-    const { data: productsResult, error: productsError } = await query;
-
-    if (productsError) {
-      console.error('Error fetching products:', productsError);
-      return NextResponse.json(
-        { success: false, error: productsError.message || 'Failed to fetch products' },
-        { status: 500 }
-      );
-    }
-
-    // For each product, try to fetch its associated images
-    const productsWithImages = await Promise.all(productsResult.map(async (product) => {
-      try {
-        const { data: imagesResult, error: imageError } = await supabase
-          .from('product_images')
-          .select('image_url, is_primary, sort_order')
-          .eq('product_id', product.id)
-          .order('sort_order');
-
-        if (imageError) {
-          throw imageError;
-        }
-
-        return {
-          ...product,
-          images: imagesResult.map((img: any) => img.image_url),
-          primary_image: imagesResult.find((img: any) => img.is_primary)?.image_url || product.image_url
-        };
-      } catch (imageError) {
-        // If product_images table doesn't exist or has an error, return product with just the images field
-        console.warn(`Could not fetch images for product ${product.id}:`, (imageError as Error).message || imageError);
-        return {
-          ...product,
-          images: Array.isArray(product.images) ? product.images : (product.image_url ? [product.image_url] : []),
-          primary_image: product.image_url
-        };
-      }
-    }));
-
-    // Get total count for pagination
-    let countQuery = supabase
-      .from('products')
-      .select('id', { count: 'exact', head: true });
-
-    if (search) {
-      countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-    }
-
-    if (category) {
-      countQuery = countQuery.eq('category', category);
-    }
-
-    if (minPrice !== null && !isNaN(minPrice)) {
-      countQuery = countQuery.gte('price', minPrice);
-    }
-
-    if (maxPrice !== null && !isNaN(maxPrice)) {
-      countQuery = countQuery.lte('price', maxPrice);
-    }
-
-    const { count, error: countError } = await countQuery;
-
-    if (countError) {
-      console.error('Error counting products:', countError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to count products' },
-        { status: 500 }
-      );
-    }
-
-    const total = count || 0;
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        products: productsWithImages,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-          hasMore: page < Math.ceil(total / limit)
-        }
-      }
-    }, {
-      headers: {
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-        "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
-      },
+    const result = await getProductsWithImages({
+      search,
+      category,
+      minPrice,
+      maxPrice,
+      page,
+      limit,
     });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          products: result.products,
+          pagination: result.pagination,
+        },
+      },
+      {
+        headers: {
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+          'Access-Control-Allow-Headers':
+            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error in products GET API:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
       },
       {
         status: 500,
         headers: {
-          "Access-Control-Allow-Credentials": "true",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-          "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+          'Access-Control-Allow-Headers':
+            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
         },
       }
     );
@@ -181,31 +65,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!supabase) {
-      return NextResponse.json(
-        { success: false, error: 'Supabase is not properly configured' },
-        { status: 500 }
-      );
-    }
-
-    // For admin users only - check authentication
-    // In a real implementation you'd verify the user has admin privileges
     const body = await request.json();
-    const { name, description, price, image_url, image_urls, category, stock_quantity } = body;
+    const { name, description, price, original_price, sale_price, image_url, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Name, description, and price are required'
+          error: 'Name, description, and price are required',
         },
         {
           status: 400,
           headers: {
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-            "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+            'Access-Control-Allow-Credentials': 'true',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+            'Access-Control-Allow-Headers':
+              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
           },
         }
       );
@@ -214,110 +90,36 @@ export async function POST(request: NextRequest) {
     // Generate a unique slug for the product
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
 
-    // Create the product first
-    const { data: product, error: productError } = await supabase
-      .from('products')
-      .insert([
-        {
-          name,
-          description,
-          price,
-          image_url,
-          images: image_urls || (image_url ? [image_url] : null),
-          category,
-          stock_quantity,
-          slug
-        }
-      ])
-      .select()
-      .single();
-
-    if (productError) {
-      console.error('Error creating product:', productError);
-      return NextResponse.json(
-        { success: false, error: productError.message },
-        { status: 500 }
-      );
-    }
-
-    // If multiple images are provided, add them to the product_images table
-    if (Array.isArray(image_urls) && image_urls.length > 0) {
-      try {
-        const imagesToInsert = image_urls.map((img_url: string, index: number) => ({
-          product_id: product.id,
-          image_url: img_url,
-          is_primary: index === 0, // Make the first image primary by default
-          sort_order: index
-        }));
-
-        const { error: imagesError } = await supabase
-          .from('product_images')
-          .insert(imagesToInsert);
-
-        if (imagesError) {
-          throw imagesError;
-        }
-      } catch (insertError) {
-        console.warn(`Could not insert images for product ${product.id}:`, (insertError as Error).message || insertError);
-      }
-    } else if (image_url) {
-      // If only a single image is provided, add it as a primary image
-      try {
-        const { error: imageError } = await supabase
-          .from('product_images')
-          .insert([
-            { product_id: product.id, image_url, is_primary: true, sort_order: 0 }
-          ]);
-
-        if (imageError) {
-          throw imageError;
-        }
-      } catch (insertError) {
-        console.warn(`Could not insert image for product ${product.id}:`, (insertError as Error).message || insertError);
-      }
-    }
-
-    // Fetch the product with its images to return
-    // Handle case where product_images table might not exist yet
-    let productWithImages;
-    try {
-      const { data: imagesResult, error: imageError } = await supabase
-        .from('product_images')
-        .select('image_url, is_primary, sort_order')
-        .eq('product_id', product.id)
-        .order('sort_order');
-
-      if (imageError) {
-        throw imageError;
-      }
-
-      productWithImages = {
-        ...product,
-        images: imagesResult.map((img: any) => img.image_url),
-        primary_image: imagesResult.find((img: any) => img.is_primary)?.image_url || product.image_url
-      };
-    } catch (imageError) {
-      // If product_images table doesn't exist, return product with just the original image_url
-      console.warn(`Could not fetch images for product ${product.id}:`, (imageError as Error).message || imageError);
-      productWithImages = {
-        ...product,
-        images: product.image_url ? [product.image_url] : [],
-        primary_image: product.image_url
-      };
-    }
+    const product = await createProduct({
+      name,
+      description,
+      price,
+      original_price,
+      sale_price,
+      image_url,
+      category,
+      stock_quantity,
+      slug,
+    });
 
     return NextResponse.json(
       {
         success: true,
-        data: productWithImages
+        data: {
+          ...product,
+          images: [],
+          primary_image: product.image_url,
+          message: 'Product created. Upload images using /api/products/images/upload',
+        },
       },
       {
         status: 201,
         headers: {
-          "Access-Control-Allow-Credentials": "true",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-          "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+          'Access-Control-Allow-Headers':
+            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
         },
       }
     );
@@ -326,15 +128,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error'
+        error: error.message || 'Internal server error',
       },
       {
         status: 500,
         headers: {
-          "Access-Control-Allow-Credentials": "true",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-          "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+          'Access-Control-Allow-Headers':
+            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
         },
       }
     );
@@ -343,12 +146,16 @@ export async function POST(request: NextRequest) {
 
 // Handle preflight requests
 export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-      "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
-    },
-  });
+  return NextResponse.json(
+    {},
+    {
+      headers: {
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+        'Access-Control-Allow-Headers':
+          'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+      },
+    }
+  );
 }

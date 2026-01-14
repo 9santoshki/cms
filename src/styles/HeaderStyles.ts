@@ -13,6 +13,11 @@ export const SharedHeader = styled.div`
   font-family: 'Playfair Display', serif;
   transition: all 0.4s ease;
   border-bottom: 1px solid rgba(193, 154, 107, 0.1);
+  width: 100%;
+
+  @media (max-width: 768px) {
+    padding: 10px 0;
+  }
 `;
 
 export const HeaderContainer = styled.div`
@@ -23,26 +28,73 @@ export const HeaderContainer = styled.div`
   margin: 0 auto;
   padding: 0 40px;
   gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 992px) {
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 8px;
+    gap: 6px;
+  }
 `;
 
 export const HeaderLogo = styled.div`
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  min-width: fit-content;
 
   a {
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    opacity: 1 !important;
+    color: inherit !important;
+    -webkit-tap-highlight-color: transparent;
+
+    &:hover,
+    &:active,
+    &:focus,
+    &:visited {
+      opacity: 1 !important;
+      color: inherit !important;
+      filter: none !important;
+    }
   }
 
   .logo-image {
-    height: 65px;
-    max-height: 65px;
+    height: 55px;
+    max-height: 55px;
     object-fit: contain;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
-    
-    &:hover {
-      transform: scale(1.03);
+    opacity: 1 !important;
+    filter: none !important;
+
+    &:hover,
+    &:active,
+    &:focus {
+      transform: scale(1.02);
+      opacity: 1 !important;
+      filter: none !important;
+    }
+
+    @media (max-width: 768px) {
+      height: 45px;
+      max-height: 45px;
+    }
+
+    @media (max-width: 480px) {
+      height: 38px;
+      max-height: 38px;
     }
   }
 `;
@@ -52,13 +104,18 @@ export const HeaderMenu = styled.div`
   gap: 35px;
   flex: 1;
   justify-content: center;
+  min-width: 0;
+  overflow: hidden;
 
-  @media (max-width: 992px) {
+  @media (max-width: 1200px) {
     gap: 25px;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     gap: 15px;
+  }
+
+  @media (max-width: 900px) {
     display: none;
   }
 `;
@@ -67,14 +124,27 @@ export const HeaderLink = styled.a<{ $active?: boolean }>`
   text-decoration: none;
   color: ${props => props.$active ? '#c19a6b' : '#333'};
   font-weight: 400;
-  font-size: 16px;
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   transition: all 0.3s ease;
   position: relative;
   padding: 10px 0;
   display: inline-block;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  @media (max-width: 1200px) {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 1024px) {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 8px 0;
+  }
 
   &:hover {
     color: #c19a6b;
@@ -122,9 +192,22 @@ export const HeaderIcons = styled.div`
   gap: 20px;
   align-items: center;
   flex-shrink: 0;
+  min-width: fit-content;
+
+  @media (max-width: 992px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
-    gap: 15px;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 4px;
+  }
+
+  @media (max-width: 360px) {
+    gap: 2px;
   }
 `;
 
@@ -143,6 +226,22 @@ export const CartCount = styled.span`
   justify-content: center;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(193, 154, 107, 0.3);
+
+  @media (max-width: 480px) {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -8px;
+    right: -8px;
+  }
+
+  @media (max-width: 360px) {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -6px;
+    right: -6px;
+  }
 `;
 
 export const UserGreeting = styled.span`
@@ -164,11 +263,34 @@ export const NavIcon = styled.button`
   position: relative;
   padding: 8px;
   border-radius: 4px;
-  
+  flex-shrink: 0;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   &:hover {
     color: #c19a6b;
     background-color: rgba(193, 154, 107, 0.08);
     transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+    padding: 5px;
+    min-width: 32px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+    padding: 4px;
+    min-width: 28px;
+  }
+
+  @media (max-width: 360px) {
+    font-size: 15px;
+    padding: 3px;
+    min-width: 26px;
   }
 `;
 
@@ -179,11 +301,16 @@ export const MobileMenuToggle = styled.button`
   border: none;
   cursor: pointer;
   padding: 5px;
-  
+  flex-shrink: 0;
+
   @media (max-width: 768px) {
     display: flex;
   }
-  
+
+  @media (max-width: 480px) {
+    padding: 3px;
+  }
+
   span {
     width: 25px;
     height: 3px;
@@ -191,5 +318,17 @@ export const MobileMenuToggle = styled.button`
     margin: 3px 0;
     transition: 0.3s;
     border-radius: 2px;
+
+    @media (max-width: 480px) {
+      width: 20px;
+      height: 2.5px;
+      margin: 2.5px 0;
+    }
+
+    @media (max-width: 360px) {
+      width: 18px;
+      height: 2px;
+      margin: 2px 0;
+    }
   }
 `;

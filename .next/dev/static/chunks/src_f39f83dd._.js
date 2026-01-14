@@ -31,32 +31,32 @@ const SharedHeader = __TURBOPACK__imported__module__$5b$project$5d2f$node_module
     displayName: "HeaderStyles__SharedHeader",
     componentId: "sc-2ajkgs-0"
 })([
-    "background-color:rgba(255,255,255,0.95);backdrop-filter:blur(10px);box-shadow:0 2px 20px rgba(0,0,0,0.08);position:sticky;top:0;z-index:1000;padding:15px 0;font-family:'Playfair Display',serif;transition:all 0.4s ease;border-bottom:1px solid rgba(193,154,107,0.1);"
+    "background-color:rgba(255,255,255,0.95);backdrop-filter:blur(10px);box-shadow:0 2px 20px rgba(0,0,0,0.08);position:sticky;top:0;z-index:1000;padding:15px 0;font-family:'Playfair Display',serif;transition:all 0.4s ease;border-bottom:1px solid rgba(193,154,107,0.1);width:100%;@media (max-width:768px){padding:10px 0;}"
 ]);
 const HeaderContainer = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "HeaderStyles__HeaderContainer",
     componentId: "sc-2ajkgs-1"
 })([
-    "display:flex;justify-content:space-between;align-items:center;max-width:1400px;margin:0 auto;padding:0 40px;gap:20px;"
+    "display:flex;justify-content:space-between;align-items:center;max-width:1400px;margin:0 auto;padding:0 40px;gap:20px;width:100%;box-sizing:border-box;@media (max-width:992px){padding:0 20px;gap:12px;}@media (max-width:768px){padding:0 10px;gap:8px;}@media (max-width:480px){padding:0 8px;gap:6px;}"
 ]);
 const HeaderLogo = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "HeaderStyles__HeaderLogo",
     componentId: "sc-2ajkgs-2"
 })([
-    "display:flex;align-items:center;flex-shrink:0;a{text-decoration:none;}.logo-image{height:65px;max-height:65px;object-fit:contain;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:transform 0.3s ease;&:hover{transform:scale(1.03);}}"
+    "display:flex;align-items:center;flex-shrink:0;min-width:fit-content;a{text-decoration:none;display:flex;align-items:center;opacity:1 !important;color:inherit !important;-webkit-tap-highlight-color:transparent;&:hover,&:active,&:focus,&:visited{opacity:1 !important;color:inherit !important;filter:none !important;}}.logo-image{height:55px;max-height:55px;object-fit:contain;transition:transform 0.3s ease;opacity:1 !important;filter:none !important;&:hover,&:active,&:focus{transform:scale(1.02);opacity:1 !important;filter:none !important;}@media (max-width:768px){height:45px;max-height:45px;}@media (max-width:480px){height:38px;max-height:38px;}}"
 ]);
 const HeaderMenu = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "HeaderStyles__HeaderMenu",
     componentId: "sc-2ajkgs-3"
 })([
-    "display:flex;gap:35px;flex:1;justify-content:center;@media (max-width:992px){gap:25px;}@media (max-width:768px){gap:15px;display:none;}"
+    "display:flex;gap:35px;flex:1;justify-content:center;min-width:0;overflow:hidden;@media (max-width:1200px){gap:25px;}@media (max-width:1024px){gap:15px;}@media (max-width:900px){display:none;}"
 ]);
 const HeaderLink = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].a.withConfig({
     displayName: "HeaderStyles__HeaderLink",
     componentId: "sc-2ajkgs-4"
 })([
     "text-decoration:none;color:",
-    ";font-weight:400;font-size:16px;text-transform:uppercase;letter-spacing:1.5px;transition:all 0.3s ease;position:relative;padding:10px 0;display:inline-block;font-family:'Montserrat',sans-serif;&:hover{color:#c19a6b;}&::before{content:'';position:absolute;width:0;height:2px;bottom:0;left:0;background:linear-gradient(to right,#c19a6b,transparent);transition:width 0.4s ease;}&::after{content:'';position:absolute;width:",
+    ";font-weight:400;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;transition:all 0.3s ease;position:relative;padding:10px 0;display:inline-block;font-family:var(--font-montserrat),'Montserrat',sans-serif;white-space:nowrap;flex-shrink:0;@media (max-width:1200px){font-size:12px;letter-spacing:1px;}@media (max-width:1024px){font-size:11px;letter-spacing:0.5px;padding:8px 0;}&:hover{color:#c19a6b;}&::before{content:'';position:absolute;width:0;height:2px;bottom:0;left:0;background:linear-gradient(to right,#c19a6b,transparent);transition:width 0.4s ease;}&::after{content:'';position:absolute;width:",
     ";height:2px;bottom:0;right:0;background:linear-gradient(to left,#c19a6b,transparent);transition:width 0.4s ease;}&:hover::before{width:100%;}&::after{",
     "}&:hover{transform:translateY(-2px);}"
 ], (props)=>props.$active ? '#c19a6b' : '#333', (props)=>props.$active ? '100%' : '0', (props)=>props.$active && `
@@ -66,13 +66,13 @@ const HeaderIcons = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules
     displayName: "HeaderStyles__HeaderIcons",
     componentId: "sc-2ajkgs-5"
 })([
-    "display:flex;gap:20px;align-items:center;flex-shrink:0;@media (max-width:768px){gap:15px;}"
+    "display:flex;gap:20px;align-items:center;flex-shrink:0;min-width:fit-content;@media (max-width:992px){gap:12px;}@media (max-width:768px){gap:8px;}@media (max-width:480px){gap:4px;}@media (max-width:360px){gap:2px;}"
 ]);
 const CartCount = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].span.withConfig({
     displayName: "HeaderStyles__CartCount",
     componentId: "sc-2ajkgs-6"
 })([
-    "position:absolute;top:-10px;right:-10px;background:linear-gradient(135deg,#c19a6b,#a8825f);color:white;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:600;box-shadow:0 2px 8px rgba(193,154,107,0.3);"
+    "position:absolute;top:-10px;right:-10px;background:linear-gradient(135deg,#c19a6b,#a8825f);color:white;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:600;box-shadow:0 2px 8px rgba(193,154,107,0.3);@media (max-width:480px){width:18px;height:18px;font-size:10px;top:-8px;right:-8px;}@media (max-width:360px){width:16px;height:16px;font-size:9px;top:-6px;right:-6px;}"
 ]);
 const UserGreeting = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].span.withConfig({
     displayName: "HeaderStyles__UserGreeting",
@@ -84,13 +84,13 @@ const NavIcon = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$
     displayName: "HeaderStyles__NavIcon",
     componentId: "sc-2ajkgs-8"
 })([
-    "background:none;border:none;font-size:20px;cursor:pointer;color:#333;transition:all 0.3s ease;position:relative;padding:8px;border-radius:4px;&:hover{color:#c19a6b;background-color:rgba(193,154,107,0.08);transform:translateY(-2px);}"
+    "background:none;border:none;font-size:20px;cursor:pointer;color:#333;transition:all 0.3s ease;position:relative;padding:8px;border-radius:4px;flex-shrink:0;min-width:36px;display:flex;align-items:center;justify-content:center;&:hover{color:#c19a6b;background-color:rgba(193,154,107,0.08);transform:translateY(-2px);}@media (max-width:768px){font-size:18px;padding:5px;min-width:32px;}@media (max-width:480px){font-size:16px;padding:4px;min-width:28px;}@media (max-width:360px){font-size:15px;padding:3px;min-width:26px;}"
 ]);
 const MobileMenuToggle = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].button.withConfig({
     displayName: "HeaderStyles__MobileMenuToggle",
     componentId: "sc-2ajkgs-9"
 })([
-    "display:none;flex-direction:column;background:none;border:none;cursor:pointer;padding:5px;@media (max-width:768px){display:flex;}span{width:25px;height:3px;background-color:#333;margin:3px 0;transition:0.3s;border-radius:2px;}"
+    "display:none;flex-direction:column;background:none;border:none;cursor:pointer;padding:5px;flex-shrink:0;@media (max-width:768px){display:flex;}@media (max-width:480px){padding:3px;}span{width:25px;height:3px;background-color:#333;margin:3px 0;transition:0.3s;border-radius:2px;@media (max-width:480px){width:20px;height:2.5px;margin:2.5px 0;}@media (max-width:360px){width:18px;height:2px;margin:2px 0;}}"
 ]);
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
@@ -113,7 +113,7 @@ var _s = __turbopack_context__.k.signature();
 ;
 const LoginModal = ({ isOpen, onClose })=>{
     _s();
-    const { signInWithGoogle, signInWithFacebook } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
+    const { signInWithGoogle } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const modalRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     // Close on outside click
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
@@ -197,17 +197,17 @@ const LoginModal = ({ isOpen, onClose })=>{
                             d: "M6 18L18 6M6 6l12 12"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 65,
+                            lineNumber: 64,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/LoginModal.tsx",
-                        lineNumber: 64,
+                        lineNumber: 63,
                         columnNumber: 11
                     }, ("TURBOPACK compile-time value", void 0))
                 }, void 0, false, {
                     fileName: "[project]/src/components/LoginModal.tsx",
-                    lineNumber: 51,
+                    lineNumber: 50,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0)),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -225,26 +225,27 @@ const LoginModal = ({ isOpen, onClose })=>{
                             children: "Welcome"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 74,
+                            lineNumber: 73,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "text-xs text-gray-600 text-center",
+                            className: "text-xs text-center",
                             style: {
                                 fontFamily: 'Montserrat, sans-serif',
-                                lineHeight: '1'
+                                lineHeight: '1',
+                                color: '#333333'
                             },
                             align: "center",
                             children: "Sign in to access your account"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 79,
+                            lineNumber: 78,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/LoginModal.tsx",
-                    lineNumber: 70,
+                    lineNumber: 69,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0)),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -273,121 +274,84 @@ const LoginModal = ({ isOpen, onClose })=>{
                                 paddingLeft: '12px'
                             },
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
-                                className: "w-10 h-6 mr-10",
-                                viewBox: "0 0 24 24",
-                                style: {
-                                    flexShrink: 0
-                                },
+                                xmlns: "http://www.w3.org/2000/svg",
+                                width: "18",
+                                height: "18",
+                                viewBox: "0 0 48 48",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-                                        fill: "#4285F4",
-                                        d: "M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                        fill: "#EA4335",
+                                        d: "M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.61 0 6.51 5.38 2.56 13.19l7.98 6.19C12.43 12.03 17.74 9.5 24 9.5z"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/LoginModal.tsx",
-                                        lineNumber: 113,
-                                        columnNumber: 15
+                                        lineNumber: 111,
+                                        columnNumber: 3
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-                                        fill: "#34A853",
-                                        d: "M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.92A10 10 0 0 0 12 23z"
+                                        fill: "#4285F4",
+                                        d: "M46.1 24.5c0-1.57-.15-3.09-.43-4.5H24v9h12.65c-.55 2.94-2.22 5.44-4.72 7.11l7.23 5.65C43.81 37.41 46.1 31.36 46.1 24.5z"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/LoginModal.tsx",
-                                        lineNumber: 114,
-                                        columnNumber: 15
+                                        lineNumber: 112,
+                                        columnNumber: 3
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
                                         fill: "#FBBC05",
-                                        d: "M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                        d: "M10.54 28.19c-.48-1.45-.74-2.99-.74-4.59s.26-3.14.74-4.59L2.56 12.81A23.85 23.85 0 000 23.6c0 3.9.93 7.59 2.56 10.79l7.98-6.2z"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/LoginModal.tsx",
-                                        lineNumber: 115,
-                                        columnNumber: 15
+                                        lineNumber: 113,
+                                        columnNumber: 3
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-                                        fill: "#EA4335",
-                                        d: "M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                        fill: "#34A853",
+                                        d: "M24 48c6.47 0 11.96-2.13 15.94-5.78l-7.23-5.65c-2.03 1.37-4.63 2.18-7.71 2.18-6.26 0-11.57-3.53-14.46-8.7l-7.98 6.2C6.51 42.62 14.61 48 24 48z"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/LoginModal.tsx",
-                                        lineNumber: 116,
-                                        columnNumber: 15
+                                        lineNumber: 114,
+                                        columnNumber: 3
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/LoginModal.tsx",
                                 lineNumber: 110,
-                                columnNumber: 13
+                                columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
                             lineNumber: 93,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            onClick: async ()=>{
-                                try {
-                                    await signInWithFacebook();
-                                } catch (err) {
-                                    console.error('Facebook sign-in error:', err);
-                                }
-                            },
-                            className: "w-full flex items-center justify-center px-3 py-2 rounded-md text-xs font-medium  text-white bg-[#1877F2] hover:bg-[#166FE0] transition-all duration-200 mt-3 shadow-sm hover:shadow-md",
-                            style: {
-                                fontFamily: 'Montserrat, sans-serif',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                                minHeight: '42px',
-                                minWidth: '42px',
-                                paddingRight: '12px',
-                                paddingLeft: '12px'
-                            },
-                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
-                                viewBox: "0 0 24 24",
-                                className: "w-4 h-4 mr-2",
-                                style: {
-                                    flexShrink: 0
-                                },
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-                                    fill: "#FFFFFF",
-                                    d: "M22 12a10 10 0 1 0-11.5 9.9v-7h-2v-3h2v-2.3c0-2 1.2-3.1 3-3.1.9 0 1.8.16 1.8.16v2h-1c-1 0-1.3.62-1.3 1.25V12h2.2l-.35 3h-1.85v7A10 10 0 0 0 22 12"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/LoginModal.tsx",
-                                    lineNumber: 142,
-                                    columnNumber: 15
-                                }, ("TURBOPACK compile-time value", void 0))
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/LoginModal.tsx",
-                                lineNumber: 139,
-                                columnNumber: 13
-                            }, ("TURBOPACK compile-time value", void 0))
-                        }, void 0, false, {
-                            fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 123,
-                            columnNumber: 11
-                        }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "mt-3 text-center",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                className: "text-xs text-gray-500",
+                                className: "text-xs",
+                                style: {
+                                    color: '#333333'
+                                },
                                 children: [
                                     "By signing in, you agree to our",
                                     ' ',
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "text-amber-700 font-medium",
+                                        className: "font-medium",
+                                        style: {
+                                            color: '#c19a6b'
+                                        },
                                         children: "Terms"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/LoginModal.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 124,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/LoginModal.tsx",
-                                lineNumber: 148,
+                                lineNumber: 120,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0))
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 147,
+                            lineNumber: 119,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
@@ -399,16 +363,16 @@ const LoginModal = ({ isOpen, onClose })=>{
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/LoginModal.tsx",
-            lineNumber: 42,
+            lineNumber: 41,
             columnNumber: 7
         }, ("TURBOPACK compile-time value", void 0))
     }, void 0, false, {
         fileName: "[project]/src/components/LoginModal.tsx",
-        lineNumber: 39,
+        lineNumber: 38,
         columnNumber: 10
     }, ("TURBOPACK compile-time value", void 0));
 };
-_s(LoginModal, "afwj5aAOcleVxF3uhx7XoM74gAs=", false, function() {
+_s(LoginModal, "yL1FDqQYzn3cDiTl0SS359dLFu4=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
     ];
@@ -429,6 +393,7 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__default__export__
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/styled-jsx/style.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/context/AuthContext.tsx [app-client] (ecmascript)");
@@ -444,15 +409,18 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
+;
 const UserMenu = ({ onNavigate })=>{
     _s();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const { user, logout } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const { items, cartCount } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$CartContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCart"])(); // Get both items and cartCount
     // Debug logging
-    console.log('UserMenu - Current user:', user);
-    console.log('UserMenu - Cart count:', cartCount);
-    console.log('UserMenu - User exists:', !!user);
+    console.log('🔍 UserMenu - Current user:', user);
+    console.log('🔍 UserMenu - User avatar:', user?.avatar);
+    console.log('🔍 UserMenu - Has avatar:', !!user?.avatar);
+    console.log('🔍 UserMenu - Cart count:', cartCount);
+    console.log('🔍 UserMenu - User exists:', !!user);
     const [isDropdownOpen, setIsDropdownOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const dropdownRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
@@ -486,326 +454,610 @@ const UserMenu = ({ onNavigate })=>{
             })["UserMenu.useEffect"];
         }
     }["UserMenu.useEffect"], []);
+    // Listen for showLoginModal event (triggered when user tries to add to cart without logging in)
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "UserMenu.useEffect": ()=>{
+            const handleShowLoginModal = {
+                "UserMenu.useEffect.handleShowLoginModal": ()=>{
+                    console.log('🔑 Login required: User tried to add item to cart');
+                    setIsAuthModalOpen(true);
+                }
+            }["UserMenu.useEffect.handleShowLoginModal"];
+            window.addEventListener('showLoginModal', handleShowLoginModal);
+            return ({
+                "UserMenu.useEffect": ()=>{
+                    window.removeEventListener('showLoginModal', handleShowLoginModal);
+                }
+            })["UserMenu.useEffect"];
+        }
+    }["UserMenu.useEffect"], []);
+    // Process pending cart action after successful login
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "UserMenu.useEffect": ()=>{
+            if (user && ("TURBOPACK compile-time value", "object") !== 'undefined') {
+                const pendingAction = localStorage.getItem('pendingCartAction');
+                if (pendingAction) {
+                    try {
+                        const { product, quantity } = JSON.parse(pendingAction);
+                        console.log('🛒 Processing pending cart action after login:', product.name);
+                        // Add the item to cart
+                        __turbopack_context__.A("[project]/src/store/cartStore.ts [app-client] (ecmascript, async loader)").then({
+                            "UserMenu.useEffect": (module)=>{
+                                module.useCartStore.getState().addItem({
+                                    id: Date.now(),
+                                    product_id: product.id,
+                                    quantity: quantity || 1,
+                                    name: product.name,
+                                    price: product.price,
+                                    image_url: product.primary_image || product.image_url
+                                });
+                                console.log('✅ Item added to cart after login');
+                            }
+                        }["UserMenu.useEffect"]);
+                        // Clear the pending action
+                        localStorage.removeItem('pendingCartAction');
+                    } catch (error) {
+                        console.error('Error processing pending cart action:', error);
+                    }
+                }
+            }
+        }
+    }["UserMenu.useEffect"], [
+        user
+    ]);
     const renderUserAccountIcon = ()=>{
         if (user) {
-            console.log('UserMenu render: user is logged in', user);
-            // Logged-in user - show dropdown menu
             return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
-                    position: 'relative'
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0
                 },
                 ref: dropdownRef,
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["NavIcon"], {
                         onClick: ()=>setIsDropdownOpen(!isDropdownOpen),
-                        title: user.name || 'Account',
-                        children: user.avatar ? // Show avatar image if available
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            lineHeight: 0
+                        },
+                        children: user.avatar ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                             src: user.avatar,
-                            alt: "Profile",
                             style: {
                                 width: '24px',
                                 height: '24px',
+                                display: 'block',
                                 borderRadius: '50%',
                                 objectFit: 'cover'
+                            },
+                            className: "user-avatar-icon",
+                            alt: "avatar",
+                            referrerPolicy: "no-referrer",
+                            crossOrigin: "anonymous",
+                            onError: (e)=>{
+                                console.error('Avatar failed to load:', user.avatar);
+                                e.currentTarget.style.display = 'none';
                             }
                         }, void 0, false, {
                             fileName: "[project]/src/components/UserMenu.tsx",
-                            lineNumber: 68,
-                            columnNumber: 11
-                        }, ("TURBOPACK compile-time value", void 0)) : // Fallback to user icon if no avatar
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                            lineNumber: 119,
+                            columnNumber: 26
+                        }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
                             className: "fas fa-user"
                         }, void 0, false, {
                             fileName: "[project]/src/components/UserMenu.tsx",
-                            lineNumber: 75,
-                            columnNumber: 11
+                            lineNumber: 128,
+                            columnNumber: 19
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/UserMenu.tsx",
-                        lineNumber: 65,
-                        columnNumber: 11
+                        lineNumber: 113,
+                        columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "dropdown-menu",
+                    isDropdownOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
-                            display: isDropdownOpen ? 'block' : 'none',
                             position: 'absolute',
-                            top: '100%',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            // Center the dropdown under the icon
+                            top: 'calc(100% + 10px)',
+                            right: 0,
+                            width: '280px',
                             backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                            zIndex: 1000,
-                            minWidth: '200px',
-                            textAlign: 'left'
+                            border: '1px solid #e8d5c4',
+                            boxShadow: '0 10px 30px rgba(193, 154, 107, 0.15)',
+                            zIndex: 9999,
+                            overflow: 'hidden',
+                            animation: 'slideDown 0.2s ease-out'
                         },
+                        className: "jsx-8a79e608e22bc54b",
                         children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                id: "8a79e608e22bc54b",
+                                children: "@keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}"
+                            }, void 0, false, void 0, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "dropdown-header",
                                 style: {
-                                    padding: '12px 16px',
-                                    borderBottom: '1px solid #eee',
-                                    fontWeight: 'bold'
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px',
+                                    padding: '20px',
+                                    background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)',
+                                    borderBottom: '1px solid #e8d5c4'
                                 },
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    style: {
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    },
-                                    children: [
-                                        user.avatar ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                            src: user.avatar,
-                                            alt: "Profile",
-                                            style: {
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                objectFit: 'cover',
-                                                marginRight: '12px'
-                                            }
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/UserMenu.tsx",
-                                            lineNumber: 103,
-                                            columnNumber: 32
-                                        }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            style: {
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                backgroundColor: '#f0f0f0',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginRight: '12px'
-                                            },
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fas fa-user",
-                                                style: {
-                                                    color: '#999'
-                                                }
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/UserMenu.tsx",
-                                                lineNumber: 119,
-                                                columnNumber: 21
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/UserMenu.tsx",
-                                            lineNumber: 109,
-                                            columnNumber: 23
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "user-name",
-                                                    style: {
-                                                        fontWeight: '600'
-                                                    },
-                                                    children: user.name
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/UserMenu.tsx",
-                                                    lineNumber: 124,
-                                                    columnNumber: 19
-                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "user-email",
-                                                    style: {
-                                                        fontSize: '14px',
-                                                        color: '#666'
-                                                    },
-                                                    children: user.email
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/UserMenu.tsx",
-                                                    lineNumber: 127,
-                                                    columnNumber: 19
-                                                }, ("TURBOPACK compile-time value", void 0))
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/components/UserMenu.tsx",
-                                            lineNumber: 123,
-                                            columnNumber: 17
-                                        }, ("TURBOPACK compile-time value", void 0))
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/components/UserMenu.tsx",
-                                    lineNumber: 99,
-                                    columnNumber: 15
-                                }, ("TURBOPACK compile-time value", void 0))
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/UserMenu.tsx",
-                                lineNumber: 94,
-                                columnNumber: 13
-                            }, ("TURBOPACK compile-time value", void 0)),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "dropdown-body",
-                                style: {
-                                    padding: '8px 0'
-                                },
+                                className: "jsx-8a79e608e22bc54b",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "dropdown-item",
                                         style: {
-                                            padding: '10px 20px',
-                                            cursor: 'pointer',
-                                            transition: 'background-color 0.2s'
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px'
                                         },
-                                        onMouseEnter: (e)=>e.currentTarget.style.backgroundColor = '#f8f9fa',
-                                        onMouseLeave: (e)=>e.currentTarget.style.backgroundColor = '',
-                                        onClick: ()=>{
-                                            onNavigate('/account');
-                                            setIsDropdownOpen(false);
-                                        },
+                                        className: "jsx-8a79e608e22bc54b",
                                         children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fas fa-user-circle",
+                                            user.avatar ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                src: user.avatar,
                                                 style: {
-                                                    marginRight: '10px'
-                                                }
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/UserMenu.tsx",
-                                                lineNumber: 145,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0)),
-                                            "Account Settings"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/UserMenu.tsx",
-                                        lineNumber: 137,
-                                        columnNumber: 15
-                                    }, ("TURBOPACK compile-time value", void 0)),
-                                    (user.role === 'admin' || user.role === 'moderator') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "dropdown-item",
-                                        style: {
-                                            padding: '10px 20px',
-                                            cursor: 'pointer',
-                                            transition: 'background-color 0.2s'
-                                        },
-                                        onMouseEnter: (e)=>e.currentTarget.style.backgroundColor = '#f8f9fa',
-                                        onMouseLeave: (e)=>e.currentTarget.style.backgroundColor = '',
-                                        onClick: ()=>{
-                                            onNavigate('/dashboard');
-                                            setIsDropdownOpen(false);
-                                        },
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fas fa-tachometer-alt",
-                                                style: {
-                                                    marginRight: '10px'
-                                                }
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/UserMenu.tsx",
-                                                lineNumber: 158,
-                                                columnNumber: 19
-                                            }, ("TURBOPACK compile-time value", void 0)),
-                                            "Dashboard"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/UserMenu.tsx",
-                                        lineNumber: 150,
-                                        columnNumber: 72
-                                    }, ("TURBOPACK compile-time value", void 0)),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "dropdown-item",
-                                        style: {
-                                            padding: '10px 20px',
-                                            cursor: 'pointer',
-                                            transition: 'background-color 0.2s'
-                                        },
-                                        onMouseEnter: (e)=>e.currentTarget.style.backgroundColor = '#f8f9fa',
-                                        onMouseLeave: (e)=>e.currentTarget.style.backgroundColor = '',
-                                        onClick: ()=>{
-                                            handleLogout();
-                                            setIsDropdownOpen(false);
-                                        },
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fas fa-sign-out-alt",
-                                                style: {
-                                                    marginRight: '10px'
-                                                }
+                                                    width: '48px',
+                                                    height: '48px',
+                                                    borderRadius: '50%',
+                                                    border: '2px solid white',
+                                                    objectFit: 'cover',
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                                },
+                                                alt: user.name,
+                                                referrerPolicy: "no-referrer",
+                                                crossOrigin: "anonymous",
+                                                onError: (e)=>{
+                                                    console.error('Dropdown avatar failed to load:', user.avatar);
+                                                    const parent = e.currentTarget.parentElement;
+                                                    e.currentTarget.style.display = 'none';
+                                                    if (parent) {
+                                                        const fallback = document.createElement('div');
+                                                        fallback.style.cssText = 'width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg, #e8d5c4, #c19a6b);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:400;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:var(--font-playfair),"Playfair Display",serif';
+                                                        fallback.textContent = user.name?.charAt(0)?.toUpperCase() || 'U';
+                                                        parent.appendChild(fallback);
+                                                    }
+                                                },
+                                                className: "jsx-8a79e608e22bc54b"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/UserMenu.tsx",
                                                 lineNumber: 171,
-                                                columnNumber: 17
+                                                columnNumber: 32
+                                            }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                style: {
+                                                    width: '48px',
+                                                    height: '48px',
+                                                    borderRadius: '50%',
+                                                    background: 'linear-gradient(135deg, #e8d5c4, #c19a6b)',
+                                                    color: '#fff',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '20px',
+                                                    fontWeight: '400',
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                                    fontFamily: 'var(--font-playfair), "Playfair Display", serif'
+                                                },
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: user.name?.charAt(0)?.toUpperCase() || "U"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 188,
+                                                columnNumber: 23
                                             }, ("TURBOPACK compile-time value", void 0)),
-                                            "Logout"
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                style: {
+                                                    flex: 1,
+                                                    minWidth: 0
+                                                },
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        style: {
+                                                            fontWeight: '600',
+                                                            color: '#222',
+                                                            fontSize: '15px',
+                                                            marginBottom: '3px',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                                        },
+                                                        className: "jsx-8a79e608e22bc54b",
+                                                        children: user.name
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                                        lineNumber: 209,
+                                                        columnNumber: 19
+                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        style: {
+                                                            fontSize: '12px',
+                                                            color: '#666',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                                        },
+                                                        className: "jsx-8a79e608e22bc54b",
+                                                        children: user.email
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                                        lineNumber: 221,
+                                                        columnNumber: 19
+                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 205,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/UserMenu.tsx",
-                                        lineNumber: 163,
+                                        lineNumber: 166,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        style: {
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '5px 14px',
+                                            fontSize: '10px',
+                                            fontWeight: '600',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.5px',
+                                            color: user.role === 'admin' ? '#991b1b' : user.role === 'moderator' ? '#92400e' : '#065f46',
+                                            background: user.role === 'admin' ? '#fee2e2' : user.role === 'moderator' ? '#fef3c7' : '#d1fae5',
+                                            border: `1px solid ${user.role === 'admin' ? '#fecaca' : user.role === 'moderator' ? '#fde68a' : '#a7f3d0'}`,
+                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif',
+                                            alignSelf: 'flex-start'
+                                        },
+                                        className: "jsx-8a79e608e22bc54b",
+                                        children: user.role
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                        lineNumber: 235,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/UserMenu.tsx",
-                                lineNumber: 134,
+                                lineNumber: 158,
+                                columnNumber: 13
+                            }, ("TURBOPACK compile-time value", void 0)),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                style: {
+                                    padding: '8px 0'
+                                },
+                                className: "jsx-8a79e608e22bc54b",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: ()=>{
+                                            onNavigate("/account");
+                                            setIsDropdownOpen(false);
+                                        },
+                                        style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            width: '100%',
+                                            padding: '12px 20px',
+                                            fontSize: '14px',
+                                            color: '#333',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                        },
+                                        onMouseEnter: (e)=>{
+                                            e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                                            e.currentTarget.style.color = '#c19a6b';
+                                        },
+                                        onMouseLeave: (e)=>{
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.color = '#333';
+                                        },
+                                        className: "jsx-8a79e608e22bc54b",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                style: {
+                                                    width: '18px',
+                                                    textAlign: 'center',
+                                                    color: '#c19a6b'
+                                                },
+                                                className: "jsx-8a79e608e22bc54b" + " " + "fas fa-user-circle"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 281,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: "Account Settings"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 286,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                        lineNumber: 258,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: ()=>{
+                                            onNavigate("/orders");
+                                            setIsDropdownOpen(false);
+                                        },
+                                        style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            width: '100%',
+                                            padding: '12px 20px',
+                                            fontSize: '14px',
+                                            color: '#333',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                        },
+                                        onMouseEnter: (e)=>{
+                                            e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                                            e.currentTarget.style.color = '#c19a6b';
+                                        },
+                                        onMouseLeave: (e)=>{
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.color = '#333';
+                                        },
+                                        className: "jsx-8a79e608e22bc54b",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                style: {
+                                                    width: '18px',
+                                                    textAlign: 'center',
+                                                    color: '#c19a6b'
+                                                },
+                                                className: "jsx-8a79e608e22bc54b" + " " + "fas fa-history"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 312,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: "Order History"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 317,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                        lineNumber: 289,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    (user.role === "admin" || user.role === "moderator") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                style: {
+                                                    height: '1px',
+                                                    background: '#f0f0f0',
+                                                    margin: '8px 20px'
+                                                },
+                                                className: "jsx-8a79e608e22bc54b"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 321,
+                                                columnNumber: 19
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>{
+                                                    onNavigate("/dashboard");
+                                                    setIsDropdownOpen(false);
+                                                },
+                                                style: {
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px',
+                                                    width: '100%',
+                                                    padding: '12px 20px',
+                                                    fontSize: '14px',
+                                                    color: '#333',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                                },
+                                                onMouseEnter: (e)=>{
+                                                    e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                                                    e.currentTarget.style.color = '#c19a6b';
+                                                },
+                                                onMouseLeave: (e)=>{
+                                                    e.currentTarget.style.background = 'transparent';
+                                                    e.currentTarget.style.color = '#333';
+                                                },
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                        style: {
+                                                            width: '18px',
+                                                            textAlign: 'center',
+                                                            color: '#c19a6b'
+                                                        },
+                                                        className: "jsx-8a79e608e22bc54b" + " " + "fas fa-tachometer-alt"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                                        lineNumber: 349,
+                                                        columnNumber: 21
+                                                    }, ("TURBOPACK compile-time value", void 0)),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "jsx-8a79e608e22bc54b",
+                                                        children: "Admin Dashboard"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                                        lineNumber: 354,
+                                                        columnNumber: 21
+                                                    }, ("TURBOPACK compile-time value", void 0))
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 326,
+                                                columnNumber: 19
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        style: {
+                                            height: '1px',
+                                            background: '#f0f0f0',
+                                            margin: '8px 20px'
+                                        },
+                                        className: "jsx-8a79e608e22bc54b"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                        lineNumber: 358,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: handleLogout,
+                                        style: {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            width: '100%',
+                                            padding: '12px 20px',
+                                            fontSize: '14px',
+                                            color: '#dc2626',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                                        },
+                                        onMouseEnter: (e)=>{
+                                            e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)';
+                                        },
+                                        onMouseLeave: (e)=>{
+                                            e.currentTarget.style.background = 'transparent';
+                                        },
+                                        className: "jsx-8a79e608e22bc54b",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                style: {
+                                                    width: '18px',
+                                                    textAlign: 'center',
+                                                    color: '#dc2626'
+                                                },
+                                                className: "jsx-8a79e608e22bc54b" + " " + "fas fa-sign-out-alt"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 382,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0)),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "jsx-8a79e608e22bc54b",
+                                                children: "Log Out"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/UserMenu.tsx",
+                                                lineNumber: 387,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/UserMenu.tsx",
+                                        lineNumber: 364,
+                                        columnNumber: 15
+                                    }, ("TURBOPACK compile-time value", void 0))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/UserMenu.tsx",
+                                lineNumber: 255,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/UserMenu.tsx",
-                        lineNumber: 79,
-                        columnNumber: 11
+                        lineNumber: 132,
+                        columnNumber: 28
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/UserMenu.tsx",
-                lineNumber: 62,
+                lineNumber: 107,
                 columnNumber: 14
             }, ("TURBOPACK compile-time value", void 0));
         }
-        // Not logged in - show sign-in option that opens the LoginModal
+        // NOT LOGGED IN
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["NavIcon"], {
             onClick: ()=>setIsAuthModalOpen(true),
-            "aria-label": "Sign in to your account",
             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                className: "fas fa-user"
+                className: "fas fa-user text-xl"
             }, void 0, false, {
                 fileName: "[project]/src/components/UserMenu.tsx",
-                lineNumber: 183,
-                columnNumber: 9
+                lineNumber: 396,
+                columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0))
         }, void 0, false, {
             fileName: "[project]/src/components/UserMenu.tsx",
-            lineNumber: 182,
+            lineNumber: 395,
             columnNumber: 12
         }, ("TURBOPACK compile-time value", void 0));
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
         children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                id: "dd47596b8753b80",
+                children: ".user-avatar-icon.jsx-dd47596b8753b80{width:24px;height:24px;display:block}@media (width<=480px){.user-avatar-icon.jsx-dd47596b8753b80{width:20px!important;height:20px!important}}@media (width<=360px){.user-avatar-icon.jsx-dd47596b8753b80{width:18px!important;height:18px!important}}"
+            }, void 0, false, void 0, ("TURBOPACK compile-time value", void 0)),
             user && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
-                    position: 'relative'
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0
                 },
+                className: "jsx-dd47596b8753b80",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["NavIcon"], {
                         onClick: ()=>onNavigate('/cart'),
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            lineHeight: 0
+                        },
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                            className: "fas fa-shopping-cart"
+                            className: "jsx-dd47596b8753b80" + " " + "fas fa-shopping-cart"
                         }, void 0, false, {
                             fileName: "[project]/src/components/UserMenu.tsx",
-                            lineNumber: 192,
+                            lineNumber: 435,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/UserMenu.tsx",
-                        lineNumber: 191,
+                        lineNumber: 429,
                         columnNumber: 11
                     }, ("TURBOPACK compile-time value", void 0)),
                     cartCount > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CartCount"], {
                         children: cartCount
                     }, void 0, false, {
                         fileName: "[project]/src/components/UserMenu.tsx",
-                        lineNumber: 194,
+                        lineNumber: 437,
                         columnNumber: 29
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/UserMenu.tsx",
-                lineNumber: 188,
+                lineNumber: 423,
                 columnNumber: 16
             }, ("TURBOPACK compile-time value", void 0)),
             user && console.log("Cart icon rendered - user is logged in"),
@@ -820,24 +1072,24 @@ const UserMenu = ({ onNavigate })=>{
                     // Position on the right side of the screen
                     zIndex: 10000
                 },
+                className: "jsx-dd47596b8753b80",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$LoginModal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                     isOpen: isAuthModalOpen,
-                    onClose: closeAuthModal,
-                    onClick: ()=>console.log("LoginModal clicked - attempting sign in")
+                    onClose: closeAuthModal
                 }, void 0, false, {
                     fileName: "[project]/src/components/UserMenu.tsx",
-                    lineNumber: 211,
+                    lineNumber: 454,
                     columnNumber: 11
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/src/components/UserMenu.tsx",
-                lineNumber: 203,
+                lineNumber: 446,
                 columnNumber: 27
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true);
 };
-_s(UserMenu, "OLdYkgbPrlDXzzRnJlb8QfP0V78=", false, function() {
+_s(UserMenu, "vBxzXt1Wn9BJm0uS2Jo3E4SmAuk=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
@@ -1492,6 +1744,7 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__default__export__
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/styled-jsx/style.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/context/AuthContext.tsx [app-client] (ecmascript)");
@@ -1503,6 +1756,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$NavLink
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
+;
 ;
 ;
 ;
@@ -1540,15 +1794,11 @@ const Header = ({ activePage = '' })=>{
                                 e.preventDefault();
                                 navigate('/');
                             },
+                            className: "jsx-310df86abecdc5a",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                 src: "/logo.svg",
                                 alt: "Colour My Space Logo",
-                                className: "logo-image",
-                                style: {
-                                    height: '40px',
-                                    width: 'auto',
-                                    maxHeight: '40px'
-                                }
+                                className: "jsx-310df86abecdc5a" + " " + "logo-image"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/Header.tsx",
                                 lineNumber: 44,
@@ -1569,7 +1819,7 @@ const Header = ({ activePage = '' })=>{
                         onNavigate: navigate
                     }, void 0, false, {
                         fileName: "[project]/src/components/Header.tsx",
-                        lineNumber: 53,
+                        lineNumber: 49,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HeaderIcons"], {
@@ -1581,57 +1831,73 @@ const Header = ({ activePage = '' })=>{
                                     border: 'none',
                                     fontSize: '20px',
                                     cursor: 'pointer',
-                                    color: '#333'
+                                    color: '#333',
+                                    padding: '8px',
+                                    flexShrink: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 },
+                                className: "jsx-310df86abecdc5a" + " " + "search-btn",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                    className: "fas fa-search"
+                                    className: "jsx-310df86abecdc5a" + " " + "fas fa-search"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/Header.tsx",
-                                    lineNumber: 63,
+                                    lineNumber: 64,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/Header.tsx",
-                                lineNumber: 56,
+                                lineNumber: 52,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$UserMenu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 onNavigate: navigate
                             }, void 0, false, {
                                 fileName: "[project]/src/components/Header.tsx",
-                                lineNumber: 67,
+                                lineNumber: 68,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$HeaderStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["MobileMenuToggle"], {
                                 onClick: toggleMobileMenu,
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {}, void 0, false, {
-                                        fileName: "[project]/src/components/Header.tsx",
-                                        lineNumber: 71,
-                                        columnNumber: 13
-                                    }, ("TURBOPACK compile-time value", void 0)),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {}, void 0, false, {
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-310df86abecdc5a"
+                                    }, void 0, false, {
                                         fileName: "[project]/src/components/Header.tsx",
                                         lineNumber: 72,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {}, void 0, false, {
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-310df86abecdc5a"
+                                    }, void 0, false, {
                                         fileName: "[project]/src/components/Header.tsx",
                                         lineNumber: 73,
+                                        columnNumber: 13
+                                    }, ("TURBOPACK compile-time value", void 0)),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "jsx-310df86abecdc5a"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/Header.tsx",
+                                        lineNumber: 74,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/Header.tsx",
-                                lineNumber: 70,
+                                lineNumber: 71,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/Header.tsx",
-                        lineNumber: 55,
+                        lineNumber: 51,
                         columnNumber: 9
-                    }, ("TURBOPACK compile-time value", void 0))
+                    }, ("TURBOPACK compile-time value", void 0)),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$jsx$2f$style$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                        id: "310df86abecdc5a",
+                        children: "@media (width<=768px){.search-btn.jsx-310df86abecdc5a{padding:5px!important;font-size:18px!important}}@media (width<=480px){.search-btn.jsx-310df86abecdc5a{display:none!important}}"
+                    }, void 0, false, void 0, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/Header.tsx",
@@ -1645,7 +1911,7 @@ const Header = ({ activePage = '' })=>{
                 activePage: activePage
             }, void 0, false, {
                 fileName: "[project]/src/components/Header.tsx",
-                lineNumber: 79,
+                lineNumber: 95,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$SearchBar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1653,7 +1919,7 @@ const Header = ({ activePage = '' })=>{
                 onToggle: toggleSearch
             }, void 0, false, {
                 fileName: "[project]/src/components/Header.tsx",
-                lineNumber: 82,
+                lineNumber: 98,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0))
         ]
@@ -1683,6 +1949,10 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 __turbopack_context__.s([
     "FooterBottom",
     ()=>FooterBottom,
+    "FooterBrand",
+    ()=>FooterBrand,
+    "FooterCTA",
+    ()=>FooterCTA,
     "FooterColumn",
     ()=>FooterColumn,
     "FooterContainer",
@@ -1695,14 +1965,22 @@ __turbopack_context__.s([
     ()=>FooterGrid,
     "FooterHeading",
     ()=>FooterHeading,
+    "FooterLinks",
+    ()=>FooterLinks,
     "FooterList",
     ()=>FooterList,
     "FooterListItem",
     ()=>FooterListItem,
     "FooterLogo",
     ()=>FooterLogo,
+    "FooterMain",
+    ()=>FooterMain,
+    "FooterNav",
+    ()=>FooterNav,
     "FooterSubsection",
     ()=>FooterSubsection,
+    "FooterTagline",
+    ()=>FooterTagline,
     "NewsletterSection",
     ()=>NewsletterSection,
     "SocialIcons",
@@ -1714,79 +1992,115 @@ const FooterContainer = __TURBOPACK__imported__module__$5b$project$5d2f$node_mod
     displayName: "FooterStyles__FooterContainer",
     componentId: "sc-1lpo1gk-0"
 })([
-    "background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%);color:#fff;padding:80px 0 0;margin-top:auto;font-family:'Montserrat',sans-serif;@media (max-width:768px){padding:60px 0 0;}"
+    "background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%);color:#fff;margin-top:auto;font-family:'Montserrat',sans-serif;"
 ]);
 const FooterContent = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "FooterStyles__FooterContent",
     componentId: "sc-1lpo1gk-1"
 })([
-    "max-width:1400px;margin:0 auto;padding:0 40px 40px;@media (max-width:768px){padding:0 20px 30px;}"
+    "max-width:1200px;margin:0 auto;padding:60px 40px 30px;@media (max-width:768px){padding:50px 20px 25px;}"
 ]);
-const FooterGrid = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
-    displayName: "FooterStyles__FooterGrid",
+const FooterMain = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterMain",
     componentId: "sc-1lpo1gk-2"
 })([
-    "display:grid;grid-template-columns:repeat(4,1fr);gap:50px;margin-bottom:60px;@media (max-width:992px){grid-template-columns:repeat(2,1fr);gap:40px;}@media (max-width:768px){grid-template-columns:1fr;gap:30px;}"
+    "display:flex;justify-content:space-between;align-items:flex-start;gap:60px;padding-bottom:40px;border-bottom:1px solid rgba(255,255,255,0.08);@media (max-width:768px){flex-direction:column;gap:40px;text-align:center;align-items:center;}"
 ]);
-const FooterColumn = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
-    displayName: "FooterStyles__FooterColumn",
+const FooterBrand = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterBrand",
     componentId: "sc-1lpo1gk-3"
 })([
-    "&:nth-child(1){grid-column:span 1;@media (max-width:992px){grid-column:span 2;}}"
+    "max-width:320px;@media (max-width:768px){max-width:100%;}"
 ]);
 const FooterLogo = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].h3.withConfig({
     displayName: "FooterStyles__FooterLogo",
     componentId: "sc-1lpo1gk-4"
 })([
-    "font-family:'Playfair Display',serif;font-size:28px;margin-bottom:20px;color:#fff;letter-spacing:1px;"
+    "font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;margin-bottom:15px;color:#fff;letter-spacing:0.5px;"
 ]);
-const FooterDescription = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].p.withConfig({
-    displayName: "FooterStyles__FooterDescription",
+const FooterTagline = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].p.withConfig({
+    displayName: "FooterStyles__FooterTagline",
     componentId: "sc-1lpo1gk-5"
 })([
-    "color:#ccc;line-height:1.7;margin-bottom:25px;font-size:15px;"
+    "color:rgba(255,255,255,0.6);line-height:1.7;font-size:14px;margin-bottom:20px;"
 ]);
 const SocialIcons = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "FooterStyles__SocialIcons",
     componentId: "sc-1lpo1gk-6"
 })([
-    "display:flex;gap:15px;margin-bottom:30px;a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background-color:rgba(255,255,255,0.1);color:#fff;font-size:16px;transition:all 0.3s ease;&:hover{background-color:#c19a6b;transform:translateY(-3px);}}"
+    "display:flex;gap:12px;@media (max-width:768px){justify-content:center;}a{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background-color:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:14px;transition:all 0.3s ease;&:hover{background-color:#c19a6b;color:#fff;transform:translateY(-2px);}}"
 ]);
-const FooterSubsection = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
-    displayName: "FooterStyles__FooterSubsection",
+const FooterNav = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].nav.withConfig({
+    displayName: "FooterStyles__FooterNav",
     componentId: "sc-1lpo1gk-7"
 })([
-    "h4{font-size:16px;margin-bottom:15px;color:#c19a6b;text-transform:uppercase;letter-spacing:1.5px;}p{color:#aaa;font-size:14px;line-height:1.6;}"
+    "display:flex;gap:50px;@media (max-width:768px){gap:30px;flex-wrap:wrap;justify-content:center;}"
 ]);
-const FooterHeading = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].h4.withConfig({
-    displayName: "FooterStyles__FooterHeading",
+const FooterLinks = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterLinks",
     componentId: "sc-1lpo1gk-8"
 })([
-    "font-size:18px;margin-bottom:25px;color:#fff;position:relative;padding-bottom:10px;text-transform:uppercase;letter-spacing:1.5px;&::after{content:'';position:absolute;left:0;bottom:0;width:40px;height:2px;background:linear-gradient(to right,#c19a6b,transparent);}"
+    "display:flex;flex-direction:column;gap:12px;a{color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.3s ease;&:hover{color:#c19a6b;}}"
 ]);
-const FooterList = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].ul.withConfig({
-    displayName: "FooterStyles__FooterList",
+const FooterCTA = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterCTA",
     componentId: "sc-1lpo1gk-9"
 })([
-    "list-style:none;padding:0;margin:0;"
-]);
-const FooterListItem = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].li.withConfig({
-    displayName: "FooterStyles__FooterListItem",
-    componentId: "sc-1lpo1gk-10"
-})([
-    "margin-bottom:15px;a{color:#ccc;text-decoration:none;transition:all 0.3s ease;position:relative;padding-left:15px;font-size:15px;&::before{content:'\u2192';position:absolute;left:0;color:#c19a6b;opacity:0;transition:all 0.3s ease;}&:hover{color:#c19a6b;padding-left:20px;&::before{opacity:1;left:5px;}}}"
+    "text-align:right;@media (max-width:768px){text-align:center;}p{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:12px;}button{background:linear-gradient(135deg,#c19a6b,#a8825f);color:white;border:none;padding:12px 28px;border-radius:4px;font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.3s ease;&:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(193,154,107,0.3);}}"
 ]);
 const FooterBottom = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "FooterStyles__FooterBottom",
+    componentId: "sc-1lpo1gk-10"
+})([
+    "display:flex;justify-content:space-between;align-items:center;padding-top:25px;@media (max-width:768px){flex-direction:column;gap:15px;text-align:center;}p{color:rgba(255,255,255,0.4);font-size:13px;margin:0;}.footer-links{display:flex;gap:25px;a{color:rgba(255,255,255,0.4);text-decoration:none;font-size:13px;transition:color 0.3s ease;&:hover{color:#c19a6b;}}}"
+]);
+const FooterGrid = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterGrid",
     componentId: "sc-1lpo1gk-11"
 })([
-    "border-top:1px solid rgba(255,255,255,0.1);padding:25px 0;text-align:center;margin-top:40px;p{color:#aaa;font-size:14px;margin:0;}"
+    ""
+]);
+const FooterColumn = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterColumn",
+    componentId: "sc-1lpo1gk-12"
+})([
+    ""
+]);
+const FooterDescription = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].p.withConfig({
+    displayName: "FooterStyles__FooterDescription",
+    componentId: "sc-1lpo1gk-13"
+})([
+    ""
+]);
+const FooterSubsection = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
+    displayName: "FooterStyles__FooterSubsection",
+    componentId: "sc-1lpo1gk-14"
+})([
+    ""
+]);
+const FooterHeading = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].h4.withConfig({
+    displayName: "FooterStyles__FooterHeading",
+    componentId: "sc-1lpo1gk-15"
+})([
+    ""
+]);
+const FooterList = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].ul.withConfig({
+    displayName: "FooterStyles__FooterList",
+    componentId: "sc-1lpo1gk-16"
+})([
+    ""
+]);
+const FooterListItem = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].li.withConfig({
+    displayName: "FooterStyles__FooterListItem",
+    componentId: "sc-1lpo1gk-17"
+})([
+    ""
 ]);
 const NewsletterSection = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "FooterStyles__NewsletterSection",
-    componentId: "sc-1lpo1gk-12"
+    componentId: "sc-1lpo1gk-18"
 })([
-    "margin-bottom:30px;h4{margin-bottom:15px;}.newsletter-form{display:flex;gap:10px;input{flex:1;padding:12px 15px;border:none;border-radius:4px;font-size:14px;}button{background:#c19a6b;color:white;border:none;padding:12px 20px;border-radius:4px;cursor:pointer;transition:background 0.3s ease;&:hover{background:#a8825f;}}}"
+    ""
 ]);
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
@@ -1801,51 +2115,76 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/context/AuthContext.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/styles/FooterStyles.ts [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
 ;
 ;
-;
 const Footer = ()=>{
     _s();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
-    const { user } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const navigate = (path)=>{
         router.push(path);
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterContainer"], {
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterContent"], {
             children: [
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterGrid"], {
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterMain"], {
                     children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterColumn"], {
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterBrand"], {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterLogo"], {
                                     children: "Colour My Space"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 19,
+                                    lineNumber: 16,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0)),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterDescription"], {
-                                    children: "Creating extraordinary interiors that blend timeless elegance with contemporary functionality. Award-winning design services for residential and commercial spaces."
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterTagline"], {
+                                    children: "Creating extraordinary interiors with timeless elegance and contemporary functionality."
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 20,
+                                    lineNumber: 17,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SocialIcons"], {
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                             href: "#",
-                                            onClick: (e)=>{
-                                                e.preventDefault();
-                                            },
+                                            "aria-label": "Instagram",
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
                                                 className: "fab fa-instagram"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/Footer.tsx",
+                                                lineNumber: 22,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/Footer.tsx",
+                                            lineNumber: 21,
+                                            columnNumber: 15
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            "aria-label": "Pinterest",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                className: "fab fa-pinterest"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/Footer.tsx",
+                                                lineNumber: 25,
+                                                columnNumber: 17
+                                            }, ("TURBOPACK compile-time value", void 0))
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/Footer.tsx",
+                                            lineNumber: 24,
+                                            columnNumber: 15
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            "aria-label": "LinkedIn",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                className: "fab fa-linkedin-in"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/Footer.tsx",
                                                 lineNumber: 28,
@@ -1853,486 +2192,211 @@ const Footer = ()=>{
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 25,
+                                            lineNumber: 27,
                                             columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/Footer.tsx",
+                                    lineNumber: 20,
+                                    columnNumber: 13
+                                }, ("TURBOPACK compile-time value", void 0))
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/components/Footer.tsx",
+                            lineNumber: 15,
+                            columnNumber: 11
+                        }, ("TURBOPACK compile-time value", void 0)),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterNav"], {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterLinks"], {
+                                    children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                             href: "#",
                                             onClick: (e)=>{
                                                 e.preventDefault();
+                                                navigate('/');
                                             },
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fab fa-pinterest"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 33,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
+                                            children: "Home"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 30,
+                                            lineNumber: 36,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                             href: "#",
                                             onClick: (e)=>{
                                                 e.preventDefault();
+                                                navigate('/shop');
                                             },
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fab fa-houzz"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 38,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 35,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                            href: "#",
-                                            onClick: (e)=>{
-                                                e.preventDefault();
-                                            },
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
-                                                className: "fab fa-linkedin-in"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 43,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
+                                            children: "Shop"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/Footer.tsx",
                                             lineNumber: 40,
                                             columnNumber: 15
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            onClick: (e)=>{
+                                                e.preventDefault();
+                                                navigate('/portfolio');
+                                            },
+                                            children: "Portfolio"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/Footer.tsx",
+                                            lineNumber: 44,
+                                            columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 24,
+                                    lineNumber: 35,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0)),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterSubsection"], {
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterLinks"], {
                                     children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
-                                            children: "Awards & Recognition"
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            onClick: (e)=>{
+                                                e.preventDefault();
+                                                navigate('/services');
+                                            },
+                                            children: "Services"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 47,
+                                            lineNumber: 50,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                            children: "Featured in Architectural Digest, Elle Decor, and House Beautiful"
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            onClick: (e)=>{
+                                                e.preventDefault();
+                                                navigate('/about');
+                                            },
+                                            children: "About"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 48,
+                                            lineNumber: 54,
+                                            columnNumber: 15
+                                        }, ("TURBOPACK compile-time value", void 0)),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: "#",
+                                            onClick: (e)=>{
+                                                e.preventDefault();
+                                                navigate('/contact');
+                                            },
+                                            children: "Contact"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/Footer.tsx",
+                                            lineNumber: 58,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 46,
+                                    lineNumber: 49,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/Footer.tsx",
-                            lineNumber: 18,
+                            lineNumber: 34,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterColumn"], {
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterCTA"], {
                             children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterHeading"], {
-                                    children: "Quick Links"
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    children: "Ready to transform your space?"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 53,
+                                    lineNumber: 67,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0)),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterList"], {
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/');
-                                                },
-                                                children: "Home"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 56,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 55,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/portfolio');
-                                                },
-                                                children: "Portfolio"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 62,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 61,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services');
-                                                },
-                                                children: "Services"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 68,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 67,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/shop');
-                                                },
-                                                children: "Shop"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 74,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 73,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/about');
-                                                },
-                                                children: "About"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 80,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 79,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/contact');
-                                                },
-                                                children: "Contact"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 86,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 85,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0))
-                                    ]
-                                }, void 0, true, {
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    onClick: ()=>navigate('/booking'),
+                                    children: "Book Consultation"
+                                }, void 0, false, {
                                     fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 54,
+                                    lineNumber: 68,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/Footer.tsx",
-                            lineNumber: 52,
-                            columnNumber: 11
-                        }, ("TURBOPACK compile-time value", void 0)),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterColumn"], {
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterHeading"], {
-                                    children: "Services"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 95,
-                                    columnNumber: 13
-                                }, ("TURBOPACK compile-time value", void 0)),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterList"], {
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services#residential');
-                                                },
-                                                children: "Residential Design"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 98,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 97,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services#commercial');
-                                                },
-                                                children: "Commercial Design"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 104,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 103,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services#space-planning');
-                                                },
-                                                children: "Space Planning"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 110,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 109,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services#color-consulting');
-                                                },
-                                                children: "Color Consulting"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 116,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 115,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/services#furniture-design');
-                                                },
-                                                children: "Furniture Design"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 122,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 121,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0))
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 96,
-                                    columnNumber: 13
-                                }, ("TURBOPACK compile-time value", void 0))
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/src/components/Footer.tsx",
-                            lineNumber: 94,
-                            columnNumber: 11
-                        }, ("TURBOPACK compile-time value", void 0)),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterColumn"], {
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterHeading"], {
-                                    children: "Shop"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 131,
-                                    columnNumber: 13
-                                }, ("TURBOPACK compile-time value", void 0)),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterList"], {
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/shop');
-                                                },
-                                                children: "All Products"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 134,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 133,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/shop');
-                                                },
-                                                children: "New Arrivals"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 140,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 139,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/shop');
-                                                },
-                                                children: "Best Sellers"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 146,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 145,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/shop');
-                                                },
-                                                children: "Sale Items"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 152,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 151,
-                                            columnNumber: 15
-                                        }, ("TURBOPACK compile-time value", void 0)),
-                                        user && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterListItem"], {
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                                href: "#",
-                                                onClick: (e)=>{
-                                                    e.preventDefault();
-                                                    navigate('/orders');
-                                                },
-                                                children: "Order History"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/Footer.tsx",
-                                                lineNumber: 158,
-                                                columnNumber: 19
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/Footer.tsx",
-                                            lineNumber: 157,
-                                            columnNumber: 24
-                                        }, ("TURBOPACK compile-time value", void 0))
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/components/Footer.tsx",
-                                    lineNumber: 132,
-                                    columnNumber: 13
-                                }, ("TURBOPACK compile-time value", void 0))
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/src/components/Footer.tsx",
-                            lineNumber: 130,
+                            lineNumber: 66,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/Footer.tsx",
-                    lineNumber: 17,
+                    lineNumber: 13,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0)),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$FooterStyles$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FooterBottom"], {
-                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        children: "© 2023 Colour My Space Interior Design. All rights reserved."
-                    }, void 0, false, {
-                        fileName: "[project]/src/components/Footer.tsx",
-                        lineNumber: 168,
-                        columnNumber: 11
-                    }, ("TURBOPACK compile-time value", void 0))
-                }, void 0, false, {
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                            children: [
+                                "© ",
+                                new Date().getFullYear(),
+                                " Colour My Space. All rights reserved."
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/components/Footer.tsx",
+                            lineNumber: 75,
+                            columnNumber: 11
+                        }, ("TURBOPACK compile-time value", void 0)),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "footer-links",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                    href: "#",
+                                    onClick: (e)=>{
+                                        e.preventDefault();
+                                    },
+                                    children: "Privacy"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/Footer.tsx",
+                                    lineNumber: 77,
+                                    columnNumber: 13
+                                }, ("TURBOPACK compile-time value", void 0)),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                    href: "#",
+                                    onClick: (e)=>{
+                                        e.preventDefault();
+                                    },
+                                    children: "Terms"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/Footer.tsx",
+                                    lineNumber: 80,
+                                    columnNumber: 13
+                                }, ("TURBOPACK compile-time value", void 0))
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/components/Footer.tsx",
+                            lineNumber: 76,
+                            columnNumber: 11
+                        }, ("TURBOPACK compile-time value", void 0))
+                    ]
+                }, void 0, true, {
                     fileName: "[project]/src/components/Footer.tsx",
-                    lineNumber: 167,
+                    lineNumber: 74,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0))
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/Footer.tsx",
-            lineNumber: 16,
+            lineNumber: 12,
             columnNumber: 7
         }, ("TURBOPACK compile-time value", void 0))
     }, void 0, false, {
         fileName: "[project]/src/components/Footer.tsx",
-        lineNumber: 15,
+        lineNumber: 11,
         columnNumber: 10
     }, ("TURBOPACK compile-time value", void 0));
 };
-_s(Footer, "oDZqiZfBBLaIfkXv6FgMIsfX0Ho=", false, function() {
+_s(Footer, "fN7XvhJ+p5oE6+Xlo0NJmXpxjC8=", false, function() {
     return [
-        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
-        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
     ];
 });
 _c = Footer;
@@ -2365,19 +2429,19 @@ const Slider = ()=>{
             id: 1,
             title: 'MODERN LIVING ROOM DESIGN',
             subtitle: 'ELEVATING INTERIORS WITH TIMELESS ELEGANCE AND FUNCTIONAL DESIGN',
-            imageUrl: 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+            imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927653531-x2pjprnjaw-slider-modern-living-room.jpg'
         },
         {
             id: 2,
             title: 'CLASSIC ELEGANCE',
             subtitle: 'SOPHISTICATED SPACES THAT COMBINE TRADITIONAL ELEGANCE WITH MODERN COMFORT',
-            imageUrl: 'https://images.unsplash.com/photo-1586040487971-52b1ca5b205b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+            imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927655512-p6cyjrf7cy-slider-classic-elegance.jpg'
         },
         {
             id: 3,
             title: 'COASTAL RETREAT',
             subtitle: 'BREATHE EASY WITH AIRY SPACES INSPIRED BY THE NATURAL COASTLINE',
-            imageUrl: 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'
+            imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656389-9s5gz1zz4c4-slider-coastal-retreat.jpg'
         }
     ];
     // All 3 buttons to show on each slide
@@ -2388,7 +2452,7 @@ const Slider = ()=>{
         },
         {
             text: 'BOOK CONSULTATION',
-            link: '/contact'
+            link: '/booking'
         },
         {
             text: 'SHOP NOW',
@@ -2625,7 +2689,7 @@ const MainHero = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f
     displayName: "NewHomepageStylesElegant__MainHero",
     componentId: "sc-16k25qd-1"
 })([
-    "background:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)),url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');background-size:cover;background-position:center;background-attachment:fixed;height:100vh;min-height:700px;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;position:relative;margin-top:0px;&::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,rgba(193,154,107,0.15) 0%,rgba(168,130,95,0.1) 100%);z-index:0;}> div{position:relative;z-index:1;max-width:1200px;padding:0 20px;}h1{font-size:4.8rem;margin-bottom:20px;text-transform:uppercase;letter-spacing:3px;text-shadow:0 4px 15px rgba(0,0,0,0.4);font-family:var(--font-playfair),'Playfair Display',serif;font-weight:300;line-height:1.1;margin-top:-40px;}p{font-size:1.4rem;margin-bottom:40px;font-family:var(--font-montserrat),'Montserrat',sans-serif;text-shadow:0 2px 8px rgba(0,0,0,0.4);text-transform:uppercase;letter-spacing:1.5px;}.btn{padding:16px 45px;font-size:1.1rem;text-transform:uppercase;letter-spacing:1.5px;border:2px solid transparent;cursor:pointer;transition:all 0.4s ease;font-family:var(--font-montserrat),'Montserrat',sans-serif;font-weight:600;&.primary{background:#c19a6b;color:white;border-color:#c19a6b;&:hover{background:transparent;color:white;border-color:white;transform:translateY(-3px);box-shadow:0 10px 25px rgba(0,0,0,0.3);}}&.secondary{background:transparent;color:white;border-color:white;&:hover{background:#c19a6b;color:white;border-color:#c19a6b;transform:translateY(-3px);}}}"
+    "background:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)),url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658910-uprpaph78yh-hero-modern-office.jpg');background-size:cover;background-position:center;background-attachment:fixed;height:100vh;min-height:700px;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;position:relative;margin-top:0px;&::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,rgba(193,154,107,0.15) 0%,rgba(168,130,95,0.1) 100%);z-index:0;}> div{position:relative;z-index:1;max-width:1200px;padding:0 20px;}h1{font-size:4.8rem;margin-bottom:20px;text-transform:uppercase;letter-spacing:3px;text-shadow:0 4px 15px rgba(0,0,0,0.4);font-family:var(--font-playfair),'Playfair Display',serif;font-weight:300;line-height:1.1;margin-top:-40px;}p{font-size:1.4rem;margin-bottom:40px;font-family:var(--font-montserrat),'Montserrat',sans-serif;text-shadow:0 2px 8px rgba(0,0,0,0.4);text-transform:uppercase;letter-spacing:1.5px;}.btn{padding:16px 45px;font-size:1.1rem;text-transform:uppercase;letter-spacing:1.5px;border:2px solid transparent;cursor:pointer;transition:all 0.4s ease;font-family:var(--font-montserrat),'Montserrat',sans-serif;font-weight:600;&.primary{background:#c19a6b;color:white;border-color:#c19a6b;&:hover{background:transparent;color:white;border-color:white;transform:translateY(-3px);box-shadow:0 10px 25px rgba(0,0,0,0.3);}}&.secondary{background:transparent;color:white;border-color:white;&:hover{background:#c19a6b;color:white;border-color:#c19a6b;transform:translateY(-3px);}}}"
 ]);
 const SectionHeader = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "NewHomepageStylesElegant__SectionHeader",
@@ -2637,7 +2701,7 @@ const FeaturedSection = __TURBOPACK__imported__module__$5b$project$5d2f$node_mod
     displayName: "NewHomepageStylesElegant__FeaturedSection",
     componentId: "sc-16k25qd-3"
 })([
-    "padding:30px 0 40px;background:#fafafa;position:relative;&::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#c19a6b,transparent);}.section-footer{text-align:center;margin-top:30px;.btn{padding:16px 45px;font-size:1.1rem;text-transform:uppercase;letter-spacing:1.5px;border:2px solid #c19a6b;background:transparent;color:#c19a6b;cursor:pointer;transition:all 0.4s ease;font-family:var(--font-montserrat),'Montserrat',sans-serif;font-weight:600;&:hover{background:#c19a6b;color:white;transform:translateY(-3px);box-shadow:0 10px 25px rgba(193,154,107,0.3);}}}"
+    "padding:30px 40px 40px;background:#fafafa;position:relative;@media (max-width:768px){padding:30px 20px 40px;}&::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#c19a6b,transparent);}.section-footer{text-align:center;margin-top:30px;.btn{padding:16px 45px;font-size:1.1rem;text-transform:uppercase;letter-spacing:1.5px;border:2px solid #c19a6b;background:transparent;color:#c19a6b;cursor:pointer;transition:all 0.4s ease;font-family:var(--font-montserrat),'Montserrat',sans-serif;font-weight:600;&:hover{background:#c19a6b;color:white;transform:translateY(-3px);box-shadow:0 10px 25px rgba(193,154,107,0.3);}}}"
 ]);
 const ProductsGrid = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "NewHomepageStylesElegant__ProductsGrid",
@@ -2669,17 +2733,17 @@ const ProductImage = __TURBOPACK__imported__module__$5b$project$5d2f$node_module
     " ",
     " &::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.3) 100%);z-index:1;}.add-to-cart-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.4s ease;z-index:2;.btn{padding:12px 25px;font-size:0.9rem;}}&:hover .add-to-cart-overlay{opacity:1;}"
 ], (props)=>props.imageClass === 'modern' && `
-    background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656951-4l8ihxmzbpv-portfolio-modern.jpg');
   `, (props)=>props.imageClass === 'classic' && `
-    background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752411-djoibj8v0mv-portfolio-classic.jpg');
   `, (props)=>props.imageClass === 'coastal' && `
-    background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927657557-5gupsrfjnxk-portfolio-coastal.jpg');
   `, (props)=>props.imageClass === 'office' && `
-    background-image: url('https://images.unsplash.com/photo-1442323822296-a34ce0d5fbc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752946-qy6cbzlqq8-portfolio-office.jpg');
   `, (props)=>props.imageClass === 'hotel' && `
-    background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658162-r7b41efd26-portfolio-hotel.jpg');
   `, (props)=>props.imageClass === 'restaurant' && `
-    background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658512-sle3q538dgl-portfolio-restaurant.jpg');
   `, (props)=>props.imageUrl ? `background-image: url('${props.imageUrl}');` : '');
 const ProductInfo = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].div.withConfig({
     displayName: "NewHomepageStylesElegant__ProductInfo",
@@ -2722,17 +2786,17 @@ const PortfolioCard = __TURBOPACK__imported__module__$5b$project$5d2f$node_modul
     " ",
     " &::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.3) 100%);z-index:1;transition:opacity 0.4s ease;}.project-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;z-index:2;opacity:1;transition:opacity 0.4s ease;background:linear-gradient(135deg,rgba(193,154,107,0.4) 0%,rgba(168,130,95,0.5) 100%);}&:hover .project-overlay{opacity:1;}.project-content{text-align:center;color:black;max-width:80%;h3{font-size:1.5rem;margin-bottom:8px;font-family:var(--font-playfair),'Playfair Display',serif;font-weight:400;letter-spacing:1px;}p{font-size:1rem;margin-bottom:15px;font-family:var(--font-montserrat),'Montserrat',sans-serif;line-height:1.6;}}"
 ], (props)=>props.imageClass === 'modern' && `
-    background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656951-4l8ihxmzbpv-portfolio-modern.jpg');
   `, (props)=>props.imageClass === 'classic' && `
-    background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752411-djoibj8v0mv-portfolio-classic.jpg');
   `, (props)=>props.imageClass === 'coastal' && `
-    background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927657557-5gupsrfjnxk-portfolio-coastal.jpg');
   `, (props)=>props.imageClass === 'office' && `
-    background-image: url('https://images.unsplash.com/photo-1442323822296-a34ce0d5fbc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752946-qy6cbzlqq8-portfolio-office.jpg');
   `, (props)=>props.imageClass === 'hotel' && `
-    background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658162-r7b41efd26-portfolio-hotel.jpg');
   `, (props)=>props.imageClass === 'restaurant' && `
-    background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658512-sle3q538dgl-portfolio-restaurant.jpg');
   `);
 const ServicesSection = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$styled$2d$components$2f$dist$2f$styled$2d$components$2e$browser$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].section.withConfig({
     displayName: "NewHomepageStylesElegant__ServicesSection",
@@ -2877,13 +2941,13 @@ const NewHomepage = ()=>{
         },
         {
             id: 2,
-            text: "Working with Elegant Spaces was a game-changer for our restaurant. The design elevated our brand and created an atmosphere that our customers love. Revenue has increased by 30% since the redesign!",
+            text: "Working with Colour My Space was a game-changer for our restaurant. The design elevated our brand and created an atmosphere that our customers love. Revenue has increased by 30% since the redesign!",
             author: "David Chen, Bistro 45 Owner",
             rating: 5
         },
         {
             id: 3,
-            text: "The team at Elegant Spaces understood our vision perfectly. They created a home office that inspires productivity while maintaining the warmth of our family space. Truly exceptional work!",
+            text: "The team at Colour My Space understood our vision perfectly. They created a home office that inspires productivity while maintaining the warmth of our family space. Truly exceptional work!",
             author: "Priya Sharma, Architect",
             rating: 5
         }
@@ -3053,15 +3117,6 @@ const NewHomepage = ()=>{
                                                     fileName: "[project]/src/components/NewHomepage.tsx",
                                                     lineNumber: 174,
                                                     columnNumber: 21
-                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                    className: "btn primary",
-                                                    onClick: ()=>navigate('/portfolio'),
-                                                    children: "View Project"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/components/NewHomepage.tsx",
-                                                    lineNumber: 175,
-                                                    columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
@@ -3093,12 +3148,12 @@ const NewHomepage = ()=>{
                             children: "View More Projects"
                         }, void 0, false, {
                             fileName: "[project]/src/components/NewHomepage.tsx",
-                            lineNumber: 183,
+                            lineNumber: 180,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 182,
+                        lineNumber: 179,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
@@ -3116,7 +3171,7 @@ const NewHomepage = ()=>{
                                 children: "FEATURED COLLECTION"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 192,
+                                lineNumber: 189,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3124,13 +3179,13 @@ const NewHomepage = ()=>{
                                 children: "Curated masterpieces that exemplify our commitment to quality craftsmanship and design excellence"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 193,
+                                lineNumber: 190,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 191,
+                        lineNumber: 188,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3161,10 +3216,10 @@ const NewHomepage = ()=>{
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ProductImage"], {
                                             imageClass: product.imageClass,
-                                            imageUrl: product.image_url
+                                            imageUrl: product.primary_image || product.image_url
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                            lineNumber: 218,
+                                            lineNumber: 215,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ProductInfo"], {
@@ -3185,7 +3240,7 @@ const NewHomepage = ()=>{
                                                             children: product.name
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                                            lineNumber: 227,
+                                                            lineNumber: 224,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3197,13 +3252,13 @@ const NewHomepage = ()=>{
                                                             children: product.description
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                                            lineNumber: 231,
+                                                            lineNumber: 228,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/NewHomepage.tsx",
-                                                    lineNumber: 226,
+                                                    lineNumber: 223,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3239,7 +3294,7 @@ const NewHomepage = ()=>{
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                        lineNumber: 252,
+                                                                        lineNumber: 249,
                                                                         columnNumber: 25
                                                                     }, ("TURBOPACK compile-time value", void 0)),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3254,13 +3309,13 @@ const NewHomepage = ()=>{
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                        lineNumber: 260,
+                                                                        lineNumber: 257,
                                                                         columnNumber: 25
                                                                     }, ("TURBOPACK compile-time value", void 0))
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                lineNumber: 248,
+                                                                lineNumber: 245,
                                                                 columnNumber: 23
                                                             }, ("TURBOPACK compile-time value", void 0)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3296,7 +3351,7 @@ const NewHomepage = ()=>{
                                                                                         quantity: 1,
                                                                                         name: product.name,
                                                                                         price: product.price,
-                                                                                        image_url: product.image_url
+                                                                                        image_url: product.primary_image || product.image_url
                                                                                     });
                                                                                 });
                                                                             }
@@ -3317,12 +3372,12 @@ const NewHomepage = ()=>{
                                                                             className: "fas fa-shopping-cart"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                            lineNumber: 312,
+                                                                            lineNumber: 309,
                                                                             columnNumber: 27
                                                                         }, ("TURBOPACK compile-time value", void 0))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                        lineNumber: 272,
+                                                                        lineNumber: 269,
                                                                         columnNumber: 25
                                                                     }, ("TURBOPACK compile-time value", void 0)),
                                                                     (()=>{
@@ -3349,47 +3404,47 @@ const NewHomepage = ()=>{
                                                                             children: cartItem.quantity
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                            lineNumber: 316,
+                                                                            lineNumber: 313,
                                                                             columnNumber: 41
                                                                         }, ("TURBOPACK compile-time value", void 0)) : null;
                                                                     })()
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                                                lineNumber: 268,
+                                                                lineNumber: 265,
                                                                 columnNumber: 23
                                                             }, ("TURBOPACK compile-time value", void 0))
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                                        lineNumber: 243,
+                                                        lineNumber: 240,
                                                         columnNumber: 21
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/NewHomepage.tsx",
-                                                    lineNumber: 237,
+                                                    lineNumber: 234,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                            lineNumber: 220,
+                                            lineNumber: 217,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/NewHomepage.tsx",
-                                    lineNumber: 211,
+                                    lineNumber: 208,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, product.id, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 203,
+                                lineNumber: 200,
                                 columnNumber: 55
                             }, ("TURBOPACK compile-time value", void 0)))
                     }, void 0, false, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 197,
+                        lineNumber: 194,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3400,18 +3455,18 @@ const NewHomepage = ()=>{
                             children: "Explore Collection"
                         }, void 0, false, {
                             fileName: "[project]/src/components/NewHomepage.tsx",
-                            lineNumber: 345,
+                            lineNumber: 342,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 344,
+                        lineNumber: 341,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/NewHomepage.tsx",
-                lineNumber: 190,
+                lineNumber: 187,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ServicesSection"], {
@@ -3424,7 +3479,7 @@ const NewHomepage = ()=>{
                                 children: "OUR SERVICES"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 354,
+                                lineNumber: 351,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3432,13 +3487,13 @@ const NewHomepage = ()=>{
                                 children: "Professional design solutions tailored to transform your space into an extraordinary experience"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 355,
+                                lineNumber: 352,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 353,
+                        lineNumber: 350,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ServicesGrid"], {
@@ -3449,43 +3504,43 @@ const NewHomepage = ()=>{
                                             className: service.icon
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/NewHomepage.tsx",
-                                            lineNumber: 360,
+                                            lineNumber: 357,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 359,
+                                        lineNumber: 356,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
                                         children: service.title
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 362,
+                                        lineNumber: 359,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         children: service.description
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 363,
+                                        lineNumber: 360,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, service.id, true, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 358,
+                                lineNumber: 355,
                                 columnNumber: 47
                             }, ("TURBOPACK compile-time value", void 0)))
                     }, void 0, false, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 357,
+                        lineNumber: 354,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/NewHomepage.tsx",
-                lineNumber: 352,
+                lineNumber: 349,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TestimonialsSection"], {
@@ -3498,7 +3553,7 @@ const NewHomepage = ()=>{
                                 children: "CLIENT TESTIMONIALS"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 371,
+                                lineNumber: 368,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3506,13 +3561,13 @@ const NewHomepage = ()=>{
                                 children: "Discover what our valued clients say about their transformative experiences with our design services"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 372,
+                                lineNumber: 369,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 370,
+                        lineNumber: 367,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TestimonialsGrid"], {
@@ -3523,7 +3578,7 @@ const NewHomepage = ()=>{
                                         children: '★'.repeat(testimonial.rating)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 376,
+                                        lineNumber: 373,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3535,7 +3590,7 @@ const NewHomepage = ()=>{
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 379,
+                                        lineNumber: 376,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3543,24 +3598,24 @@ const NewHomepage = ()=>{
                                         children: testimonial.author
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/NewHomepage.tsx",
-                                        lineNumber: 382,
+                                        lineNumber: 379,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, testimonial.id, true, {
                                 fileName: "[project]/src/components/NewHomepage.tsx",
-                                lineNumber: 375,
+                                lineNumber: 372,
                                 columnNumber: 59
                             }, ("TURBOPACK compile-time value", void 0)))
                     }, void 0, false, {
                         fileName: "[project]/src/components/NewHomepage.tsx",
-                        lineNumber: 374,
+                        lineNumber: 371,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/NewHomepage.tsx",
-                lineNumber: 369,
+                lineNumber: 366,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$styles$2f$NewHomepageStylesElegant$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ConsultationSection"], {
@@ -3571,39 +3626,39 @@ const NewHomepage = ()=>{
                             children: "Ready to transform your space?"
                         }, void 0, false, {
                             fileName: "[project]/src/components/NewHomepage.tsx",
-                            lineNumber: 392,
+                            lineNumber: 389,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             children: "Schedule a complimentary 30-minute consultation to discuss your project vision."
                         }, void 0, false, {
                             fileName: "[project]/src/components/NewHomepage.tsx",
-                            lineNumber: 393,
+                            lineNumber: 390,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             className: "btn primary",
-                            onClick: ()=>navigate('/contact'),
+                            onClick: ()=>navigate('/booking'),
                             children: "Schedule Now"
                         }, void 0, false, {
                             fileName: "[project]/src/components/NewHomepage.tsx",
-                            lineNumber: 394,
+                            lineNumber: 391,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/NewHomepage.tsx",
-                    lineNumber: 391,
+                    lineNumber: 388,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/src/components/NewHomepage.tsx",
-                lineNumber: 390,
+                lineNumber: 387,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Footer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/src/components/NewHomepage.tsx",
-                lineNumber: 400,
+                lineNumber: 397,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0))
         ]

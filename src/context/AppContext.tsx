@@ -19,3 +19,4 @@ export { useCart } from './CartContext';
 export { useProduct } from './ProductContext';
 export { useUI } from './UIContext';
 export { AppProvider } from './AppProvider';
+export { useAppContext } from './CombinedAppContext';

@@ -159,8 +159,8 @@ export const PortfolioHeader = styled.header`
 
 // Hero section with elegant overlay
 export const PortfolioHero = styled.section`
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-              url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+              url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658910-uprpaph78yh-hero-modern-office.jpg');
   background-size: cover;
   background-position: center;
   height: 50vh;
@@ -347,27 +347,27 @@ export const ProjectImage = styled.div.withConfig({
   transition: transform 0.5s ease;
 
   ${props => props.imageClass === 'modern' && `
-    background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656951-4l8ihxmzbpv-portfolio-modern.jpg');
   `}
-  
+
   ${props => props.imageClass === 'classic' && `
-    background-image: url('https://images.unsplash.com/photo-1586040487971-52b1ca5b205b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752411-djoibj8v0mv-portfolio-classic.jpg');
   `}
-  
+
   ${props => props.imageClass === 'coastal' && `
-    background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927657557-5gupsrfjnxk-portfolio-coastal.jpg');
   `}
-  
+
   ${props => props.imageClass === 'office' && `
-    background-image: url('https://images.unsplash.com/photo-1442323822296-a34ce0d5fbc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927752946-qy6cbzlqq8-portfolio-office.jpg');
   `}
-  
+
   ${props => props.imageClass === 'hotel' && `
-    background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658162-r7b41efd26-portfolio-hotel.jpg');
   `}
-  
+
   ${props => props.imageClass === 'restaurant' && `
-    background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');
+    background-image: url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927658512-sle3q538dgl-portfolio-restaurant.jpg');
   `}
   
   ${ProjectCard}:hover & {
@@ -381,14 +381,17 @@ export const ProjectOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 30px;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
   opacity: 0;
   transition: opacity 0.4s ease;
-  
+  box-sizing: border-box;
+  overflow: hidden;
+
   ${ProjectCard}:hover & {
     opacity: 1;
   }
@@ -397,46 +400,57 @@ export const ProjectOverlay = styled.div`
 export const ProjectInfo = styled.div`
   color: white;
   width: 100%;
+  max-width: 90%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 `;
 
 export const ProjectCategory = styled.span`
   display: inline-block;
-  padding: 8px 15px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #c19a6b, #a8825f);
-  font-size: 14px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  margin-bottom: 12px;
+  margin: 0;
   font-weight: 500;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
 `;
 
 export const ProjectTitle = styled.h3`
-  font-size: 1.8rem;
-  margin-bottom: 15px;
+  font-size: 1.5rem;
+  margin: 0;
   color: white;
   font-weight: 400;
   font-family: var(--font-playfair), 'Playfair Display', serif;
   text-transform: uppercase;
   letter-spacing: 1px;
+  line-height: 1.3;
 `;
 
 export const ProjectDescription = styled.p`
-  font-size: 16px;
-  margin-bottom: 25px;
-  line-height: 1.7;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
   color: #ddd;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   display: none;
-  
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   ${ProjectCard}:hover & {
     display: block;
   }
 `;
 
 export const ProjectButton = styled.button`
-  width: 100%;
-  padding: 16px;
+  width: auto;
+  min-width: 180px;
+  padding: 12px 30px;
   background-color: transparent;
   color: white;
   border: 2px solid white;
@@ -448,7 +462,8 @@ export const ProjectButton = styled.button`
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   position: relative;
   overflow: hidden;
-  font-size: 16px;
+  font-size: 14px;
+  margin: 0;
 
   &::before {
     content: '';

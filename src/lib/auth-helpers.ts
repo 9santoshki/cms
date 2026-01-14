@@ -17,7 +17,6 @@ export const isAuthenticated = (): boolean => {
  */
 export const showLoginModal = (): void => {
   if (typeof window === 'undefined') return;
-  console.log('Dispatching showLoginModal event');
   window.dispatchEvent(new CustomEvent('showLoginModal'));
 };
 
@@ -26,7 +25,6 @@ export const showLoginModal = (): void => {
  */
 export const closeLoginModal = (): void => {
   if (typeof window === 'undefined') return;
-  console.log('Dispatching closeLoginModal event');
   window.dispatchEvent(new CustomEvent('closeLoginModal'));
 };
 

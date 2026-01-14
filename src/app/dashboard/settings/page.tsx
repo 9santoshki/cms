@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const DashboardSettingsPage = () => {
   const router = useRouter();
-  const { user, loading } = useAppContext();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<any>({
     shipping: {
       min_order_amount: 50000,
@@ -19,28 +20,28 @@ const DashboardSettingsPage = () => {
       enabled: false
     }
   });
-  const [loadingState, setLoadingState] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading.user && !user) {
+    if (!user) {
       router.push('/auth?redirect=/dashboard/settings');
-    } else if (user && user.role === 'admin') {
-      loadSettings();
-    } else {
-      router.push('/dashboard'); // Redirect if not authorized
+      return;
     }
-  }, [user, loading]);
+
+    if (user.role !== 'admin') {
+      router.push('/dashboard');
+      return;
+    }
+
+    loadSettings();
+  }, [user]);
 
   const loadSettings = async () => {
-    setLoadingState(true);
-    setError(null);
-    
     try {
-      // Simulate loading settings from API
-      // In a real application, this would fetch from the database
+      setLoading(true);
+      // In a real application, fetch from API
       const mockSettings = {
         shipping: {
           min_order_amount: 50000,
@@ -53,13 +54,11 @@ const DashboardSettingsPage = () => {
           enabled: false
         }
       };
-      
       setSettings(mockSettings);
-    } catch (err: any) {
-      console.error('Error loading settings:', err);
-      setError(err.message || 'Failed to load settings');
+    } catch (error) {
+      console.error('Error loading settings:', error);
     } finally {
-      setLoadingState(false);
+      setLoading(false);
     }
   };
 
@@ -75,242 +74,382 @@ const DashboardSettingsPage = () => {
 
   const handleSaveSettings = async () => {
     setSaving(true);
-    setError(null);
     setSuccessMessage(null);
-    
+
     try {
-      // Simulate saving settings to API
-      // In a real application, this would save to the database
+      // In a real application, save to API
       console.log('Saving settings:', settings);
       setSuccessMessage('Settings saved successfully!');
-      
-      // Clear success message after 3 seconds
+
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: any) {
-      console.error('Error saving settings:', err);
-      setError(err.message || 'Failed to save settings');
+    } catch (error) {
+      console.error('Error saving settings:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading.user || loadingState) {
+  if (!user || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading settings...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 max-w-md">
-          <div className="text-5xl text-red-500 mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">
-            You don't have permission to access system settings.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-amber-600 text-white rounded-md hover:bg-amber-700"
-          >
-            Go Home
-          </button>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid #f0f0f0',
+            borderTop: '3px solid #c19a6b',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">System Settings</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <button 
-                  onClick={() => router.push('/dashboard')}
-                  className="border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 text-sm font-medium"
-                >
-                  Dashboard
-                </button>
-                <span className="border-b-2 border-amber-500 text-amber-600 inline-flex items-center px-1 pt-1 text-sm font-medium">
-                  Settings
-                </span>
-              </div>
+    <>
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .settings-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .settings-action-buttons {
+            flex-direction: column !important;
+          }
+          .settings-action-buttons button {
+            width: 100% !important;
+          }
+        }
+      `}</style>
+      <DashboardLayout
+      title="System Settings"
+      description="Configure platform settings, shipping options, tax rates, and other system-wide preferences."
+    >
+      {successMessage && (
+        <div style={{
+          background: 'rgba(34, 197, 94, 0.1)',
+          border: '1px solid rgba(34, 197, 94, 0.3)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <i className="fas fa-check-circle" style={{ fontSize: '20px', color: '#16a34a' }}></i>
+          <p style={{ color: '#16a34a', fontSize: '14px', fontWeight: '600', margin: 0 }}>
+            {successMessage}
+          </p>
+        </div>
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }}>
+        {/* Shipping Configuration */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <i className="fas fa-shipping-fast" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+              Shipping Configuration
+            </h3>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#333'
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.shipping.enabled}
+                onChange={(e) => handleInputChange('shipping', 'enabled', e.target.checked)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  cursor: 'pointer',
+                  accentColor: '#c19a6b'
+                }}
+              />
+              Enable Shipping
+            </label>
+          </div>
+
+          <div className="settings-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '20px'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#666',
+                marginBottom: '8px'
+              }}>
+                Minimum Order Amount (₹)
+              </label>
+              <input
+                type="number"
+                value={settings.shipping.min_order_amount}
+                onChange={(e) => handleInputChange('shipping', 'min_order_amount', parseFloat(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1px solid #e8d5c4',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
             </div>
-            <div className="flex items-center">
-              <div className="ml-3 relative">
-                <div className="text-sm text-gray-700">
-                  Welcome, <span className="font-medium capitalize">{user.role}</span> {user.name}
-                </div>
-              </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#666',
+                marginBottom: '8px'
+              }}>
+                Flat Shipping Rate (₹)
+              </label>
+              <input
+                type="number"
+                value={settings.shipping.flat_rate}
+                onChange={(e) => handleInputChange('shipping', 'flat_rate', parseFloat(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1px solid #e8d5c4',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="py-6">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center mb-8">
-            <h2 className="text-base text-amber-600 font-semibold tracking-wide uppercase">System Settings</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Configure Platform Settings
+        {/* Tax Configuration */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <i className="fas fa-receipt" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+              Tax Configuration
+            </h3>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#333'
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.tax.enabled}
+                onChange={(e) => handleInputChange('tax', 'enabled', e.target.checked)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  cursor: 'pointer',
+                  accentColor: '#c19a6b'
+                }}
+              />
+              Enable Tax Calculation
+            </label>
+          </div>
+
+          {settings.tax.enabled && (
+            <div className="settings-grid" style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '20px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#666',
+                  marginBottom: '8px'
+                }}>
+                  Tax Rate (%)
+                </label>
+                <input
+                  type="number"
+                  value={settings.tax.rate}
+                  onChange={(e) => handleInputChange('tax', 'rate', parseFloat(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#666',
+                  marginBottom: '8px'
+                }}>
+                  Tax Type
+                </label>
+                <select
+                  value={settings.tax.type}
+                  onChange={(e) => handleInputChange('tax', 'type', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    background: 'white'
+                  }}
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Site Configuration */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <i className="fas fa-cog" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+              Site Information
+            </h3>
+          </div>
+
+          <div style={{ padding: '16px', background: 'rgba(193, 154, 107, 0.05)', borderRadius: '8px' }}>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0 }}>
+              Additional site configuration options will be available here. This includes site name, logo, contact information, and other general settings.
             </p>
           </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-md">
-              {successMessage}
-            </div>
-          )}
-
-          <form onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }}>
-            {/* Shipping Configuration */}
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Shipping Configuration</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <input
-                    id="shipping-enabled"
-                    name="shipping-enabled"
-                    type="checkbox"
-                    checked={settings.shipping.enabled}
-                    onChange={(e) => handleInputChange('shipping', 'enabled', e.target.checked)}
-                    className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="shipping-enabled" className="ml-2 block text-sm text-gray-900">
-                    Enable Shipping
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="min-order-amount" className="block text-sm font-medium text-gray-700">
-                      Minimum Order Amount (₹)
-                    </label>
-                    <div className="mt-1">
-                      <input
-                        type="number"
-                        id="min-order-amount"
-                        value={settings.shipping.min_order_amount}
-                        onChange={(e) => handleInputChange('shipping', 'min_order_amount', parseFloat(e.target.value))}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="flat-rate" className="block text-sm font-medium text-gray-700">
-                      Flat Shipping Rate (₹)
-                    </label>
-                    <div className="mt-1">
-                      <input
-                        type="number"
-                        id="flat-rate"
-                        value={settings.shipping.flat_rate}
-                        onChange={(e) => handleInputChange('shipping', 'flat_rate', parseFloat(e.target.value))}
-                        className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Tax Configuration */}
-            <div className="bg-white shadow rounded-lg p-6 mb-8">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Tax Configuration</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <input
-                    id="tax-enabled"
-                    name="tax-enabled"
-                    type="checkbox"
-                    checked={settings.tax.enabled}
-                    onChange={(e) => handleInputChange('tax', 'enabled', e.target.checked)}
-                    className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="tax-enabled" className="ml-2 block text-sm text-gray-900">
-                    Enable Tax Calculation
-                  </label>
-                </div>
-
-                {settings.tax.enabled && (
-                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="tax-rate" className="block text-sm font-medium text-gray-700">
-                        Tax Rate (%)
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          type="number"
-                          id="tax-rate"
-                          value={settings.tax.rate}
-                          onChange={(e) => handleInputChange('tax', 'rate', parseFloat(e.target.value))}
-                          className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="tax-type" className="block text-sm font-medium text-gray-700">
-                        Tax Type
-                      </label>
-                      <div className="mt-1">
-                        <select
-                          id="tax-type"
-                          value={settings.tax.type}
-                          onChange={(e) => handleInputChange('tax', 'type', e.target.value)}
-                          className="shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        >
-                          <option value="percentage">Percentage</option>
-                          <option value="fixed">Fixed Amount</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
-              >
-                {saving ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </span>
-                ) : (
-                  'Save Settings'
-                )}
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
-    </div>
+
+        {/* Save Button */}
+        <div className="settings-action-buttons" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <button
+            type="button"
+            onClick={loadSettings}
+            style={{
+              padding: '10px 24px',
+              border: '1px solid #e8d5c4',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              background: 'white',
+              color: '#666',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(193, 154, 107, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+            }}
+          >
+            Reset
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              padding: '10px 24px',
+              background: saving ? '#999' : 'linear-gradient(135deg, #c19a6b, #a67c52)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(193, 154, 107, 0.2)'
+            }}
+          >
+            {saving ? (
+              <>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid #ffffff',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite'
+                }}></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-save"></i>
+                Save Settings
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </DashboardLayout>
+    </>
   );
 };
 

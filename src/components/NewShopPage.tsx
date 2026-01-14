@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppContext } from '../context/AppContext';
+import { useProduct } from '../context/ProductContext';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
 import ProductDetail from './ProductDetail'; // Assuming this component exists
@@ -23,23 +25,55 @@ import {
   ProductImage,
   ProductInfo,
   ProductPrice,
+  DiscountBadge,
   Pagination,
   PageButton,
   LoadingSpinner,
   ErrorContainer
 } from '../styles/NewShopStyles';
 
+// Helper function to safely parse price (handles string or number)
+const parsePrice = (price: any): number => {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') return parseFloat(price) || 0;
+  return 0;
+};
+
+// Helper function to calculate discount percentage
+const getDiscountPercentage = (originalPrice: number, salePrice: number): number => {
+  if (!originalPrice || originalPrice <= salePrice) return 0;
+  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+};
+
+// Helper to check if product has discount
+const hasDiscount = (product: any): boolean => {
+  const original = parsePrice(product.original_price);
+  const sale = parsePrice(product.sale_price) || parsePrice(product.price);
+  return original > 0 && original > sale;
+};
+
+// Helper to get display price
+const getDisplayPrice = (product: any): number => {
+  return parsePrice(product.sale_price) || parsePrice(product.price);
+};
+
 const NewShopPage = () => {
   const router = useRouter();
 
   const {
     products,
-    loading,
-    error,
-    fetchProducts,
-    addToCartWithAuth,
-    cartItems
-  } = useAppContext();
+    loading: productLoading,
+    error: productError,
+    fetchProducts
+  } = useProduct();
+
+  const { 
+    items: cartItems,
+    addItem: addToCart,
+    cartCount
+  } = useCart();
+
+  const { user } = useAuth();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [filters, setFilters] = useState({
@@ -54,7 +88,7 @@ const NewShopPage = () => {
   useEffect(() => {
     // Fetch products to ensure we have current data
     // Only fetch if not already loading to avoid conflicts
-    if (!loading.products) {
+    if (!productLoading) {
       fetchProducts();
     }
   }, []); // Empty dependency array to run once on mount
@@ -101,23 +135,30 @@ const NewShopPage = () => {
 
 
   const handleAddToCart = (product: any) => {
-    // Using context's addToCartWithAuth function which checks authentication
-    const result = addToCartWithAuth(product, 1);
-    if (!result.success && result.requiresLogin) {
+    // Check if user is authenticated
+    if (!user) {
       // Store the pending cart action in localStorage
       localStorage.setItem('pendingCartAction', JSON.stringify({
-        product: result.product,
-        quantity: result.quantity
+        product: product,
+        quantity: 1
       }));
       // Trigger a global event or callback to show login modal
-      window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
-    } else if (result.success && !result.requiresLogin && result.action) {
-      // User is authenticated, proceed with adding to cart
-      result.action();
+      window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: 1 } }));
+    } else {
+      // User is authenticated, add directly to cart
+      addToCart({
+        id: Date.now(), // temporary ID for cart item
+        product_id: product.id,
+        quantity: 1,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        image_url: product.primary_image || product.image_url
+      });
     }
   };
 
-  if (loading.products) {
+  if (productLoading) {
     return (
       <ShopContainer>
         <LoadingSpinner />
@@ -125,10 +166,10 @@ const NewShopPage = () => {
     );
   }
 
-  if (error.products) {
+  if (productError) {
     return (
       <ErrorContainer>
-        <p>{error.products}</p>
+        <p>{productError}</p>
         <button className="btn primary" onClick={() => window.location.reload()}>
           Retry
         </button>
@@ -245,11 +286,16 @@ const NewShopPage = () => {
                     margin: '0 auto'
                   }}
                 >
-                  <ProductCard 
-                    onClick={() => router.push(`/products/${product.slug || product.id}`)} 
+                  <ProductCard
+                    onClick={() => router.push(`/products/${product.slug || product.id}`)}
                     style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
                   >
-                    <ProductImage imageClass={product.imageClass} imageUrl={product.image_url}>
+                    {hasDiscount(product) && (
+                      <DiscountBadge>
+                        {getDiscountPercentage(parsePrice(product.original_price), getDisplayPrice(product))}% OFF
+                      </DiscountBadge>
+                    )}
+                    <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url}>
                     </ProductImage>
                     <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div>
@@ -258,13 +304,15 @@ const NewShopPage = () => {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '8px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 'bold', color: '#e74c3c', fontSize: '1.1rem', marginRight: '6px' }}>
-                              ₹{product.price?.toLocaleString()}
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                            <span style={{ fontWeight: 'bold', color: '#c19a6b', fontSize: '1.1rem' }}>
+                              ₹{getDisplayPrice(product).toLocaleString()}
                             </span>
-                            <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
-                              ₹{product.price ? (product.price * 1.2).toLocaleString() : product.price?.toLocaleString()}
-                            </span>
+                            {hasDiscount(product) && (
+                              <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
+                                ₹{parsePrice(product.original_price).toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <div style={{ position: 'relative', display: 'inline-block' }}>
                             <button

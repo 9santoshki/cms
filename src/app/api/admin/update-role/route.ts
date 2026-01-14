@@ -1,49 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-
-// Initialize Supabase client using environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { getSessionFromCookie, getUserProfile, updateUserRole } from '@/lib/db/auth';
 
 export async function PUT(request: NextRequest) {
   try {
-    // Get the session from Supabase auth
-    const cookieStore = cookies();
-    const accessToken = cookieStore.get('sb-access-token')?.value;
-    const refreshToken = cookieStore.get('sb-refresh-token')?.value;
+    const session = await getSessionFromCookie();
 
-    if (!accessToken) {
-      return NextResponse.json(
-        { success: false, error: 'No access token found' },
-        { status: 401 }
-      );
-    }
-
-    // Get user from Supabase auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-
-    if (authError || !user) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Check if the current user is an admin by getting their profile
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    // Check if the current user is an admin
+    const userProfile = await getUserProfile(session.userId);
 
-    if (profileError || !userProfile || userProfile.role !== 'admin') {
+    if (!userProfile || userProfile.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Only admins can update user roles' },
         { status: 403 }
@@ -69,30 +41,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update the user role in the profiles table
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating user role:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to update user role' },
-        { status: 500 }
-      );
-    }
+    // Update the user role
+    await updateUserRole(userId, newRole);
 
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         data: {
           message: `User role updated successfully to ${newRole}`,
           updatedUser: {
-            id: updatedProfile.id,
-            role: updatedProfile.role
+            id: userId,
+            role: newRole
           }
         }
       },
@@ -105,4 +64,8 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return PUT(request);
 }

@@ -1,35 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { getSessionFromCookie } from '@/lib/db/auth';
+import {
+  getCartItems,
+  addCartItem,
+  updateCartItemQuantity,
+  removeCartItem,
+  clearCart,
+  getCartItemWithProduct,
+} from '@/lib/db/cart';
+import { getCloudflareImageUrl } from '@/lib/cloudflare';
 
 // Verify user session and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
-  // Create a Supabase server client using SSR pattern to read cookies
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-      },
-    }
-  );
-
   try {
-    // Get the current session
-    const {
-      data: { session },
-      error: sessionError
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
-      return null;
-    }
-
-    // Return the user ID from the session
-    return session.user.id;
+    const session = await getSessionFromCookie();
+    return session?.userId || null;
   } catch (error) {
     console.error('Error getting user session:', error);
     return null;
@@ -38,67 +23,52 @@ async function getUserIdFromRequest(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🛒 API /api/cart GET: Fetching cart items...');
     const userId = await getUserIdFromRequest(request);
+    console.log('🛒 API /api/cart GET: User ID from request:', userId);
 
     if (userId) {
       // Authenticated user - get database cart
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            get(name: string) {
-              return request.cookies.get(name)?.value;
-            },
-          },
-        }
-      );
-
-      const { data: cartItems, error: cartError } = await supabase
-        .from('cart_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          products (id, name, price, image_url)
-        `)
-        .eq('user_id', userId);
-
-      if (cartError) {
-        console.error('Error fetching cart items:', cartError);
-        return NextResponse.json(
-          { success: false, error: 'Failed to fetch cart items' },
-          { status: 500 }
-        );
-      }
+      console.log('🛒 API /api/cart GET: Fetching cart items from database...');
+      const cartItems = await getCartItems(userId);
+      console.log('🛒 API /api/cart GET: Found', cartItems.length, 'cart items');
 
       // Format the response to match expected format
-      const formattedCartItems = cartItems?.map((item: any) => ({
-        id: item.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        name: item.products?.name || 'Unknown Product',
-        price: item.products?.price || 0,
-        image_url: item.products?.image_url || null,
-        originalPrice: null,  // Default values for compatibility
-        discount: 0
-      })) || [];
+      const formattedCartItems = cartItems.map((item: any) => {
+        // Use Cloudflare image URL if available, otherwise fall back to image_url
+        const imageUrl = item.primary_image_id
+          ? getCloudflareImageUrl(item.primary_image_id)
+          : item.image_url || null;
 
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          name: item.name || 'Unknown Product',
+          description: item.description || '',
+          price: item.price || 0,
+          image_url: imageUrl,
+          originalPrice: null, // Default values for compatibility
+          discount: 0,
+        };
+      });
+
+      console.log('🛒 API /api/cart GET: ✅ Returning', formattedCartItems.length, 'formatted items');
       return NextResponse.json(
         { success: true, data: formattedCartItems },
         { status: 200 }
       );
     } else {
       // Unauthenticated user - return empty cart
-      return NextResponse.json(
-        { success: true, data: [] },
-        { status: 200 }
-      );
+      console.log('🛒 API /api/cart GET: No user ID, returning empty cart');
+      return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
-  } catch (error) {
-    console.error('Error fetching cart:', error);
+  } catch (error: any) {
+    console.error('❌ API /api/cart GET: Error fetching cart:', error);
+    console.error('❌ API /api/cart GET: Error message:', error?.message);
+    console.error('❌ API /api/cart GET: Error stack:', error?.stack);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: error?.message || 'Internal server error' },
       { status: 500 }
     );
   }
@@ -115,22 +85,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase client for database operations
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-        },
-      }
-    );
-
     const { product_id, quantity = 1 } = await request.json();
 
-    if (!product_id || typeof product_id !== 'number' || product_id <= 0) {
+    if (!product_id) {
       return NextResponse.json(
         { success: false, error: 'Valid product ID is required' },
         { status: 400 }
@@ -144,117 +101,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if item already exists in cart
-    const { data: existingItem, error: selectError } = await supabase
-      .from('cart_items')
-      .select('id, quantity')
-      .eq('user_id', userId)
-      .eq('product_id', product_id)
-      .single();
+    // Add item to cart (will update if exists)
+    await addCartItem(userId, product_id, quantity);
 
-    if (existingItem) {
-      // Item exists, update quantity by adding to existing quantity
-      const newQuantity = existingItem.quantity + quantity;
+    // Get the updated cart item with product details
+    const cartItem = await getCartItemWithProduct(userId, product_id);
 
-      const { data, error: updateError } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', existingItem.id)
-        .select('*, products(name, price, image_url)')
-        .single();
-
-      if (updateError) {
-        console.error('Error updating cart item:', updateError);
-        return NextResponse.json(
-          { success: false, error: 'Failed to update cart item' },
-          { status: 500 }
-        );
-      }
-
+    if (!cartItem) {
       return NextResponse.json(
-        {
-          success: true,
-          data: {
-            id: data.id,
-            product_id: data.product_id,
-            name: data.products?.name || 'Unknown Product',
-            price: data.products?.price || 0,
-            quantity: data.quantity,
-            image_url: data.products?.image_url || null
-          }
-        },
-        { status: 200 }
-      );
-    } else {
-      // Item doesn't exist, insert new cart item
-      const { data, error: insertError } = await supabase
-        .from('cart_items')
-        .insert([
-          { user_id: userId, product_id, quantity }
-        ])
-        .select('*, products(name, price, image_url)')
-        .single();
-
-      if (insertError) {
-        // Handle race condition - if item was inserted by another request in the meantime
-        if (insertError.code === '23505' || // Unique violation
-            insertError.message?.toLowerCase().includes('duplicate') ||
-            insertError.message?.toLowerCase().includes('unique')) {
-
-          // Try updating the item that was added by the other request
-          const { data: updateData, error: updateError2 } = await supabase
-            .from('cart_items')
-            .update({ quantity: quantity })
-            .eq('user_id', userId)
-            .eq('product_id', product_id)
-            .select('*, products(name, price, image_url)')
-            .single();
-
-          if (updateError2) {
-            return NextResponse.json(
-              { success: false, error: 'Failed to add item to cart' },
-              { status: 500 }
-            );
-          }
-
-          return NextResponse.json(
-            {
-              success: true,
-              data: {
-                id: updateData.id,
-                product_id: updateData.product_id,
-                name: updateData.products?.name || 'Unknown Product',
-                price: updateData.products?.price || 0,
-                quantity: updateData.quantity,
-                image_url: updateData.products?.image_url || null
-              }
-            },
-            { status: 200 }
-          );
-        } else {
-          console.error('Error inserting cart item:', insertError);
-          return NextResponse.json(
-            { success: false, error: 'Failed to add item to cart' },
-            { status: 500 }
-          );
-        }
-      }
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            id: data.id,
-            product_id: data.product_id,
-            name: data.products?.name || 'Unknown Product',
-            price: data.products?.price || 0,
-            quantity: data.quantity,
-            image_url: data.products?.image_url || null
-          }
-        },
-        { status: 200 }
+        { success: false, error: 'Failed to add item to cart' },
+        { status: 500 }
       );
     }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: cartItem.id,
+          product_id: cartItem.product_id,
+          name: cartItem.name || 'Unknown Product',
+          price: cartItem.price || 0,
+          quantity: cartItem.quantity,
+          image_url: cartItem.image_url || null,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error('Error adding to cart:', error);
     return NextResponse.json(
@@ -275,22 +148,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Create Supabase client for database operations
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-        },
-      }
-    );
-
     const { product_id, quantity } = await request.json();
 
-    if (!product_id || typeof product_id !== 'number' || product_id <= 0) {
+    if (!product_id) {
       return NextResponse.json(
         { success: false, error: 'Valid product ID is required' },
         { status: 400 }
@@ -306,19 +166,7 @@ export async function PUT(request: NextRequest) {
 
     if (quantity <= 0) {
       // If quantity is 0 or negative, remove item from cart
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', userId)
-        .eq('product_id', product_id);
-
-      if (error) {
-        console.error('Error removing cart item:', error);
-        return NextResponse.json(
-          { success: false, error: 'Failed to remove item from cart' },
-          { status: 500 }
-        );
-      }
+      await removeCartItem(userId, product_id);
 
       return NextResponse.json(
         { success: true, message: 'Item removed from cart' },
@@ -326,16 +174,12 @@ export async function PUT(request: NextRequest) {
       );
     } else {
       // Update quantity
-      const { data, error } = await supabase
-        .from('cart_items')
-        .update({ quantity })
-        .eq('user_id', userId)
-        .eq('product_id', product_id)
-        .select('*, products(name, price, image_url)')
-        .single();
+      await updateCartItemQuantity(userId, product_id, quantity);
 
-      if (error) {
-        console.error('Error updating cart item:', error);
+      // Get the updated cart item with product details
+      const cartItem = await getCartItemWithProduct(userId, product_id);
+
+      if (!cartItem) {
         return NextResponse.json(
           { success: false, error: 'Failed to update cart item' },
           { status: 500 }
@@ -346,13 +190,13 @@ export async function PUT(request: NextRequest) {
         {
           success: true,
           data: {
-            id: data.id,
-            product_id: data.product_id,
-            name: data.products?.name || 'Unknown Product',
-            price: data.products?.price || 0,
-            quantity: data.quantity,
-            image_url: data.products?.image_url || null
-          }
+            id: cartItem.id,
+            product_id: cartItem.product_id,
+            name: cartItem.name || 'Unknown Product',
+            price: cartItem.price || 0,
+            quantity: cartItem.quantity,
+            image_url: cartItem.image_url || null,
+          },
         },
         { status: 200 }
       );
@@ -371,32 +215,8 @@ export async function DELETE(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
 
     if (userId) {
-      // Create Supabase client for database operations
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            get(name: string) {
-              return request.cookies.get(name)?.value;
-            },
-          },
-        }
-      );
-
       // Authenticated user - clear database cart
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error clearing cart:', error);
-        return NextResponse.json(
-          { success: false, error: 'Failed to clear cart' },
-          { status: 500 }
-        );
-      }
+      await clearCart(userId);
 
       return NextResponse.json(
         { success: true, message: 'Cart cleared' },

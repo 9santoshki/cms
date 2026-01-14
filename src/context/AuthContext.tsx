@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { User } from '@/types';
-import { signInWithGoogle as googleSignIn } from '@/lib/supabase/auth';
+import { signInWithGoogle as googleSignIn, signOut, onAuthStateChange, getCurrentUser, getUserProfile } from '@/lib/auth/client';
 
 interface AuthState {
   user: User | null;
@@ -11,215 +11,178 @@ interface AuthState {
   error: string | null;
 }
 
-interface AuthAction {
-  type: string;
-  payload?: any;
-}
+type AuthAction =
+  | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_TOKEN'; payload: string | null }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'LOGOUT' };
 
-// Action types
-const AUTH_ACTIONS = {
-  SET_USER: 'SET_USER',
-  SET_TOKEN: 'SET_TOKEN',
-  SET_LOADING: 'SET_LOADING',
-  SET_ERROR: 'SET_ERROR',
-  LOGOUT: 'LOGOUT'
-};
-
-// Initial state
 const initialState: AuthState = {
   user: null,
   token: null,
   loading: false,
-  error: null
+  error: null,
 };
 
-// Reducer
-const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case AUTH_ACTIONS.SET_USER:
-      return {
-        ...state,
-        user: action.payload
-      };
-    case AUTH_ACTIONS.SET_TOKEN:
-      return {
-        ...state,
-        token: action.payload
-      };
-    case AUTH_ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        loading: action.payload
-      };
-    case AUTH_ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload
-      };
-    case AUTH_ACTIONS.LOGOUT:
-      return {
-        ...state,
-        user: null,
-        token: null
-      };
-    default:
-      return state;
+    case 'SET_USER': return { ...state, user: action.payload };
+    case 'SET_TOKEN': return { ...state, token: action.payload };
+    case 'SET_LOADING': return { ...state, loading: action.payload };
+    case 'SET_ERROR': return { ...state, error: action.payload };
+    case 'LOGOUT': return { ...state, user: null, token: null };
+    default: return state;
   }
-};
-
-// Create context
-export const AuthContext = createContext<{
-  user: User | null;
-  token: string | null;
-  loading: boolean;
-  error: string | null;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  logout: () => void;
-  signInWithGoogle: () => Promise<void>;
-} | undefined>(undefined);
-
-// Provider component
-interface AuthProviderProps {
-  children: React.ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthContext = createContext<any>(undefined);
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  const setUser = (user: User | null) => {
-    dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
-  };
+  // Memoized setters
+  const setUser = useCallback((u: User | null) => dispatch({ type: 'SET_USER', payload: u }), []);
+  const setToken = useCallback((t: string | null) => dispatch({ type: 'SET_TOKEN', payload: t }), []);
+  const setLoading = useCallback((l: boolean) => dispatch({ type: 'SET_LOADING', payload: l }), []);
+  const setError = useCallback((e: string | null) => dispatch({ type: 'SET_ERROR', payload: e }), []);
 
-  const setToken = (token: string | null) => {
-    dispatch({ type: AUTH_ACTIONS.SET_TOKEN, payload: token });
-  };
+  // Clean Logout
+  const logout = useCallback(async () => {
+    dispatch({ type: 'LOGOUT' });
+    try { await signOut(); } catch (e) {}
+  }, []);
 
-  const setLoading = (loading: boolean) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: loading });
-  };
+  // Google Login
+  const signInWithGoogle = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  const setError = (error: string | null) => {
-    dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: error });
-  };
-
-  const logout = async () => {
     try {
-      // Also sign out from supabase
-      await import('@/lib/supabase/auth').then(async ({ signOut }) => {
-        await signOut();
-      });
-      
-      // Clear the local state
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
-    } catch (error) {
-      console.error('Error during logout:', error);
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Check if window is available (client-side only)
-      if (typeof window === 'undefined') {
-        throw new Error('Authentication can only be performed on the client side');
-      }
-
-      // Use the existing google sign-in implementation from the auth library
       await googleSignIn();
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      setError(error.message || 'Failed to sign in with Google. Please try again.');
-      throw error; // Re-throw so calling components can handle the error
+    } catch (err: any) {
+      setError(err?.message || 'Google sign-in failed');
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setError]);
 
-  // Set up auth state change listener
-  React.useEffect(() => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      import('@/lib/supabase/auth').then(({ onAuthStateChange, getCurrentUser, getUserProfile }) => {
-        const subscription = onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            if (session?.user) {
-              // Get user profile data
-              const profile = await getUserProfile();
-              if (profile) {
-                // Create a User object with both session user data and profile info
-                const user: User = {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
-                  avatar: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || '',
-                  role: profile.role,
-                  // Add any other fields as needed
-                };
-                setUser(user);
-                setToken(session.access_token || null);
-              } else {
-                // If profile doesn't exist, at least set basic user info
-                const user: User = {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
-                  avatar: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || '',
-                  role: 'customer', // default role
-                  // Add any other fields as needed
-                };
-                setUser(user);
-                setToken(session.access_token || null);
-              }
-            }
-          } else if (event === 'SIGNED_OUT') {
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
-          } else if (event === 'USER_UPDATED') {
-            // Update user info if it has been updated
-            const user = await getCurrentUser();
-            if (user) {
-              const profile = await getUserProfile();
-              if (profile) {
-                const updatedUser: User = {
-                  id: user.id,
-                  email: user.email || '',
-                  name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-                  avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-                  role: profile.role,
-                  // Add any other fields as needed
-                };
-                setUser(updatedUser);
-              }
-            }
+  // 🔥 Stable auth listener with initial session check
+  useEffect(() => {
+    console.log('AuthContext: Setting up auth state change listener');
+
+    // Check current session on mount - run immediately without delay
+    const checkCurrentSession = async () => {
+      console.log('AuthContext: Checking current session on mount...');
+
+      try {
+        const user = await getCurrentUser();
+        console.log('AuthContext: getCurrentUser result:', user);
+        if (user) {
+          console.log('AuthContext: Current user found on mount:', user);
+          setUser(user);
+
+          // Load user's cart from server IMMEDIATELY
+          try {
+            const { useCartStore } = await import('@/store/cartStore');
+            console.log('AuthContext: Loading cart from server...');
+            await useCartStore.getState().loadServerCart();
+            console.log('AuthContext: ✅ Cart loaded from server successfully');
+          } catch (cartError) {
+            console.error('AuthContext: ❌ Error loading cart:', cartError);
           }
-        });
+        } else {
+          console.log('AuthContext: No current user found on mount');
+        }
+      } catch (error) {
+        console.error('AuthContext: Error checking current session:', error);
+      }
+    };
 
-        // Clean up subscription on unmount
-        return () => {
-          subscription.unsubscribe();
-        };
-      });
-    }
-  }, []);
+    // Run immediately - don't delay with setTimeout
+    checkCurrentSession();
+
+    console.log('AuthContext: Subscribing to auth state changes...');
+    const sub = onAuthStateChange(async (event, session) => {
+      console.log('AuthContext: Auth state changed event:', event, 'Session:', session);
+
+      if (event === 'SIGNED_IN') {
+        const user = session.user;
+        if (!user) return;
+
+        console.log('AuthContext: Processing SIGNED_IN event for user:', user);
+        setUser(user);
+        setToken(null); // We use cookie-based sessions now
+
+        // Load user's cart from server after sign in
+        try {
+          const { useCartStore } = await import('@/store/cartStore');
+          console.log('AuthContext: Loading cart after sign in...');
+          await useCartStore.getState().loadServerCart();
+          console.log('AuthContext: ✅ Cart loaded from server after sign in');
+        } catch (cartError) {
+          console.error('AuthContext: ❌ Error loading cart after sign in:', cartError);
+        }
+      }
+
+      if (event === 'SIGNED_OUT') {
+        console.log('AuthContext: Processing SIGNED_OUT event');
+        dispatch({ type: 'LOGOUT' });
+
+        // Clear local cart state only (keep database cart for when user logs back in)
+        try {
+          const { useCartStore } = await import('@/store/cartStore');
+          useCartStore.setState({ items: [] });
+          console.log('AuthContext: ✅ Local cart state cleared after sign out (database cart preserved)');
+        } catch (cartError) {
+          console.error('AuthContext: ❌ Error clearing cart after sign out:', cartError);
+        }
+      }
+
+      if (event === 'USER_UPDATED') {
+        console.log('AuthContext: Processing USER_UPDATED event');
+        const user = session.user;
+        if (!user) return;
+
+        setUser(user);
+      }
+    });
+
+    // Reload cart when window regains focus (in case user logged in from another tab)
+    const handleWindowFocus = async () => {
+      console.log('AuthContext: Window focused, checking for cart updates...');
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          const { useCartStore } = await import('@/store/cartStore');
+          await useCartStore.getState().loadServerCart();
+          console.log('AuthContext: ✅ Cart reloaded on window focus');
+        }
+      } catch (error) {
+        console.error('AuthContext: ❌ Error reloading cart on focus:', error);
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      console.log('AuthContext: Cleaning up auth subscription');
+      window.removeEventListener('focus', handleWindowFocus);
+      sub.unsubscribe();
+    };
+  }, [setUser, setToken]);
 
   return (
     <AuthContext.Provider
       value={{
-        user: state.user,
-        token: state.token,
-        loading: state.loading,
-        error: state.error,
+        ...state,
         setUser,
         setToken,
         setLoading,
         setError,
+        signInWithGoogle,
         logout,
-        signInWithGoogle
       }}
     >
       {children}
@@ -228,9 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 };

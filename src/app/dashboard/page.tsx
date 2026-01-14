@@ -1,77 +1,202 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const DashboardPage = () => {
   const router = useRouter();
-  const { user, loading } = useAppContext();
-  const [role, setRole] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalUsers: 0,
+    pendingAppointments: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading.user && !user) {
+    if (!user) {
       router.push('/auth?redirect=/dashboard');
-    } else if (user) {
-      setRole(user.role);
+      return;
     }
-  }, [user, loading, router]);
 
-  if (loading.user || !user) {
+    if (user.role !== 'admin' && user.role !== 'moderator') {
+      router.push('/?error=forbidden');
+      return;
+    }
+
+    // Fetch dashboard stats
+    fetchStats();
+  }, [user, router]);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/dashboard/stats', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setStats(data.data);
+      } else {
+        console.error('Failed to fetch stats:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)',
+        fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid #f0f0f0',
+            borderTop: '3px solid #c19a6b',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Redirect if user doesn't have proper role
-  if (user.role !== 'admin' && user.role !== 'moderator') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 max-w-md">
-          <div className="text-5xl text-red-500 mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">
-            You don't have permission to access the dashboard. Contact an administrator if you believe this is an error.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-amber-600 text-white rounded-md hover:bg-amber-700"
-          >
-            Go Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const isAdmin = user.role === 'admin';
 
-  const canViewProducts = user.role === 'admin';
-  const canViewOrders = user.role === 'admin' || user.role === 'moderator';
-  const canViewAppointments = user.role === 'admin' || user.role === 'moderator';
+  const menuItems = [
+    { icon: 'fas fa-tachometer-alt', label: 'Overview', href: '/dashboard', active: true },
+    { icon: 'fas fa-box', label: 'Products', href: '/dashboard/products', show: isAdmin },
+    { icon: 'fas fa-shopping-bag', label: 'Orders', href: '/dashboard/orders', show: true },
+    { icon: 'fas fa-calendar-check', label: 'Appointments', href: '/dashboard/appointments', show: true },
+    { icon: 'fas fa-users', label: 'Users', href: '/dashboard/users', show: isAdmin },
+    { icon: 'fas fa-cog', label: 'Settings', href: '/dashboard/settings', show: isAdmin },
+  ].filter(item => item.show !== false);
+
+  const statCards = [
+    { icon: 'fas fa-box', label: 'Total Products', value: stats.totalProducts, color: '#c19a6b', show: isAdmin },
+    { icon: 'fas fa-shopping-bag', label: 'Total Orders', value: stats.totalOrders, color: '#8b7355', show: true },
+    { icon: 'fas fa-users', label: 'Total Users', value: stats.totalUsers, color: '#a67c52', show: isAdmin },
+    { icon: 'fas fa-calendar-check', label: 'Pending Appointments', value: stats.pendingAppointments, color: '#d4a574', show: true },
+  ].filter(item => item.show !== false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Management Dashboard</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <span className="border-b-2 border-amber-500 text-amber-600 inline-flex items-center px-1 pt-1 text-sm font-medium">
-                  Dashboard
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="ml-3 relative">
-                <div className="text-sm text-gray-700">
-                  Welcome, <span className="font-medium capitalize">{user.role}</span> {user.name}
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)',
+      fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+    }}>
+      {/* Header */}
+      <div style={{
+        background: 'white',
+        borderBottom: '1px solid #e8d5c4',
+        boxShadow: '0 2px 8px rgba(193, 154, 107, 0.1)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '0 24px',
+          height: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link href="/" style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#c19a6b',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-playfair), "Playfair Display", serif',
+              letterSpacing: '0.5px'
+            }}>
+              ← Colour My Space
+            </Link>
+            <div style={{
+              width: '1px',
+              height: '32px',
+              background: '#e8d5c4'
+            }}></div>
+            <h1 style={{
+              fontSize: '20px',
+              fontWeight: '500',
+              color: '#333',
+              margin: 0,
+              letterSpacing: '0.5px'
+            }}>
+              Admin Dashboard
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              background: 'linear-gradient(135deg, #f8f4f0, #efe9e3)',
+              borderRadius: '8px'
+            }}>
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    border: '2px solid #c19a6b'
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>{user.name}</div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#c19a6b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontWeight: '600'
+                }}>
+                  {user.role}
                 </div>
               </div>
             </div>
@@ -79,189 +204,286 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center">
-            <h2 className="text-base text-amber-600 font-semibold tracking-wide uppercase">Dashboard</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Manage Your Platform
-            </p>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              {user.role === 'admin' 
-                ? 'Full access to all management features' 
-                : 'Access to order and appointment management'}
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '32px 24px',
+        display: 'flex',
+        gap: '32px'
+      }}>
+        {/* Sidebar */}
+        <div style={{
+          width: '260px',
+          flexShrink: 0
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '16px',
+            boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+            border: '1px solid #e8d5c4'
+          }}>
+            <div style={{
+              fontSize: '11px',
+              fontWeight: '700',
+              color: '#999',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '12px',
+              padding: '0 12px'
+            }}>
+              Navigation
+            </div>
+            {menuItems.map((item, index) => (
+              <Link
+                key={index}
+                href={item.href}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  marginBottom: '4px',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  color: item.active ? '#c19a6b' : '#666',
+                  background: item.active ? 'linear-gradient(135deg, rgba(193, 154, 107, 0.1), rgba(193, 154, 107, 0.05))' : 'transparent',
+                  fontWeight: item.active ? '600' : '500',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  border: item.active ? '1px solid rgba(193, 154, 107, 0.2)' : '1px solid transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!item.active) {
+                    e.currentTarget.style.background = 'rgba(193, 154, 107, 0.05)';
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!item.active) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }
+                }}
+              >
+                <i className={item.icon} style={{
+                  width: '20px',
+                  textAlign: 'center',
+                  fontSize: '16px'
+                }}></i>
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div style={{ flex: 1 }}>
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{
+              fontSize: '28px',
+              fontWeight: '600',
+              color: '#333',
+              margin: '0 0 8px 0',
+              fontFamily: 'var(--font-playfair), "Playfair Display", serif'
+            }}>
+              Dashboard Overview
+            </h2>
+            <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+              Welcome back, {user.name}. Here's what's happening with your platform.
             </p>
           </div>
 
-          <div className="mt-10">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {canViewProducts && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Products</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Manage</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/products" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        Manage Products
-                      </a>
-                    </div>
+          {/* Stats Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '20px',
+            marginBottom: '32px'
+          }}>
+            {statCards.map((stat, index) => (
+              <div
+                key={index}
+                style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+                  border: '1px solid #e8d5c4',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(193, 154, 107, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.08)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    background: `linear-gradient(135deg, ${stat.color}, ${stat.color}dd)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '20px'
+                  }}>
+                    <i className={stat.icon}></i>
                   </div>
                 </div>
-              )}
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#333', marginBottom: '4px' }}>
+                  {stat.value}
+                </div>
+                <div style={{ fontSize: '13px', color: '#666', fontWeight: '500' }}>
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
 
-              {canViewProducts && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Categories</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Manage</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/categories" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        Manage Categories
-                      </a>
-                    </div>
-                  </div>
-                </div>
+          {/* Quick Actions */}
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+            border: '1px solid #e8d5c4'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#333',
+              margin: '0 0 20px 0',
+              fontFamily: 'var(--font-playfair), "Playfair Display", serif'
+            }}>
+              Quick Actions
+            </h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px'
+            }}>
+              {isAdmin && (
+                <Link
+                  href="/dashboard/products"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))',
+                    border: '1px solid rgba(193, 154, 107, 0.2)',
+                    textDecoration: 'none',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.15), rgba(193, 154, 107, 0.08))';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <i className="fas fa-plus" style={{ color: '#c19a6b' }}></i>
+                  <span>Add New Product</span>
+                </Link>
               )}
-
-              {canViewOrders && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Orders</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Manage</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/orders" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        Manage Orders
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {canViewAppointments && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Appointments</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Manage</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/appointments" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        Manage Appointments
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {canViewProducts && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Users</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Manage</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/users" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        Manage Users
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {canViewProducts && (
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dt className="text-sm font-medium text-gray-500 truncate">Settings</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">Configure</div>
-                        </dd>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href="/dashboard/settings" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                      >
-                        System Settings
-                      </a>
-                    </div>
-                  </div>
-                </div>
+              <Link
+                href="/dashboard/orders"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))',
+                  border: '1px solid rgba(193, 154, 107, 0.2)',
+                  textDecoration: 'none',
+                  color: '#333',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.15), rgba(193, 154, 107, 0.08))';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <i className="fas fa-list" style={{ color: '#c19a6b' }}></i>
+                <span>View All Orders</span>
+              </Link>
+              <Link
+                href="/dashboard/appointments"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))',
+                  border: '1px solid rgba(193, 154, 107, 0.2)',
+                  textDecoration: 'none',
+                  color: '#333',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.15), rgba(193, 154, 107, 0.08))';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <i className="fas fa-calendar" style={{ color: '#c19a6b' }}></i>
+                <span>View Appointments</span>
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/dashboard/users"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))',
+                    border: '1px solid rgba(193, 154, 107, 0.2)',
+                    textDecoration: 'none',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.15), rgba(193, 154, 107, 0.08))';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <i className="fas fa-users" style={{ color: '#c19a6b' }}></i>
+                  <span>Manage Users</span>
+                </Link>
               )}
             </div>
           </div>

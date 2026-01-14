@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { query } from '@/lib/db/connection';
+import { clearCart } from '@/lib/db/cart';
 
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role to bypass RLS
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,43 +64,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the order in our database based on the Razorpay order ID
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select('id, user_id, status')
-      .eq('external_id', razorpay_order_id) // Assuming we store the Razorpay order ID as external_id
-      .single();
+    const orderResult = await query(
+      'SELECT id, user_id, status FROM orders WHERE payment_id = $1',
+      [razorpay_order_id]
+    );
 
-    if (orderError || !order) {
-      console.error('Order not found for Razorpay order ID:', razorpay_order_id, orderError);
+    if (orderResult.rows.length === 0) {
+      console.error('Order not found for Razorpay order ID:', razorpay_order_id);
       return NextResponse.json(
         { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
 
-    // Update the order status to 'paid'
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({ 
-        status: 'paid',
-        external_payment_id: razorpay_payment_id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id);
+    const order = orderResult.rows[0];
 
-    if (updateError) {
-      console.error('Error updating order status:', updateError);
+    // Update the order status to 'completed'
+    const updateResult = await query(
+      `UPDATE orders
+       SET status = 'completed', payment_status = 'captured', updated_at = NOW()
+       WHERE id = $1`,
+      [order.id]
+    );
+
+    if (updateResult.rowCount === 0) {
+      console.error('Error updating order status');
       return NextResponse.json(
         { success: false, error: 'Failed to update order status' },
         { status: 500 }
       );
     }
 
-    // Optionally, clear the user's cart after successful payment
-    await supabase
-      .from('cart_items')
-      .delete()
-      .eq('user_id', order.user_id);
+    // Clear the user's cart after successful payment
+    await clearCart(order.user_id);
 
     return NextResponse.json({
       success: true,

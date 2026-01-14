@@ -10,6 +10,9 @@ export const CartContext = createContext<{
   error: string | null;
   cartCount: number;
   cartTotal: number;
+  addItem: (item: any) => void;
+  updateItem: (productId: number, quantity: number) => void;
+  removeItem: (productId: number) => void;
   clearCart: () => void;
 } | undefined>(undefined);
 

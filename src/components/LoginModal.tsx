@@ -9,7 +9,7 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const { signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -87,7 +87,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           <h2 className="text-lg font-semibold text-center mb-1" style={{ color: '#333333' }} align="center">
             Welcome
           </h2>
-          <p className="text-xs text-gray-600 text-center" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1' }} align="center">
+          <p className="text-xs text-center" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1', color: '#333333' }} align="center">
             Sign in to access your account
           </p>
         </div>
@@ -117,48 +117,24 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               paddingLeft: '12px'
             }}
           >
-            <svg className="w-10 h-6 mr-10" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.92A10 10 0 0 0 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  width="18" 
+  height="18" 
+  viewBox="0 0 48 48"
+>
+  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.61 0 6.51 5.38 2.56 13.19l7.98 6.19C12.43 12.03 17.74 9.5 24 9.5z"/>
+  <path fill="#4285F4" d="M46.1 24.5c0-1.57-.15-3.09-.43-4.5H24v9h12.65c-.55 2.94-2.22 5.44-4.72 7.11l7.23 5.65C43.81 37.41 46.1 31.36 46.1 24.5z"/>
+  <path fill="#FBBC05" d="M10.54 28.19c-.48-1.45-.74-2.99-.74-4.59s.26-3.14.74-4.59L2.56 12.81A23.85 23.85 0 000 23.6c0 3.9.93 7.59 2.56 10.79l7.98-6.2z"/>
+  <path fill="#34A853" d="M24 48c6.47 0 11.96-2.13 15.94-5.78l-7.23-5.65c-2.03 1.37-4.63 2.18-7.71 2.18-6.26 0-11.57-3.53-14.46-8.7l-7.98 6.2C6.51 42.62 14.61 48 24 48z"/>
+</svg>
             {/* <span>Sign in with Google</span> */}
           </button>
 
- 
-          {/* --- Facebook Sign In --- */}
-          <button
-            onClick={async () => {
-              try {
-                await signInWithFacebook();
-              } catch (err) {
-                console.error('Facebook sign-in error:', err);
-              }
-            }}
-            className="w-full flex items-center justify-center px-3 py-2 rounded-md text-xs font-medium 
-                       text-white bg-[#1877F2] hover:bg-[#166FE0] transition-all duration-200 mt-3 shadow-sm hover:shadow-md"
-            style={{
-              fontFamily: 'Montserrat, sans-serif',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              minHeight: '42px',
-              minWidth: '42px',
-                            paddingRight: '12px',
-              paddingLeft: '12px'
-
-            }}
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2" style={{ flexShrink: 0 }}>
-              <path fill="#FFFFFF" d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2v-3h2v-2.3c0-2 1.2-3.1 3-3.1.9 0 1.8.16 1.8.16v2h-1c-1 0-1.3.62-1.3 1.25V12h2.2l-.35 3h-1.85v7A10 10 0 0 0 22 12" />
-            </svg>
-            {/* <span>Sign in with Facebook</span> */}
-          </button>
-
           <div className="mt-3 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs" style={{ color: '#333333' }}>
               By signing in, you agree to our{' '}
-              <span className="text-amber-700 font-medium">Terms</span>
+              <span className="font-medium" style={{ color: '#c19a6b' }}>Terms</span>
             </p>
           </div>
         </div>

@@ -1,286 +1,457 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getAllUserProfiles, updateUserRole } from '@/lib/supabase/auth';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const DashboardUsersPage = () => {
   const router = useRouter();
-  const { user, loading } = useAppContext();
+  const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
-  const [loadingState, setLoadingState] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
-    if (!loading.user && !user) {
+    if (!user) {
       router.push('/auth?redirect=/dashboard/users');
-    } else if (user && user.role === 'admin') {
-      loadUsers();
-    } else {
-      router.push('/dashboard'); // Redirect if not authorized
+      return;
     }
-  }, [user, loading]);
 
-  const loadUsers = async () => {
-    setLoadingState(true);
-    setError(null);
-    
+    if (user.role !== 'admin') {
+      router.push('/dashboard');
+      return;
+    }
+
+    fetchUsers();
+  }, [user]);
+
+  const fetchUsers = async () => {
     try {
-      // In a real implementation, this would call getAllUserProfiles()
-      // For now, we'll use mock data
+      setLoading(true);
+      // In a real implementation, this would call the API
+      // For now using mock data
       const mockUsers = [
         {
           id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
           role: 'customer',
           created_at: '2023-11-01T10:00:00.000Z',
-          updated_at: '2023-11-01T10:00:00.000Z',
-          user_info: { name: 'John Doe', email: 'john@example.com' }
+          updated_at: '2023-11-01T10:00:00.000Z'
         },
         {
           id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
           role: 'moderator',
           created_at: '2023-11-02T11:00:00.000Z',
-          updated_at: '2023-11-15T14:30:00.000Z',
-          user_info: { name: 'Jane Smith', email: 'jane@example.com' }
+          updated_at: '2023-11-15T14:30:00.000Z'
         },
         {
           id: '3',
+          name: 'Robert Johnson',
+          email: 'robert@example.com',
           role: 'admin',
           created_at: '2023-11-03T12:00:00.000Z',
-          updated_at: '2023-11-20T09:15:00.000Z',
-          user_info: { name: 'Robert Johnson', email: 'robert@example.com' }
-        },
-        {
-          id: '4',
-          role: 'customer',
-          created_at: '2023-11-04T13:00:00.000Z',
-          updated_at: '2023-11-04T13:00:00.000Z',
-          user_info: { name: 'Emily Davis', email: 'emily@example.com' }
+          updated_at: '2023-11-20T09:15:00.000Z'
         }
       ];
-      
       setUsers(mockUsers);
-    } catch (err: any) {
-      console.error('Error fetching users:', err);
-      setError(err.message || 'Failed to load users');
+    } catch (error) {
+      console.error('Error fetching users:', error);
     } finally {
-      setLoadingState(false);
+      setLoading(false);
     }
   };
 
-  const updateUserRoleLocally = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      // In a real implementation, this would call updateUserRole(userId, newRole)
-      console.log(`Updating user ${userId} to ${newRole}`);
-      
-      // Update local state
-      setUsers(prev => 
-        prev.map(user => 
-          user.id === userId ? { ...user, role: newRole } : user
-        )
-      );
+      const response = await fetch('/api/admin/update-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: newRole })
+      });
+
+      if (response.ok) {
+        setUsers(prev =>
+          prev.map(u =>
+            u.id === userId ? { ...u, role: newRole, updated_at: new Date().toISOString() } : u
+          )
+        );
+      }
     } catch (error) {
       console.error('Error updating user role:', error);
-      setError('Failed to update user role');
     }
   };
 
-  // Apply role filter
-  const filteredUsers = roleFilter === 'all' 
-    ? users 
-    : users.filter(u => u.role === roleFilter);
-
-  if (loading.user || loadingState) {
+  if (!user || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid #f0f0f0',
+            borderTop: '3px solid #c19a6b',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading users...</p>
         </div>
       </div>
     );
   }
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 max-w-md">
-          <div className="text-5xl text-red-500 mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">
-            You don't have permission to access user management.
-          </p>
+  const filteredUsers = users.filter(u => {
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    const matchesSearch = !searchTerm ||
+      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
+
+  return (
+    <>
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .users-filter-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .users-filter-grid button {
+            width: 100% !important;
+          }
+          .user-card-header {
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .user-role-badge {
+            text-align: left !important;
+          }
+          .user-controls {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            margin-left: 0 !important;
+          }
+          .user-controls button {
+            width: 100% !important;
+          }
+        }
+      `}</style>
+      <DashboardLayout
+      title="User Management"
+      description="Manage user accounts, update roles, and monitor user activity across the platform."
+    >
+      {/* Filters */}
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '24px',
+        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        border: '1px solid #e8d5c4'
+      }}>
+        <div className="users-filter-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr auto',
+          gap: '16px',
+          alignItems: 'end'
+        }}>
+          {/* Search */}
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#666',
+              marginBottom: '8px'
+            }}>
+              Search Users
+            </label>
+            <div style={{ position: 'relative' }}>
+              <i className="fas fa-search" style={{
+                position: 'absolute',
+                left: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#999',
+                fontSize: '14px'
+              }}></i>
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px 10px 40px',
+                  border: '1px solid #e8d5c4',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Role Filter */}
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#666',
+              marginBottom: '8px'
+            }}>
+              Filter by Role
+            </label>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid #e8d5c4',
+                borderRadius: '8px',
+                fontSize: '14px',
+                outline: 'none',
+                cursor: 'pointer',
+                background: 'white'
+              }}
+            >
+              <option value="all">All Roles</option>
+              <option value="customer">Customer</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {/* Refresh Button */}
           <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-amber-600 text-white rounded-md hover:bg-amber-700"
+            onClick={fetchUsers}
+            style={{
+              padding: '10px 24px',
+              background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
           >
-            Go Home
+            <i className="fas fa-sync-alt"></i>
+            Refresh
           </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">User Management</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <button 
-                  onClick={() => router.push('/dashboard')}
-                  className="border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 text-sm font-medium"
-                >
-                  Dashboard
-                </button>
-                <span className="border-b-2 border-amber-500 text-amber-600 inline-flex items-center px-1 pt-1 text-sm font-medium">
-                  Users
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="ml-3 relative">
-                <div className="text-sm text-gray-700">
-                  Welcome, <span className="font-medium capitalize">{user.role}</span> {user.name}
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Users List */}
+      {loading ? (
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '64px',
+          textAlign: 'center',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid #f0f0f0',
+            borderTop: '3px solid #c19a6b',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading users...</p>
         </div>
-      </div>
-
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center mb-8">
-            <h2 className="text-base text-amber-600 font-semibold tracking-wide uppercase">User Management</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Manage User Roles
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {/* Filter Controls */}
-          <div className="mb-6 flex flex-wrap gap-4 items-center">
-            <div>
-              <label htmlFor="roleFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                Filter by Role
-              </label>
-              <select
-                id="roleFilter"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md"
-              >
-                <option value="all">All Roles</option>
-                <option value="customer">Customer</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            
-            <button
-              onClick={loadUsers}
-              className="mt-6 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+      ) : filteredUsers.length === 0 ? (
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '64px 32px',
+          textAlign: 'center',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <i className="fas fa-users" style={{ fontSize: '64px', color: '#e8d5c4', marginBottom: '16px' }}></i>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+            No Users Found
+          </h3>
+          <p style={{ color: '#666', fontSize: '14px' }}>
+            {roleFilter === 'all' && !searchTerm
+              ? 'No users registered yet.'
+              : 'Try adjusting your filters or search term.'}
+          </p>
+        </div>
+      ) : (
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          {filteredUsers.map((userItem: any, index: number) => (
+            <div
+              key={userItem.id}
+              style={{
+                padding: '20px',
+                borderBottom: index < filteredUsers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(193, 154, 107, 0.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              Refresh
-            </button>
-          </div>
-
-          {loadingState ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-5xl mb-4">👥</div>
-              <h3 className="text-xl font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-600">
-                {roleFilter === 'all' 
-                  ? "No users to display." 
-                  : `No ${roleFilter} users found.`}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
-                {filteredUsers.map((userItem) => (
-                  <li key={userItem.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-amber-600 truncate">
-                          {userItem.user_info?.name || 'Unknown User'}
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            userItem.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            userItem.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
-                            userItem.role === 'customer' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {userItem.role.charAt(0).toUpperCase() + userItem.role.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <div className="mr-6 text-sm text-gray-500">
-                            Email: <span className="text-gray-900">{userItem.user_info?.email || 'N/A'}</span>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                            </svg>
-                            Joined: {new Date(userItem.created_at).toLocaleDateString('en-IN')}
-                          </div>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          Last updated: {new Date(userItem.updated_at).toLocaleDateString('en-IN')}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex items-center">
-                        <div className="mr-4">
-                          <label htmlFor={`role-select-${userItem.id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                            Change Role
-                          </label>
-                          <select
-                            id={`role-select-${userItem.id}`}
-                            value={userItem.role}
-                            onChange={(e) => updateUserRoleLocally(userItem.id, e.target.value)}
-                            className="block w-40 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md"
-                          >
-                            <option value="customer">Customer</option>
-                            <option value="moderator">Moderator</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        </div>
-                        <button
-                          onClick={() => router.push(`/dashboard/users/${userItem.id}`)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                        >
-                          View Details
-                        </button>
+              <div className="user-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      fontWeight: '600'
+                    }}>
+                      {userItem.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '2px' }}>
+                        {userItem.name}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fas fa-envelope" style={{ fontSize: '11px', color: '#999' }}></i>
+                        <p style={{ fontSize: '13px', color: '#666' }}>
+                          {userItem.email}
+                        </p>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#999', marginLeft: '52px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <i className="fas fa-calendar-plus"></i>
+                      <span>Joined {new Date(userItem.created_at).toLocaleDateString('en-IN')}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <i className="fas fa-clock"></i>
+                      <span>Updated {new Date(userItem.updated_at).toLocaleDateString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="user-role-badge" style={{ textAlign: 'right' }}>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '6px 12px',
+                    background: userItem.role === 'admin' ? 'rgba(139, 92, 246, 0.1)' :
+                               userItem.role === 'moderator' ? 'rgba(59, 130, 246, 0.1)' :
+                               userItem.role === 'customer' ? 'rgba(34, 197, 94, 0.1)' :
+                               'rgba(156, 163, 175, 0.1)',
+                    color: userItem.role === 'admin' ? '#8b5cf6' :
+                           userItem.role === 'moderator' ? '#3b82f6' :
+                           userItem.role === 'customer' ? '#22c55e' :
+                           '#6b7280',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
+                  }}>
+                    {userItem.role}
+                  </div>
+                </div>
+              </div>
+
+              {/* Role update controls */}
+              <div className="user-controls" style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                paddingTop: '12px',
+                borderTop: '1px solid #f0f0f0',
+                marginLeft: '52px'
+              }}>
+                <label style={{
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#666'
+                }}>
+                  Change Role:
+                </label>
+                <select
+                  value={userItem.role}
+                  onChange={(e) => updateUserRole(userItem.id, e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    background: 'white'
+                  }}
+                >
+                  <option value="customer">Customer</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button
+                  onClick={() => router.push(`/dashboard/users/${userItem.id}`)}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    background: 'white',
+                    color: '#c19a6b',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#c19a6b';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.color = '#c19a6b';
+                  }}
+                >
+                  View Details
+                </button>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>
-    </div>
+      )}
+    </DashboardLayout>
+    </>
   );
 };
 

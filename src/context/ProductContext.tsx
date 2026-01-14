@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 
 interface ProductState {
@@ -41,7 +41,7 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
     case PRODUCT_ACTIONS.SET_PRODUCTS:
       return {
         ...state,
-        products: action.payload
+        products: Array.isArray(action.payload) ? action.payload : []
       };
     case PRODUCT_ACTIONS.SET_LOADING:
       return {
@@ -56,12 +56,12 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
     case PRODUCT_ACTIONS.SET_APPOINTMENTS:
       return {
         ...state,
-        appointments: action.payload
+        appointments: Array.isArray(action.payload) ? action.payload : []
       };
     case PRODUCT_ACTIONS.SET_ORDERS:
       return {
         ...state,
-        orders: action.payload
+        orders: Array.isArray(action.payload) ? action.payload : []
       };
     case PRODUCT_ACTIONS.ADD_ORDER:
       return {
@@ -86,6 +86,13 @@ export const ProductContext = createContext<{
   setAppointments: (appointments: any[]) => void;
   setOrders: (orders: any[]) => void;
   fetchProducts: () => Promise<void>;
+  fetchOrders: () => Promise<void>;
+  fetchAppointments: () => Promise<void>;
+  createOrder: (orderData: any) => Promise<any>;
+  createAppointment: (appointmentData: any) => Promise<any>;
+  updateProduct: (id: number, data: any) => Promise<any>;
+  deleteProduct: (id: number) => Promise<any>;
+  createProduct: (productData: any) => Promise<any>;
 } | undefined>(undefined);
 
 // Provider component
@@ -165,7 +172,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         setProducts(formattedProducts);
       } else {
         console.warn('No products found:', response.error);
-        // Even if no products are found, we should still set the products state 
+        // Even if no products are found, we should still set the products state
         // and turn off loading to avoid the infinite loading state
         setProducts([]);
       }
@@ -176,6 +183,144 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       setLoading(false);
     }
   };
+
+  // Fetch orders
+  const fetchOrders = useCallback(async () => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.getOrders();
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_ORDERS, payload: Array.isArray(response.data) ? response.data : [] });
+      } else {
+        dispatch({ type: PRODUCT_ACTIONS.SET_ORDERS, payload: [] });
+      }
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to load orders.' });
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, []);
+
+  // Fetch appointments
+  const fetchAppointments = useCallback(async () => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.getAppointments();
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_APPOINTMENTS, payload: Array.isArray(response.data) ? response.data : [] });
+      } else {
+        dispatch({ type: PRODUCT_ACTIONS.SET_APPOINTMENTS, payload: [] });
+      }
+    } catch (error: any) {
+      console.error('Error fetching appointments:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to load appointments.' });
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, []);
+
+  // Create order
+  const createOrder = useCallback(async (orderData: any) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.createOrder(orderData);
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.ADD_ORDER, payload: response.data });
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to create order');
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to create order.' });
+      throw error;
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, []);
+
+  // Create appointment
+  const createAppointment = useCallback(async (appointmentData: any) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.createAppointment(appointmentData);
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_APPOINTMENTS, payload: [response.data, ...state.appointments] });
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to create appointment');
+    } catch (error: any) {
+      console.error('Error creating appointment:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to create appointment.' });
+      throw error;
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, [state.appointments]);
+
+  // Update product
+  const updateProduct = useCallback(async (id: number, data: any) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.updateProduct(id, data);
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_PRODUCTS, payload: state.products.map(p => p.id === id ? response.data : p) });
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to update product');
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to update product.' });
+      throw error;
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, [state.products]);
+
+  // Delete product
+  const deleteProduct = useCallback(async (id: number) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.deleteProduct(id);
+      if (response.success) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_PRODUCTS, payload: state.products.filter(p => p.id !== id) });
+        return true;
+      }
+      throw new Error(response.error || 'Failed to delete product');
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to delete product.' });
+      throw error;
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, [state.products]);
+
+  // Create product
+  const createProduct = useCallback(async (productData: any) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+    dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
+    try {
+      const response = await apiClient.createProduct(productData);
+      if (response.success && response.data) {
+        dispatch({ type: PRODUCT_ACTIONS.SET_PRODUCTS, payload: [response.data, ...state.products] });
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to create product');
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message || 'Failed to create product.' });
+      throw error;
+    } finally {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, [state.products]);
 
   return (
     <ProductContext.Provider
@@ -190,7 +335,14 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         setError,
         setAppointments,
         setOrders,
-        fetchProducts
+        fetchProducts,
+        fetchOrders,
+        fetchAppointments,
+        createOrder,
+        createAppointment,
+        updateProduct,
+        deleteProduct,
+        createProduct
       }}
     >
       {children}

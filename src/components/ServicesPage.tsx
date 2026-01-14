@@ -134,12 +134,7 @@ const ServicesPage = () => {
               <h2>Ready to transform your space?</h2>
               <p>Schedule a complimentary 30-minute consultation to discuss your project vision.</p>
             </div>
-            <button className="btn primary" onClick={() => {
-              const contactElement = document.getElementById('contact');
-              if (contactElement) {
-                contactElement.scrollIntoView({behavior: 'smooth'});
-              }
-            }}>
+            <button className="btn primary" onClick={() => window.location.href = '/booking'}>
               Book Consultation
             </button>
           </ServicesCTA>

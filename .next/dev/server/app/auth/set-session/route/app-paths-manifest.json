@@ -1,0 +1,3 @@
+{
+  "/auth/set-session/route": "app/auth/set-session/route.js"
+}

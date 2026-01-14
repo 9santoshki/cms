@@ -204,7 +204,7 @@ const CheckoutPage = () => {
       
       <div className="checkout-container">
         <div className="checkout-form-section">
-          <form onSubmit={handleSubmit} className="checkout-form">
+          <form id="checkout-form" onSubmit={handleSubmit} className="checkout-form">
             <div className="form-section">
               <h2>Shipping Information</h2>
               
@@ -356,30 +356,48 @@ const CheckoutPage = () => {
           <div className="checkout-summary checkout-summary-sticky">
             <h2>Order Summary</h2>
             <div className="summary-items">
-              {cartItems.map(item => (
-                <div className="summary-item" key={item.id}>
-                  <div className="item-details">
-                    <h3>{item.name}</h3>
-                    <p>Qty: {item.quantity}</p>
+              {cartItems.map(item => {
+                const hasValidImage = item.image_url && !item.image_url.includes('r2-placeholder.com');
+                return (
+                  <div className="summary-item" key={item.id}>
+                    <div className="item-image-wrapper">
+                      {hasValidImage ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="item-thumb"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextSibling) {
+                              (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="item-thumb-placeholder"
+                        style={{ display: hasValidImage ? 'none' : 'flex' }}
+                      >
+                        <i className="fas fa-image"></i>
+                      </div>
+                    </div>
+                    <div className="item-info">
+                      <h4>{item.name}</h4>
+                      <div className="item-details">
+                        <span className="qty">Qty: {item.quantity}</span>
+                        <span className="price">
+                          ₹{typeof item.price === 'number'
+                            ? item.price.toLocaleString()
+                            : parseFloat(item.price || '0').toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="item-price">
-                    ₹{typeof item.price === 'number' 
-                      ? (item.price * item.quantity).toLocaleString() 
-                      : (parseFloat(item.price || '0') * item.quantity).toLocaleString()}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="summary-totals">
-              <div className="total-row">
-                <span>Original Price</span>
-                <span>₹{calculateOriginalCartTotal(cartItems).toLocaleString()}</span>
-              </div>
-              <div className="total-row" style={{ color: '#28a745', fontWeight: '600' }}>
-                <span>You saved</span>
-                <span>-₹{calculateDiscountSavings(cartItems).toLocaleString()}</span>
-              </div>
               <div className="total-row">
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString()}</span>
@@ -393,22 +411,17 @@ const CheckoutPage = () => {
                 <span>₹{total.toLocaleString()}</span>
               </div>
             </div>
+
+            <button
+              type="submit"
+              form="checkout-form"
+              className="checkout-button"
+              disabled={loading.orders}
+            >
+              {loading.orders ? 'Processing...' : 'Place Order'}
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Move payment button below the summary */}
-      <div className="checkout-payment-section">
-        <button
-          type="submit"
-          className="btn primary checkout-button"
-          disabled={loading.orders}
-        >
-          {loading.orders ? 'Processing Order...' : 
-           (['razorpay', 'upi', 'netbanking'].includes(formData.paymentMethod) 
-            ? `Pay with ${formData.paymentMethod === 'razorpay' ? 'Card' : formData.paymentMethod === 'upi' ? 'UPI' : 'Net Banking'} - ₹${total.toLocaleString()}`
-            : `Complete Order - ₹${total.toLocaleString()}`)}
-        </button>
       </div>
     </div>
   );

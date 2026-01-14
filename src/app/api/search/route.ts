@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { searchProducts, getProducts } from '@/lib/db/products';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,53 +14,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let sqlQuery = 'SELECT * FROM products WHERE ';
-    const params: string[] = [];
-    let paramIndex = 1;
-
     if (query) {
-      sqlQuery += `(name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
-      params.push(`%${query}%`);
-      paramIndex++;
-    }
-
-    if (query && category) {
-      sqlQuery += ' AND ';
+      const products = await searchProducts(query, 50);
+      return NextResponse.json({
+        success: true,
+        data: products.map((p) => ({
+          ...p,
+          images: p.image_url ? [p.image_url] : [],
+          primary_image: p.image_url,
+        })),
+      });
     }
 
     if (category) {
-      if (query) {
-        sqlQuery += `category ILIKE $${paramIndex}`;
-      } else {
-        sqlQuery += `category ILIKE $${paramIndex}`;
-      }
-      params.push(`%${category}%`);
+      const result = await getProducts({ category, limit: 50 });
+      return NextResponse.json({
+        success: true,
+        data: result.products.map((p) => ({
+          ...p,
+          images: p.image_url ? [p.image_url] : [],
+          primary_image: p.image_url,
+        })),
+      });
     }
 
-    let queryBuilder = supabase.from('products').select('*');
-
-    if (query) {
-      queryBuilder = queryBuilder.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
-    }
-
-    if (category) {
-      queryBuilder = queryBuilder.ilike('category', `%${category}%`);
-    }
-
-    const { data, error } = await queryBuilder;
-
-    if (error) {
-      console.error('Search error:', error);
-      return NextResponse.json(
-        { success: false, error: 'Search failed' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: data
-    });
+    return NextResponse.json({ success: true, data: [] });
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json(

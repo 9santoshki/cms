@@ -35,7 +35,7 @@ const NewAboutPage = () => {
       {/* About Hero Section */}
       <AboutHero>
         <div className="hero-content">
-          <h1>About Elegant Spaces</h1>
+          <h1>About Colour My Space</h1>
           <p>Creating extraordinary interiors with timeless elegance and contemporary functionality</p>
         </div>
       </AboutHero>
@@ -46,8 +46,8 @@ const NewAboutPage = () => {
           <AboutIntro>
             <h2>Our Story</h2>
             <p>
-              Founded by award-winning designer Sarah Johnson, Elegant Spaces brings over 15 years of experience in creating 
-              transformative interiors that reflect our clients' unique lifestyles and aspirations. Our philosophy centers on 
+              Founded by award-winning designer Sarah Johnson, Colour My Space brings over 15 years of experience in creating
+              transformative interiors that reflect our clients' unique lifestyles and aspirations. Our philosophy centers on
               the belief that exceptional interior design is the intersection of artistry and functionality.
             </p>
           </AboutIntro>

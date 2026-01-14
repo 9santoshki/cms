@@ -1,51 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+import { getSessionFromCookie } from '@/lib/db/auth';
+import { query } from '@/lib/db/connection';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Verify JWT token and get user ID
+// Verify user session and get user ID
 async function getUserIdFromRequest(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.replace('Bearer ', '');
-  const jwtSecret = process.env.JWT_SECRET;
-
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not set in environment variables');
-  }
-
   try {
-    const decoded = jwt.verify(token, jwtSecret) as { id: number; email: string; role: string };
-
-    // Verify that the user actually exists
-    const { data: user, error } = await supabase
-      .from('profiles') // Changed from 'users' to 'profiles' to match our schema
-      .select('id')
-      .eq('id', decoded.id)
-      .single();
-
-    if (error || !user) {
-      return null;
-    }
-
-    return decoded.id;
+    const session = await getSessionFromCookie();
+    return session?.userId || null;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('Error getting user session:', error);
     return null;
   }
 }
@@ -127,20 +92,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update the order status in the database
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select('id, user_id, status')
-      .eq('external_id', razorpay_order_id) // Changed to external_id to match our schema
-      .single();
+    // Find the order by payment_id
+    const orderResult = await query(
+      'SELECT id, user_id, status FROM orders WHERE payment_id = $1',
+      [razorpay_order_id]
+    );
 
-    if (orderError || !order) {
+    if (orderResult.rows.length === 0) {
       console.error('Order not found for Razorpay order ID:', razorpay_order_id);
       return NextResponse.json(
         { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
+
+    const order = orderResult.rows[0];
 
     // Verify that the order belongs to the current user
     if (order.user_id !== userId) {
@@ -150,18 +116,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update order status to 'paid'
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({
-        status: 'paid',
-        external_payment_id: razorpay_payment_id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id);
+    // Update order status to 'completed' and add payment status
+    const updateResult = await query(
+      `UPDATE orders
+       SET status = 'completed', payment_status = 'captured', updated_at = NOW()
+       WHERE id = $1`,
+      [order.id]
+    );
 
-    if (updateError) {
-      console.error('Error updating order status:', updateError);
+    if (updateResult.rowCount === 0) {
+      console.error('Error updating order status');
       return NextResponse.json(
         { success: false, error: 'Failed to update order status' },
         { status: 500 }

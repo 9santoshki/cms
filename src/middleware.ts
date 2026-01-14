@@ -1,68 +1,32 @@
 // middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const SESSION_COOKIE_NAME = 'cms-session';
 
 export async function middleware(request: NextRequest) {
-  // Create a Supabase client for server-side operations
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.delete(name);
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.delete(name);
-        },
-      },
-    }
-  );
-
-  // Get the current session
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Get the session cookie (just check if it exists, don't verify JWT)
+  // JWT verification happens in API routes which run in Node.js runtime
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+  const hasSession = !!sessionCookie;
 
   // Optionally protect certain routes
   const protectedPaths = ['/account', '/cart', '/checkout', '/orders'];
-  const isProtectedPath = protectedPaths.some(path => 
+  const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
 
-  if (isProtectedPath && !session) {
-    // Redirect to login if accessing protected route without session
+  if (isProtectedPath && !hasSession) {
+    // Redirect to login if accessing protected route without session cookie
     const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
+    url.pathname = '/';
     url.search = `?redirect=${request.nextUrl.pathname}`;
     return NextResponse.redirect(url);
   }

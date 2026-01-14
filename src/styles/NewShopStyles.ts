@@ -301,13 +301,45 @@ export const ProductInfo = styled.div`
   }
 `;
 
+// Product price container
+export const PriceContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+`;
+
 // Product price
 export const ProductPrice = styled.div`
   font-size: 1.4rem; /* Smaller font */
   font-weight: 600;
   color: #c19a6b;
-  margin: 6px 0; /* Less margin */
   font-family: var(--font-playfair), 'Playfair Display', serif;
+`;
+
+// Original price (strikethrough)
+export const OriginalPrice = styled.span`
+  font-size: 1rem;
+  color: #999;
+  text-decoration: line-through;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+`;
+
+// Discount badge
+export const DiscountBadge = styled.span`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #e74c3c;
+  color: white;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
 `;
 
 // Pagination
