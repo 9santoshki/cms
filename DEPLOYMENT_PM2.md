@@ -122,8 +122,8 @@ adduser --disabled-password --gecos "" cms
 # Add to sudo group (optional)
 usermod -aG sudo cms
 
-# Switch to cms user
-su - cms
+# No need to Switch to cms user
+# su - cms
 ```
 
 ---
