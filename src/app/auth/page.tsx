@@ -1,11 +1,11 @@
 'use client';
 
 import { useAppContext } from '@/context/AppContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthForm from '@/components/AuthForm'
 
-export default function Auth() {
+function AuthContent() {
   const { user, loading } = useAppContext();
   const router = useRouter();
   const [redirect, setRedirect] = useState<string>('/');
@@ -39,4 +39,19 @@ export default function Auth() {
   }
 
   return <AuthForm />;
+}
+
+export default function Auth() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AuthContent />
+    </Suspense>
+  );
 }

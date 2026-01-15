@@ -26,7 +26,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
   if (!product) return null;
 
   const handleAddToCart = () => {
-    const result = addToCartWithAuth(product);
+    const result = addToCartWithAuth(product, 1);
     if (!result.success && result.requiresLogin) {
       // Store the pending cart action in localStorage
       localStorage.setItem('pendingCartAction', JSON.stringify({
@@ -57,7 +57,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
             <ProductDetailPrice>₹{product.price.toLocaleString()}</ProductDetailPrice>
             <ProductDetailDescription>{product.description}</ProductDetailDescription>
             
-            {error.cart && <ErrorMessage>{error.cart}</ErrorMessage>}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             
             <ProductDetailActions>
               <button 

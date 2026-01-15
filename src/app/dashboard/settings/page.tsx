@@ -5,10 +5,24 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 
+interface Settings {
+  shipping: {
+    min_order_amount: number;
+    flat_rate: number;
+    enabled: boolean;
+  };
+  tax: {
+    rate: number;
+    type: string;
+    enabled: boolean;
+  };
+  [key: string]: any;
+}
+
 const DashboardSettingsPage = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const [settings, setSettings] = useState<any>({
+  const [settings, setSettings] = useState<Settings>({
     shipping: {
       min_order_amount: 50000,
       flat_rate: 1500,

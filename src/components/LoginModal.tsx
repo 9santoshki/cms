@@ -65,7 +65,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             backgroundColor: 'rgba(248, 244, 240, 0.7)',
             borderRadius: '50%',
             padding: '2px',
-            align: 'right',
             position: 'absolute',
             right: '10px',
           }}
@@ -84,16 +83,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             // borderBottom: '1px solid #c19a6b'
           }}
         >
-          <h2 className="text-lg font-semibold text-center mb-1" style={{ color: '#333333' }} align="center">
+          <h2 className="text-lg font-semibold text-center mb-1" style={{ color: '#333333' }}>
             Welcome
           </h2>
-          <p className="text-xs text-center" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1', color: '#333333' }} align="center">
+          <p className="text-xs text-center" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1', color: '#333333' }}>
             Sign in to access your account
           </p>
         </div>
 
         {/* Body */}
-        <div className="p-5 pt-4" style={{ backgroundColor: '#fffaf5' }} align="center">
+        <div className="p-5 pt-4" style={{ backgroundColor: '#fffaf5', textAlign: 'center' }}>
 
           {/* --- Google Sign In --- */}
           <button

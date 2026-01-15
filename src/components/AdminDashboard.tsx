@@ -413,10 +413,10 @@ const ProductManagement = () => {
     );
   }
 
-  if (error.products) {
+  if (error) {
     return (
       <div className="admin-error">
-        <p>Error loading products: {error.products}</p>
+        <p>Error loading products: {error}</p>
         <button className="btn primary" onClick={fetchProducts}>
           Retry
         </button>

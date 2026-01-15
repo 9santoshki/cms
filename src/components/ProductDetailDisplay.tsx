@@ -729,7 +729,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
   // Get the currently selected image
   const selectedImage = productImages[selectedImageIndex] || productImages[0];
-  const selectedImageUrl = selectedImage.url || selectedImage;
+  const selectedImageUrl = typeof selectedImage === 'string' ? selectedImage : (selectedImage?.url || '');
 
   return (
     <ProductDetailContainer>

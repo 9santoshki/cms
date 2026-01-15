@@ -51,7 +51,7 @@ const CheckoutPage = () => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     // Clear general error when user starts typing
-    if (error.orders) setError('orders', '');
+    if (error) setError(null);
   };
 
   const validateForm = () => {
@@ -134,7 +134,7 @@ const CheckoutPage = () => {
       }, 5000);
     } catch (err) {
       console.error('Checkout error:', err);
-      setError('orders', 'Failed to place order. Please try again.');
+      setError('Failed to place order. Please try again.');
     }
   };
 
@@ -200,7 +200,7 @@ const CheckoutPage = () => {
         </div>
       </div>
       
-      {error.orders && <div className="error-message">{error.orders}</div>}
+      {error && <div className="error-message">{error}</div>}
       
       <div className="checkout-container">
         <div className="checkout-form-section">

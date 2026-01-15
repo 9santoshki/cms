@@ -67,7 +67,7 @@ export const getUserProfile = async (): Promise<{ id: string; role: string } | n
   if (!user) return null;
 
   return {
-    id: user.id,
+    id: String(user.id),
     role: user.role,
   };
 };

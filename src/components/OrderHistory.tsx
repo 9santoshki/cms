@@ -91,10 +91,10 @@ const OrderHistory = () => {
       </OrdersHeaderSection>
 
       <OrdersContent>
-        {error?.orders && (
+        {error && (
           <ErrorMessage>
             <i className="fas fa-exclamation-circle" />
-            {error.orders}
+            {error}
           </ErrorMessage>
         )}
 

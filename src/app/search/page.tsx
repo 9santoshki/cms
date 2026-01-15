@@ -158,7 +158,7 @@ const SearchPage = () => {
   };
 
   // Get image URL - prioritize Cloudflare R2 URLs
-  const getImageUrl = (product: Product & { images?: any[] }) => {
+  const getImageUrl = (product: Product) => {
     // First check primary_image (should have Cloudflare URL)
     if (product.primary_image && product.primary_image.startsWith('http')) {
       return product.primary_image;
@@ -166,14 +166,21 @@ const SearchPage = () => {
 
     // Check images array for Cloudflare URLs
     if (product.images && product.images.length > 0) {
-      const primaryImg = product.images.find((img: any) => img.is_primary);
-      if (primaryImg?.url && primaryImg.url.startsWith('http')) {
+      // Handle both object and string array formats
+      const imagesArray = product.images as any[];
+      const primaryImg = imagesArray.find((img: any) =>
+        typeof img === 'object' && img.is_primary
+      );
+      if (primaryImg && typeof primaryImg === 'object' && primaryImg.url && primaryImg.url.startsWith('http')) {
         return primaryImg.url;
       }
       // Use first image if no primary
-      const firstImg = product.images[0];
-      if (firstImg?.url && firstImg.url.startsWith('http')) {
+      const firstImg = imagesArray[0];
+      if (typeof firstImg === 'object' && firstImg.url && firstImg.url.startsWith('http')) {
         return firstImg.url;
+      }
+      if (typeof firstImg === 'string' && firstImg.startsWith('http')) {
+        return firstImg;
       }
     }
 

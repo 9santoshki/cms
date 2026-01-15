@@ -133,7 +133,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       const response = await apiClient.getProducts();
       if (response.success && response.data) {
         // Handle the new response structure with pagination
-        const productsData = Array.isArray(response.data) ? response.data : response.data?.products || [];
+        const productsData = Array.isArray(response.data) ? response.data : (response.data as any)?.products || [];
 
         // Convert price strings to numbers for proper formatting
         // Map mock image_url identifiers to appropriate imageClass values

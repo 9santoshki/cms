@@ -139,7 +139,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Payment verified and order updated to paid status',
-      order_id: order.id
+      data: {
+        order_id: order.id
+      }
     });
   } catch (error: any) {
     console.error('Error verifying payment:', error);

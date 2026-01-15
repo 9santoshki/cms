@@ -4,14 +4,24 @@ import crypto from 'crypto';
 import { query } from '@/lib/db/connection';
 import { clearCart } from '@/lib/db/cart';
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Razorpay inside the function to handle missing env vars gracefully
+    const razorpayKey = process.env.RAZORPAY_KEY_ID;
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKey || !razorpaySecret) {
+      return NextResponse.json(
+        { success: false, error: 'Payment gateway not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id: razorpayKey,
+      key_secret: razorpaySecret,
+    });
+
     const body = await request.json();
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 

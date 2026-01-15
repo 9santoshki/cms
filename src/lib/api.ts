@@ -213,7 +213,7 @@ class ApiClient {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) {
-    return this.request<{ success: boolean; data?: any; error?: string }>(
+    return this.request<{ order_id: string }>(
       '/checkout/verify',
       {
         method: 'POST',

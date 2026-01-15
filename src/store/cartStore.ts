@@ -178,7 +178,9 @@ export const useCartStore = create<CartState>()(
                 });
 
                 // Sync the higher quantity back to server
-                syncCartItemWithServer(serverItem.product_id, localItem.quantity);
+                if (serverItem.product_id && localItem.quantity) {
+                  syncCartItemWithServer(serverItem.product_id, localItem.quantity);
+                }
               } else {
                 mergedItems.push(serverItem);
               }

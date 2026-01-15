@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAppContext } from '@/context/AppContext';
 
-const CheckoutSuccessPage = () => {
+const CheckoutSuccessContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -230,6 +230,25 @@ const CheckoutSuccessPage = () => {
 
       <Footer />
     </div>
+  );
+};
+
+const CheckoutSuccessPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <Header activePage="checkout" />
+        <div className="container mx-auto px-4 py-8 flex justify-center items-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 };
 
