@@ -340,14 +340,14 @@ const DashboardProductsPage = () => {
               <div style={{
                 width: '100%',
                 height: '200px',
-                background: product.image_url
-                  ? `url(${product.image_url}) center/cover no-repeat`
+                background: (product.primary_image || product.image_url)
+                  ? `url(${product.primary_image || product.image_url}) center/cover no-repeat`
                   : 'linear-gradient(135deg, #f8f4f0, #efe9e3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                {!product.image_url && (
+                {!(product.primary_image || product.image_url) && (
                   <i className="fas fa-image" style={{ fontSize: '48px', color: '#e8d5c4' }}></i>
                 )}
               </div>

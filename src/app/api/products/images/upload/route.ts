@@ -59,9 +59,11 @@ export async function POST(request: NextRequest) {
         if (uploadResponse.success && uploadResponse.result) {
           // Save to database
           const isPrimaryImage = isPrimary && i === 0; // Only first image can be primary
+          const imageUrl = getCloudflareImageUrl(uploadResponse.result.id);
           const dbImage = await addProductImage(
             productId,
             uploadResponse.result.id,
+            imageUrl,
             file.name,
             isPrimaryImage,
             i
@@ -84,10 +86,12 @@ export async function POST(request: NextRequest) {
         }
       } catch (error: any) {
         console.error(`Error uploading ${file.name}:`, error);
+        const errorMessage = error?.message || error?.toString() || 'Upload failed';
+        console.error(`Error message: ${errorMessage}`);
         uploadResults.push({
           success: false,
           filename: file.name,
-          error: error.message || 'Upload failed',
+          error: errorMessage,
         });
       }
     }
@@ -102,10 +106,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error in image upload:', error);
+    const errorMessage = error?.message || error?.toString() || 'Internal server error';
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error',
+        error: errorMessage,
       },
       { status: 500 }
     );

@@ -30,39 +30,29 @@ const DashboardUsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // In a real implementation, this would call the API
-      // For now using mock data
-      const mockUsers = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          role: 'customer',
-          created_at: '2023-11-01T10:00:00.000Z',
-          updated_at: '2023-11-01T10:00:00.000Z'
-        },
-        {
-          id: '2',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          role: 'moderator',
-          created_at: '2023-11-02T11:00:00.000Z',
-          updated_at: '2023-11-15T14:30:00.000Z'
-        },
-        {
-          id: '3',
-          name: 'Robert Johnson',
-          email: 'robert@example.com',
-          role: 'admin',
-          created_at: '2023-11-03T12:00:00.000Z',
-          updated_at: '2023-11-20T09:15:00.000Z'
-        }
-      ];
-      setUsers(mockUsers);
+      console.log('🔍 [Users Page] Fetching users from API...');
+
+      const response = await fetch('/api/admin/users');
+      console.log('📡 [Users Page] Response status:', response.status, response.statusText);
+
+      const result = await response.json();
+      console.log('📦 [Users Page] Response data:', result);
+      console.log('📊 [Users Page] Users count:', result.data?.length);
+
+      if (result.success && result.data) {
+        console.log('✅ [Users Page] Setting users:', result.data.length, 'users');
+        console.log('👥 [Users Page] Users data:', result.data);
+        setUsers(result.data);
+      } else {
+        console.error('❌ [Users Page] Failed to fetch users:', result.error);
+        setUsers([]);
+      }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('💥 [Users Page] Error fetching users:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
+      console.log('🏁 [Users Page] Fetch complete, loading state set to false');
     }
   };
 
@@ -74,15 +64,18 @@ const DashboardUsersPage = () => {
         body: JSON.stringify({ userId, role: newRole })
       });
 
-      if (response.ok) {
-        setUsers(prev =>
-          prev.map(u =>
-            u.id === userId ? { ...u, role: newRole, updated_at: new Date().toISOString() } : u
-          )
-        );
+      const result = await response.json();
+
+      if (result.success) {
+        // Refresh the users list to get updated data
+        await fetchUsers();
+        alert('User role updated successfully');
+      } else {
+        alert(`Failed to update role: ${result.error}`);
       }
     } catch (error) {
       console.error('Error updating user role:', error);
+      alert('An error occurred while updating the role');
     }
   };
 
@@ -124,6 +117,14 @@ const DashboardUsersPage = () => {
       u.email?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesRole && matchesSearch;
   });
+
+  console.log('🔍 [Users Page] Filter state:', {
+    totalUsers: users.length,
+    roleFilter,
+    searchTerm,
+    filteredCount: filteredUsers.length
+  });
+  console.log('📋 [Users Page] Filtered users:', filteredUsers);
 
   return (
     <>

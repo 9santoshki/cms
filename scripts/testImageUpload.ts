@@ -64,9 +64,11 @@ async function testUpload() {
 
     // Step 3: Save to database
     console.log('💾 Step 3: Saving to database...');
+    const imageUrl = getCloudflareImageUrl(uploadResult.result!.id);
     const dbImage = await addProductImage(
       PRODUCT_ID,
       uploadResult.result!.id,
+      imageUrl,
       'test-product-image.png',
       true, // Set as primary
       0

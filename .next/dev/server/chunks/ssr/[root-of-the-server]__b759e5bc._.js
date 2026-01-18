@@ -44,15 +44,8 @@ pool.on('error', (err)=>{
     process.exit(-1);
 });
 const query = async (text, params)=>{
-    const start = Date.now();
     try {
         const res = await pool.query(text, params);
-        const duration = Date.now() - start;
-        console.log('Executed query', {
-            text,
-            duration,
-            rows: res.rowCount
-        });
         return res;
     } catch (error) {
         console.error('Database query error:', error);
@@ -410,15 +403,10 @@ const validateSession = async (token)=>{
 };
 const getSessionFromCookieWithDB = async ()=>{
     const cookieStore = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["cookies"])();
-    // Debug: Log all available cookies
-    const allCookies = cookieStore.getAll();
-    console.log('🔍 Available cookies:', allCookies.map((c)=>c.name));
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
     if (!sessionCookie) {
-        console.log('❌ getSessionFromCookieWithDB: No session cookie found with name:', SESSION_COOKIE_NAME);
         return null;
     }
-    console.log('✅ getSessionFromCookieWithDB: Found session cookie, validating...');
     // Validate against database as well
     return validateSession(sessionCookie.value);
 };
@@ -433,7 +421,6 @@ const setSessionCookieWithDB = async (token, rememberMe = true)=>{
         maxAge: maxAge,
         path: '/'
     });
-    console.log('setSessionCookieWithDB: Cookie set successfully, maxAge:', maxAge);
 };
 const logoutSession = async ()=>{
     const session = await getSessionFromCookieWithDB();

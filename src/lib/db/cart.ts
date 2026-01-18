@@ -30,9 +30,9 @@ export async function getCartItems(userId: string): Promise<CartItem[]> {
         WHERE pi.product_id = p.id AND pi.is_primary = true
         LIMIT 1
       ) as primary_image_id
-     FROM cart_items ci
+     FROM cart ci
      JOIN products p ON ci.product_id = p.id
-     WHERE ci.user_id = $1::uuid
+     WHERE ci.user_id = $1
      ORDER BY ci.created_at DESC`,
     [userId]
   );
@@ -41,7 +41,7 @@ export async function getCartItems(userId: string): Promise<CartItem[]> {
 
 export async function getCartItem(userId: string, productId: string): Promise<CartItem | null> {
   const result = await query(
-    `SELECT * FROM cart_items WHERE user_id = $1::uuid AND product_id = $2::uuid`,
+    `SELECT * FROM cart WHERE user_id = $1 AND product_id = $2`,
     [userId, productId]
   );
   return result.rows[0] || null;
@@ -53,10 +53,10 @@ export async function addCartItem(
   quantity: number
 ): Promise<CartItem> {
   const result = await query(
-    `INSERT INTO cart_items (user_id, product_id, quantity)
-     VALUES ($1::uuid, $2::uuid, $3)
+    `INSERT INTO cart (user_id, product_id, quantity)
+     VALUES ($1, $2, $3)
      ON CONFLICT (user_id, product_id)
-     DO UPDATE SET quantity = cart_items.quantity + $3, updated_at = NOW()
+     DO UPDATE SET quantity = cart.quantity + $3, updated_at = NOW()
      RETURNING *`,
     [userId, productId, quantity]
   );
@@ -69,9 +69,9 @@ export async function updateCartItemQuantity(
   quantity: number
 ): Promise<CartItem | null> {
   const result = await query(
-    `UPDATE cart_items
+    `UPDATE cart
      SET quantity = $3, updated_at = NOW()
-     WHERE user_id = $1::uuid AND product_id = $2::uuid
+     WHERE user_id = $1 AND product_id = $2
      RETURNING *`,
     [userId, productId, quantity]
   );
@@ -80,14 +80,14 @@ export async function updateCartItemQuantity(
 
 export async function removeCartItem(userId: string, productId: string): Promise<boolean> {
   const result = await query(
-    `DELETE FROM cart_items WHERE user_id = $1::uuid AND product_id = $2::uuid`,
+    `DELETE FROM cart WHERE user_id = $1 AND product_id = $2`,
     [userId, productId]
   );
   return result.rowCount ? result.rowCount > 0 : false;
 }
 
 export async function clearCart(userId: string): Promise<boolean> {
-  const result = await query(`DELETE FROM cart_items WHERE user_id = $1::uuid`, [userId]);
+  const result = await query(`DELETE FROM cart WHERE user_id = $1`, [userId]);
   return result.rowCount ? result.rowCount > 0 : false;
 }
 
@@ -103,9 +103,9 @@ export async function getCartItemWithProduct(
       p.name,
       p.price,
       p.image_url
-     FROM cart_items ci
+     FROM cart ci
      JOIN products p ON ci.product_id = p.id
-     WHERE ci.user_id = $1::uuid AND ci.product_id = $2::uuid`,
+     WHERE ci.user_id = $1 AND ci.product_id = $2`,
     [userId, productId]
   );
   return result.rows[0] || null;

@@ -501,6 +501,8 @@ var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
 async function GET(request) {
     try {
         console.log('=== SESSION API CALLED ===');
+        console.log('Cookies:', request.cookies.getAll());
+        console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
         // Use database-backed session validation
         const session = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getSessionFromCookieWithDB"])();
         console.log('Session from cookie:', session ? {

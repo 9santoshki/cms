@@ -375,6 +375,21 @@ export const validateSession = async (token: string): Promise<SessionData | null
     await updateSessionActivity(jwtData.sessionId);
   }
 
+  // Fetch current user data from database to get latest role
+  // This ensures role changes are reflected immediately without re-login
+  const userProfile = await getUserProfile(jwtData.userId);
+  if (userProfile) {
+    // Override JWT data with current database values
+    return {
+      userId: jwtData.userId,
+      email: userProfile.email,
+      name: userProfile.name,
+      avatar: userProfile.avatar,
+      role: userProfile.role,  // Use current role from database
+      sessionId: jwtData.sessionId
+    };
+  }
+
   return jwtData;
 };
 

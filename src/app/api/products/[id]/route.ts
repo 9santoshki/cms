@@ -20,15 +20,15 @@ export async function GET(
       );
     }
 
-    // Check if it's a UUID (id) or a slug
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      productIdOrSlug
-    );
+    // Check if it's a number (id) or a slug
+    const isNumericId = /^\d+$/.test(productIdOrSlug);
 
     let product;
-    if (isUUID) {
+    if (isNumericId) {
+      // It's a numeric ID
       product = await getProductWithImages(productIdOrSlug);
     } else {
+      // It's a slug
       product = await getProductBySlugWithImages(productIdOrSlug);
     }
 
@@ -67,7 +67,7 @@ export async function PUT(
     const { id } = params;
 
     const body = await request.json();
-    const { name, description, price, image_url, category, stock_quantity } = body;
+    const { name, description, price, original_price, sale_price, image_url, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -102,6 +102,8 @@ export async function PUT(
       name,
       description,
       price,
+      original_price,
+      sale_price,
       image_url,
       category,
       stock_quantity,

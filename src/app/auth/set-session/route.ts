@@ -3,6 +3,7 @@ import { query } from '@/lib/db/connection';
 
 export async function GET(request: NextRequest) {
   try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
     const searchParams = request.nextUrl.searchParams;
     const tempToken = searchParams.get('token');
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     if (!tempToken) {
       console.error('❌ No temp token provided');
-      return NextResponse.redirect(new URL('/?error=no_token', request.url));
+      return NextResponse.redirect(new URL('/?error=no_token', appUrl));
     }
 
     // Retrieve session token from temporary storage
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (result.rows.length === 0) {
       console.error('❌ Invalid or expired temp token');
-      return NextResponse.redirect(new URL('/?error=invalid_token', request.url));
+      return NextResponse.redirect(new URL('/?error=invalid_token', appUrl));
     }
 
     const sessionToken = result.rows[0].session_token;
@@ -56,23 +57,61 @@ export async function GET(request: NextRequest) {
       <html>
         <head>
           <title>Login Successful</title>
+          <style>
+            body {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              background: linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%);
+            }
+            .loader {
+              text-align: center;
+            }
+            .spinner {
+              border: 3px solid #f3f3f3;
+              border-top: 3px solid #c19a6b;
+              border-radius: 50%;
+              width: 40px;
+              height: 40px;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 20px;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            h2 { color: #333; margin: 0 0 10px; }
+            p { color: #666; font-size: 14px; }
+          </style>
         </head>
         <body>
-          <h2>Login successful! Setting session...</h2>
+          <div class="loader">
+            <div class="spinner"></div>
+            <h2>Login successful!</h2>
+            <p>Setting up your session...</p>
+          </div>
           <script>
             console.log('🔄 Setting session cookie via JavaScript...');
 
             // Set cookie via JavaScript (not HttpOnly, but it will work!)
             var expires = new Date();
             expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-            document.cookie = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/; SameSite=Lax";
+            var isProduction = ${secure};
+            var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/; SameSite=Lax" + (isProduction ? "; Secure" : "");
+            document.cookie = cookieStr;
 
-            console.log('✅ Cookie set! Redirecting...');
+            console.log('✅ Cookie set!');
+            console.log('Cookie string:', cookieStr);
             console.log('Cookie value:', document.cookie);
 
-            // Redirect immediately for fast header loading
-            console.log('🔄 Redirecting to homepage...');
-            window.location.href = '/';
+            // Wait a moment for cookie to be fully set before redirecting
+            setTimeout(function() {
+              console.log('🔄 Redirecting to homepage...');
+              // Use replace to force a full page reload and ensure session loads
+              window.location.replace('/?login=success');
+            }, 500);
           </script>
         </body>
       </html>
@@ -91,6 +130,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('❌ Error in set-session:', error);
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    return NextResponse.redirect(new URL('/?error=auth_failed', appUrl));
   }
 }

@@ -4,6 +4,8 @@ import { getSessionFromCookieWithDB, getUserProfile } from '@/lib/db/auth';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== SESSION API CALLED ===');
+    console.log('Cookies:', request.cookies.getAll());
+    console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
 
     // Use database-backed session validation
     const session = await getSessionFromCookieWithDB();

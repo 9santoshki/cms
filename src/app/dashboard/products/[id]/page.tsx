@@ -70,6 +70,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const loadProduct = async () => {
     if (!productId) return;
 
+    // If productId is "new", we're creating a new product, not loading one
+    if (productId === 'new') {
+      setLoadingProduct(false);
+      return;
+    }
+
     try {
       setLoadingProduct(true);
       const response = await fetch(`/api/products/${productId}`);
@@ -115,8 +121,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setSuccessMessage(null);
 
     try {
-      const response = await fetch(`/api/products/${productId}`, {
-        method: 'PUT',
+      const isNewProduct = productId === 'new';
+      const url = isNewProduct ? '/api/products' : `/api/products/${productId}`;
+      const method = isNewProduct ? 'POST' : 'PUT';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -134,15 +144,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const data = await response.json();
 
       if (data.success) {
-        setSuccessMessage('Product updated successfully!');
-        loadProduct();
-        setTimeout(() => setSuccessMessage(null), 3000);
+        if (isNewProduct) {
+          // Redirect to the edit page with the new product ID
+          setSuccessMessage('Product created successfully! Redirecting...');
+          setTimeout(() => {
+            router.push(`/dashboard/products/${data.data.id}`);
+          }, 1000);
+        } else {
+          setSuccessMessage('Product updated successfully!');
+          loadProduct();
+          setTimeout(() => setSuccessMessage(null), 3000);
+        }
       } else {
-        setError(data.error || 'Failed to update product');
+        setError(data.error || `Failed to ${isNewProduct ? 'create' : 'update'} product`);
       }
     } catch (err: any) {
-      console.error('Error updating product:', err);
-      setError(err.message || 'Failed to update product');
+      console.error('Error saving product:', err);
+      setError(err.message || 'Failed to save product');
     } finally {
       setSaving(false);
     }
@@ -262,8 +280,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         }
       `}</style>
       <DashboardLayout
-        title={`Edit Product${product ? `: ${product.name}` : ''}`}
-        description="Update product details, manage images, and configure settings."
+        title={productId === 'new' ? 'Create New Product' : `Edit Product${product ? `: ${product.name}` : ''}`}
+        description={productId === 'new' ? 'Add a new product to your catalog' : 'Update product details, manage images, and configure settings.'}
       >
       {/* Action Bar */}
       <div className="action-bar" style={{
@@ -306,34 +324,36 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           Back to Products
         </button>
 
-        <button
-          onClick={handleDelete}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            background: 'transparent',
-            color: '#ef4444',
-            border: '1px solid #fecaca',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#ef4444';
-            e.currentTarget.style.color = 'white';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#ef4444';
+        {productId !== 'new' && (
+          <button
+            onClick={handleDelete}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              background: 'transparent',
+              color: '#ef4444',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#ef4444';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#ef4444';
           }}
         >
           <i className="fas fa-trash"></i>
           Delete Product
         </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -671,12 +691,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       borderRadius: '50%',
                       animation: 'spin 0.8s linear infinite'
                     }}></div>
-                    Saving...
+                    {productId === 'new' ? 'Creating...' : 'Saving...'}
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-save"></i>
-                    Save Changes
+                    <i className={productId === 'new' ? 'fas fa-plus' : 'fas fa-save'}></i>
+                    {productId === 'new' ? 'Create Product' : 'Save Changes'}
                   </>
                 )}
               </button>

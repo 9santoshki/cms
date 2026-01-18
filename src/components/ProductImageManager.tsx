@@ -68,11 +68,14 @@ export default function ProductImageManager({
 
         setTimeout(() => setUploadProgress(''), 3000);
       } else {
-        setUploadProgress(`Error: ${data.error}`);
+        const errorMsg = data.error || data.message || 'Upload failed';
+        console.error('Upload failed:', data);
+        setUploadProgress(`Error: ${errorMsg}`);
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      setUploadProgress(`Error: ${error.message}`);
+      const errorMsg = error?.message || error?.toString() || 'An unexpected error occurred';
+      setUploadProgress(`Error: ${errorMsg}`);
     } finally {
       setUploading(false);
       if (fileInputRef.current) {

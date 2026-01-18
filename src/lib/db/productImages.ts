@@ -28,6 +28,7 @@ export async function getProductImages(productId: string): Promise<ProductImage[
 export async function addProductImage(
   productId: string,
   cloudflareImageId: string,
+  url: string,
   filename?: string,
   isPrimary: boolean = false,
   displayOrder?: number
@@ -50,10 +51,10 @@ export async function addProductImage(
   }
 
   const result = await query(
-    `INSERT INTO product_images (product_id, cloudflare_image_id, filename, is_primary, display_order)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO product_images (product_id, cloudflare_image_id, url, filename, is_primary, display_order)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [productId, cloudflareImageId, filename, isPrimary, displayOrder]
+    [productId, cloudflareImageId, url, filename, isPrimary, displayOrder]
   );
 
   return result.rows[0];

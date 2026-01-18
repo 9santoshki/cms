@@ -8,7 +8,7 @@ import * as path from 'path';
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
 
 import sharp from 'sharp';
-import { uploadImageToCloudflare } from '../src/lib/cloudflare';
+import { uploadImageToCloudflare, getCloudflareImageUrl } from '../src/lib/cloudflare';
 import { addProductImage } from '../src/lib/db/productImages';
 import { query } from '../src/lib/db/connection';
 
@@ -106,9 +106,11 @@ async function addSampleImages() {
         }
 
         // Save to database
+        const imageUrl = getCloudflareImageUrl(uploadResult.result!.id);
         await addProductImage(
           product.id,
           uploadResult.result!.id,
+          imageUrl,
           filename,
           isPrimary,
           i

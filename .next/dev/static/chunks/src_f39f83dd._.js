@@ -181,7 +181,6 @@ const LoginModal = ({ isOpen, onClose })=>{
                         backgroundColor: 'rgba(248, 244, 240, 0.7)',
                         borderRadius: '50%',
                         padding: '2px',
-                        align: 'right',
                         position: 'absolute',
                         right: '10px'
                     },
@@ -197,12 +196,12 @@ const LoginModal = ({ isOpen, onClose })=>{
                             d: "M6 18L18 6M6 6l12 12"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 64,
+                            lineNumber: 63,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/src/components/LoginModal.tsx",
-                        lineNumber: 63,
+                        lineNumber: 62,
                         columnNumber: 11
                     }, ("TURBOPACK compile-time value", void 0))
                 }, void 0, false, {
@@ -221,11 +220,10 @@ const LoginModal = ({ isOpen, onClose })=>{
                             style: {
                                 color: '#333333'
                             },
-                            align: "center",
                             children: "Welcome"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 73,
+                            lineNumber: 72,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -235,25 +233,24 @@ const LoginModal = ({ isOpen, onClose })=>{
                                 lineHeight: '1',
                                 color: '#333333'
                             },
-                            align: "center",
                             children: "Sign in to access your account"
                         }, void 0, false, {
                             fileName: "[project]/src/components/LoginModal.tsx",
-                            lineNumber: 78,
+                            lineNumber: 77,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/LoginModal.tsx",
-                    lineNumber: 69,
+                    lineNumber: 68,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0)),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "p-5 pt-4",
                     style: {
-                        backgroundColor: '#fffaf5'
+                        backgroundColor: '#fffaf5',
+                        textAlign: 'center'
                     },
-                    align: "center",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: async ()=>{
@@ -357,7 +354,7 @@ const LoginModal = ({ isOpen, onClose })=>{
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/LoginModal.tsx",
-                    lineNumber: 88,
+                    lineNumber: 87,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0))
             ]

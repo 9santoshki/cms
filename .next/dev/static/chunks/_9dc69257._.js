@@ -23,7 +23,9 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 const signInWithGoogle = async ()=>{
-    const redirectUri = `${window.location.origin}/auth/callback`;
+    // Use NEXT_PUBLIC_APP_URL if set, otherwise fall back to window.location.origin
+    const appUrl = ("TURBOPACK compile-time value", "http://localhost:3000") || window.location.origin;
+    const redirectUri = `${appUrl}/auth/callback`;
     const googleClientId = ("TURBOPACK compile-time value", "774770475031-c7nqt1nrj05ntj4h9h1a2co56o5peb2o.apps.googleusercontent.com");
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleAuthUrl.searchParams.set('client_id', googleClientId);
@@ -80,7 +82,7 @@ const getUserProfile = async ()=>{
     const user = await getCurrentUser();
     if (!user) return null;
     return {
-        id: user.id,
+        id: String(user.id),
         role: user.role
     };
 };
@@ -578,7 +580,9 @@ const useCartStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_mo
                                 quantity: localItem.quantity
                             });
                             // Sync the higher quantity back to server
-                            syncCartItemWithServer(serverItem.product_id, localItem.quantity);
+                            if (serverItem.product_id && localItem.quantity) {
+                                syncCartItemWithServer(serverItem.product_id, localItem.quantity);
+                            }
                         } else {
                             mergedItems.push(serverItem);
                         }

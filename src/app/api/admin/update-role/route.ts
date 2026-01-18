@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie, getUserProfile, updateUserRole } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB, updateUserRole } from '@/lib/db/auth';
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSessionFromCookie();
+    const session = await getSessionFromCookieWithDB();
 
     if (!session) {
       return NextResponse.json(
@@ -13,17 +13,17 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if the current user is an admin
-    const userProfile = await getUserProfile(session.userId);
-
-    if (!userProfile || userProfile.role !== 'admin') {
+    if (session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Only admins can update user roles' },
         { status: 403 }
       );
     }
 
-    // Get the request body
-    const { userId, newRole } = await request.json();
+    // Get the request body (support both 'role' and 'newRole' for compatibility)
+    const body = await request.json();
+    const userId = body.userId;
+    const newRole = body.role || body.newRole;
 
     // Validate the input
     if (!userId || !newRole) {

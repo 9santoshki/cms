@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteProductImage } from '@/lib/db/productImages';
-import { deleteImageFromCloudflare } from '@/lib/cloudflare';
 import { query } from '@/lib/db/connection';
+import { deleteImageFromCloudflare } from '@/lib/cloudflare';
 
 /**
  * Delete a product image
  * DELETE /api/products/images/[imageId]
  */
 export async function DELETE(
-  _request: NextRequest,
-  context: { params: Promise<{ imageId: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ imageId: string }> }
 ) {
   try {
-    const params = await context.params;
-    const { imageId } = params;
+    const { imageId } = await params;
 
     if (!imageId) {
       return NextResponse.json(
@@ -25,7 +24,7 @@ export async function DELETE(
       );
     }
 
-    // Get the image details first to get Cloudflare ID
+    // Get the image details before deleting
     const imageResult = await query(
       'SELECT cloudflare_image_id FROM product_images WHERE id = $1',
       [imageId]
@@ -44,9 +43,9 @@ export async function DELETE(
     const cloudflareImageId = imageResult.rows[0].cloudflare_image_id;
 
     // Delete from database
-    const dbDeleted = await deleteProductImage(imageId);
+    const deleted = await deleteProductImage(imageId);
 
-    if (!dbDeleted) {
+    if (!deleted) {
       return NextResponse.json(
         {
           success: false,
@@ -56,11 +55,12 @@ export async function DELETE(
       );
     }
 
-    // Delete from Cloudflare (don't fail if this fails)
+    // Try to delete from Cloudflare (non-blocking, log errors but don't fail the request)
     try {
       await deleteImageFromCloudflare(cloudflareImageId);
-    } catch (error) {
-      console.error('Failed to delete from Cloudflare, but DB deletion succeeded:', error);
+    } catch (cloudflareError: any) {
+      console.error('Error deleting from Cloudflare:', cloudflareError);
+      // Continue anyway since DB deletion succeeded
     }
 
     return NextResponse.json({
@@ -69,103 +69,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error deleting image:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Internal server error',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Update image properties (e.g., set as primary, update order)
- * PATCH /api/products/images/[imageId]
- */
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ imageId: string }> }
-) {
-  try {
-    const params = await context.params;
-    const { imageId } = params;
-    const body = await request.json();
-    const { isPrimary, displayOrder } = body;
-
-    if (!imageId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Image ID is required',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Get image details
-    const imageResult = await query(
-      'SELECT product_id FROM product_images WHERE id = $1',
-      [imageId]
-    );
-
-    if (imageResult.rows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Image not found',
-        },
-        { status: 404 }
-      );
-    }
-
-    const productId = imageResult.rows[0].product_id;
-
-    // Build update query
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramCount = 1;
-
-    if (isPrimary !== undefined) {
-      // If setting as primary, first unset all primary images for this product
-      if (isPrimary) {
-        await query(
-          'UPDATE product_images SET is_primary = false WHERE product_id = $1',
-          [productId]
-        );
-      }
-      updates.push(`is_primary = $${paramCount++}`);
-      values.push(isPrimary);
-    }
-
-    if (displayOrder !== undefined) {
-      updates.push(`display_order = $${paramCount++}`);
-      values.push(displayOrder);
-    }
-
-    if (updates.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'No updates provided',
-        },
-        { status: 400 }
-      );
-    }
-
-    values.push(imageId);
-
-    const result = await query(
-      `UPDATE product_images SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${paramCount} RETURNING *`,
-      values
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: result.rows[0],
-    });
-  } catch (error: any) {
-    console.error('Error updating image:', error);
     return NextResponse.json(
       {
         success: false,

@@ -1,7 +1,11 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: '.env.local' });
+
+// Load environment variables - try .env.production first (for server), then .env.local (for dev)
+const envFile = fs.existsSync('.env.production') ? '.env.production' : '.env.local';
+require('dotenv').config({ path: envFile });
+console.log(`Loading environment from: ${envFile}`);
 
 async function initDatabase() {
   const client = new Client({
@@ -23,13 +27,15 @@ async function initDatabase() {
     // Execute the SQL
     await client.query(sql);
 
-    console.log('Database initialized successfully!');
+    console.log('✅ Database initialized successfully!');
     console.log('Tables created:');
     console.log('  - users');
+    console.log('  - sessions');
+    console.log('  - temp_auth_tokens');
     console.log('  - products');
     console.log('  - orders');
     console.log('  - order_items');
-    console.log('  - cart_items');
+    console.log('  - cart');
     console.log('  - appointments');
 
   } catch (error) {

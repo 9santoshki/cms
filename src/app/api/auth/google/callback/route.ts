@@ -8,21 +8,26 @@ import {
 import { query } from '@/lib/db/connection';
 
 export async function GET(request: NextRequest) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
   if (error) {
     console.error('OAuth error:', error);
-    return NextResponse.redirect(new URL('/?error=oauth_failed', request.url));
+    return NextResponse.redirect(new URL('/?error=oauth_failed', appUrl));
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', request.url));
+    return NextResponse.redirect(new URL('/?error=no_code', appUrl));
   }
 
   try {
     // Exchange code for tokens
+    console.log('🔄 Exchanging code for tokens...');
+    console.log('Redirect URI:', `${appUrl}/auth/callback`);
+    console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
+
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -32,14 +37,18 @@ export async function GET(request: NextRequest) {
         code,
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        redirect_uri: `${request.nextUrl.origin}/auth/callback`,
+        redirect_uri: `${appUrl}/auth/callback`,
         grant_type: 'authorization_code',
       }),
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to exchange code for tokens');
+      const errorText = await tokenResponse.text();
+      console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
+      throw new Error(`Failed to exchange code for tokens: ${tokenResponse.status} - ${errorText}`);
     }
+
+    console.log('✅ Token exchange successful');
 
     const tokens = await tokenResponse.json();
 
@@ -115,9 +124,20 @@ export async function GET(request: NextRequest) {
     console.log('✅ Temporary token created, redirecting to set-session route');
 
     // Redirect to server-side set-session route (no client-side JavaScript needed!)
-    return NextResponse.redirect(new URL(`/auth/set-session?token=${tempToken}`, request.url));
+    return NextResponse.redirect(new URL(`/auth/set-session?token=${tempToken}`, appUrl));
   } catch (error) {
-    console.error('Error in OAuth callback:', error);
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    console.error('❌❌❌ Error in OAuth callback:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      appUrl,
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20),
+      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET
+    });
+
+    // For debugging, include error message in redirect
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    const errorParam = encodeURIComponent(errorMsg.substring(0, 100));
+    return NextResponse.redirect(new URL(`/?error=auth_failed&details=${errorParam}`, appUrl));
   }
 }

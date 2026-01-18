@@ -123,7 +123,16 @@ export async function uploadImageToCloudflare(
     };
   } catch (error: any) {
     console.error('Error uploading to R2:', error);
-    throw error;
+    console.error('R2 Error details:', {
+      message: error?.message,
+      code: error?.Code || error?.code,
+      name: error?.name,
+      stack: error?.stack,
+    });
+
+    // Provide more helpful error message
+    const errorMessage = error?.message || error?.Code || error?.toString() || 'Failed to upload to Cloudflare R2';
+    throw new Error(`Cloudflare R2 upload failed: ${errorMessage}`);
   }
 }
 

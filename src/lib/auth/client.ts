@@ -3,7 +3,9 @@ import { User } from '@/types';
 
 // Sign in with Google OAuth - redirect to Google OAuth
 export const signInWithGoogle = async () => {
-  const redirectUri = `${window.location.origin}/auth/callback`;
+  // Use NEXT_PUBLIC_APP_URL if set, otherwise fall back to window.location.origin
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+  const redirectUri = `${appUrl}/auth/callback`;
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');

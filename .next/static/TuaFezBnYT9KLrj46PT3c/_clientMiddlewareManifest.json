@@ -1,0 +1,12 @@
+[
+  {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!api|_next\\/static|_next\\/image|favicon.ico).*))(\\\\.json)?[\\/#\\?]?$",
+    "missing": [
+      {
+        "type": "header",
+        "key": "next-router-data"
+      }
+    ],
+    "originalSource": "/((?!api|_next/static|_next/image|favicon.ico).*)"
+  }
+]
