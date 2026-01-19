@@ -128,7 +128,7 @@ All database operations go through dedicated modules:
 
 - **Storage:** Cloudflare R2 bucket (configured via `CLOUDFLARE_BUCKET` env var)
 - **Upload:** Images uploaded via `src/lib/cloudflare.ts` using AWS S3 SDK
-- **Access:** Public URLs served from `CLOUDFLARE_R2_PUBLIC_URL`
+- **Access:** Public URLs constructed from `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_BUCKET`
 - **Database Tables:**
   - `products.image_url` - Legacy single image URL (full Cloudflare R2 public URL)
   - `product_images` - Multiple images per product with gallery support
@@ -153,9 +153,11 @@ product_images (
 1. Admin uploads image(s) via dashboard `/dashboard/products/[id]`
 2. Images uploaded to Cloudflare R2 via `uploadImageToCloudflare()`
 3. R2 returns object key (e.g., `product_images/1234567890-abc123-image.jpg`)
-4. Public URL constructed as `${CLOUDFLARE_R2_PUBLIC_URL}/${key}`
+4. Public URL constructed as `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${CLOUDFLARE_BUCKET}/${key}`
 5. Metadata saved to `product_images` table via `addProductImage()`
 6. Product API returns `primary_image` URL from the image marked as `is_primary = true`
+
+**Note:** R2 bucket must have public access enabled for images to be accessible via these URLs.
 
 ### API Response Format
 
@@ -202,7 +204,7 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
 ADMIN_EMAILS
 CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY
 CLOUDFLARE_R2_ENDPOINT, CLOUDFLARE_R2_TOKEN_VALUE, CLOUDFLARE_BUCKET
-CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
+CLOUDFLARE_PRODUCT_IMAGE_FOLDER
 ```
 
 **Important Notes:**

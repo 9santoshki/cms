@@ -172,20 +172,18 @@ export async function deleteImageFromCloudflare(
  * @returns Public URL for the image
  */
 export function getCloudflareImageUrl(imageKey: string): string {
-  const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL;
   const bucket = process.env.CLOUDFLARE_BUCKET;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
-  // If public URL is configured, use it
-  if (publicUrl && publicUrl !== 'https://pub-your-id.r2.dev') {
-    return `${publicUrl}/${imageKey}`;
+  if (!bucket || !accountId) {
+    console.warn('Missing CLOUDFLARE_BUCKET or CLOUDFLARE_ACCOUNT_ID');
+    return `https://r2-placeholder.com/${imageKey}`;
   }
 
-  // Otherwise, return a placeholder (user needs to configure public access)
-  // In production, you should either:
-  // 1. Enable public access on the bucket and set CLOUDFLARE_R2_PUBLIC_URL
-  // 2. Use signed URLs
-  // 3. Use a custom domain
-  return `https://r2-placeholder.com/${bucket}/${imageKey}`;
+  // Construct R2 public URL using account ID and bucket name
+  // Format: https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>
+  // Note: This requires the bucket to have public access enabled
+  return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${imageKey}`;
 }
 
 /**
