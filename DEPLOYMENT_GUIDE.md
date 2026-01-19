@@ -9,6 +9,30 @@ This project uses **local build + binary deployment** with two types of deployme
 
 ---
 
+## Environment Configuration
+
+This project supports multiple environments with separate configuration files:
+
+### Environment Files
+
+| File | Purpose | Domain | Server |
+|------|---------|--------|--------|
+| `.env.local` | Local development | `http://localhost:3000` | Your machine |
+| `.env.uat` | UAT/Staging | `https://uat.colourmyspace.com` | 68.183.53.217 |
+| `.env.production` | Production | `https://www.colourmyspace.com` | TBD |
+
+**Important Notes:**
+- All `.env*` files are in `.gitignore` for security
+- Each file should contain environment-specific values:
+  - `NEXT_PUBLIC_APP_URL` - Domain URL (embedded at build time)
+  - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` - OAuth client ID
+  - `DB_HOST`, `DB_PASSWORD` - Database credentials
+  - Other environment-specific configuration
+
+**This guide covers UAT deployment** (`.env.uat` → uat.colourmyspace.com)
+
+---
+
 ## Regular Deployment (Updates Only)
 
 For day-to-day deployments after initial setup:
@@ -65,7 +89,9 @@ DB_PASSWORD='your-generated-password' ./scripts/first-time-setup.sh 68.183.53.21
 ./scripts/deploy-env.sh
 ```
 
-This uploads your `.env.production` file to the server.
+This uploads your `.env.uat` file to the UAT server (uat.colourmyspace.com).
+
+**Note:** For production deployment to www.colourmyspace.com, you'll use `.env.production` (separate configuration).
 
 ### Step 3: Initialize Database Schema
 
@@ -334,9 +360,9 @@ curl -I https://uat.colourmyspace.com
 
 **Problem:** App can't connect to PostgreSQL
 
-**Check `.env.production`:**
+**Check `.env.uat`:**
 ```bash
-ssh root@68.183.53.217 "cd /home/cms/app && grep DB_ .env.production"
+ssh root@68.183.53.217 "cd /home/cms/app && grep DB_ .env.uat"
 ```
 
 **Test database connection:**
@@ -407,7 +433,7 @@ PostgreSQL (Localhost only, cms_db database)
 ├── public/                   # Static assets (deployed)
 ├── node_modules/             # Production dependencies (installed)
 ├── package.json              # Dependencies list (deployed)
-├── .env.production          # Environment variables (manual upload)
+├── .env.uat                 # UAT environment variables (manual upload)
 └── .git/                     # Git repository (for version tracking)
 ```
 

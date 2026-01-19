@@ -2,8 +2,13 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Load environment variables - try .env.production first (for server), then .env.local (for dev)
-const envFile = fs.existsSync('.env.production') ? '.env.production' : '.env.local';
+// Load environment variables - priority: .env.uat (UAT server) > .env.production (prod server) > .env.local (dev)
+let envFile = '.env.local';
+if (fs.existsSync('.env.uat')) {
+  envFile = '.env.uat';
+} else if (fs.existsSync('.env.production')) {
+  envFile = '.env.production';
+}
 require('dotenv').config({ path: envFile });
 console.log(`Loading environment from: ${envFile}`);
 

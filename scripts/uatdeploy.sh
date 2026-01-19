@@ -26,14 +26,14 @@ if ! git diff-index --quiet HEAD --; then
     fi
 fi
 
-# Step 2: Build locally with production environment variables
-echo "🔨 Building locally..."
-echo "   Using production URL: https://uat.colourmyspace.com"
+# Step 2: Build locally with UAT environment variables
+echo "🔨 Building locally for UAT..."
+echo "   Using UAT URL: https://uat.colourmyspace.com"
 
-# Load NEXT_PUBLIC_ variables from .env.production
-export NEXT_PUBLIC_APP_URL=$(grep NEXT_PUBLIC_APP_URL .env.production | cut -d '=' -f2)
-export NEXT_PUBLIC_GOOGLE_CLIENT_ID=$(grep NEXT_PUBLIC_GOOGLE_CLIENT_ID .env.production | cut -d '=' -f2)
-export NEXT_PUBLIC_RAZORPAY_KEY_ID=$(grep NEXT_PUBLIC_RAZORPAY_KEY_ID .env.production | cut -d '=' -f2)
+# Load NEXT_PUBLIC_ variables from .env.uat
+export NEXT_PUBLIC_APP_URL=$(grep NEXT_PUBLIC_APP_URL .env.uat | cut -d '=' -f2)
+export NEXT_PUBLIC_GOOGLE_CLIENT_ID=$(grep NEXT_PUBLIC_GOOGLE_CLIENT_ID .env.uat | cut -d '=' -f2)
+export NEXT_PUBLIC_RAZORPAY_KEY_ID=$(grep NEXT_PUBLIC_RAZORPAY_KEY_ID .env.uat | cut -d '=' -f2)
 
 NODE_ENV=production npm run build
 
@@ -75,7 +75,7 @@ tar -czf /tmp/cms-deploy.tar.gz \
     package-lock.json \
     next.config.js \
     babel.config.js \
-    .env.production 2>/dev/null || tar -czf /tmp/cms-deploy.tar.gz .next public package.json package-lock.json next.config.js babel.config.js
+    .env.uat 2>/dev/null || tar -czf /tmp/cms-deploy.tar.gz .next public package.json package-lock.json next.config.js babel.config.js
 
 echo "✅ Package created ($(du -h /tmp/cms-deploy.tar.gz | cut -f1))"
 echo ""

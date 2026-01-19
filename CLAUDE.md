@@ -186,11 +186,17 @@ product_images (
 
 ## Environment Variables
 
-Required in `.env.local` (development) and `.env.production` (production):
+This project uses multiple environment files for different deployment targets:
+
+- **`.env.local`** - Local development (http://localhost:3000)
+- **`.env.uat`** - UAT/Staging server (https://uat.colourmyspace.com, 68.183.53.217)
+- **`.env.production`** - Production server (https://www.colourmyspace.com, TBD)
+
+Required variables in all environment files:
 ```
 DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 JWT_SECRET
-NEXT_PUBLIC_APP_URL (https://uat.colourmyspace.com for production, http://localhost:3000 for dev)
+NEXT_PUBLIC_APP_URL (environment-specific URL)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 NEXT_PUBLIC_RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
 ADMIN_EMAILS
@@ -199,7 +205,11 @@ CLOUDFLARE_R2_ENDPOINT, CLOUDFLARE_R2_TOKEN_VALUE, CLOUDFLARE_BUCKET
 CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
 ```
 
-**Note:** Variables starting with `NEXT_PUBLIC_` are bundled into the client build and require a rebuild after changes.
+**Important Notes:**
+- Variables starting with `NEXT_PUBLIC_` are bundled into the client build at build time
+- `uatdeploy.sh` reads from `.env.uat` to build for UAT environment
+- All `.env*` files are in `.gitignore` for security
+- Database credentials and URLs differ per environment
 
 ## Security
 
@@ -280,8 +290,8 @@ CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
 Before deploying to production:
 
 - [ ] Generate strong credentials: `openssl rand -base64 32` and `openssl rand -base64 64`
-- [ ] Update `.env.production` with strong passwords
-- [ ] Use `secure-server-setup.sh` script (not old `setup-new-server.sh`)
+- [ ] Update environment files (`.env.uat` or `.env.production`) with strong passwords
+- [ ] Use `first-time-setup.sh` script for server configuration
 - [ ] Verify PostgreSQL only on localhost: `netstat -an | grep 5432` (should show 127.0.0.1:5432)
 - [ ] Verify firewall: `ufw status` (should show active)
 - [ ] Verify fail2ban: `fail2ban-client status`
@@ -320,39 +330,41 @@ ssh root@<ip> "wondershaper -a eth0 -s"
 
 ## Deployment
 
-**Production Server:** DigitalOcean Droplet (104.236.245.179)
-**Domain:** https://uat.colourmyspace.com
+**UAT Server:** DigitalOcean Droplet (68.183.53.217)
+**UAT Domain:** https://uat.colourmyspace.com
+**Production Domain:** https://www.colourmyspace.com (TBD)
 **Process Manager:** PM2 (app name: `cms-app`)
 **Node.js Version:** 20.20.0 (required for Next.js 16)
 
 ### Deployment Scripts
 
 ```bash
-./scripts/secure-server-setup.sh <ip>  # ⚠️ REQUIRED: Secure first-time server setup
-./scripts/setup-git-deploy.sh <ip>     # One-time: Set up git-based deployment
-./scripts/deploy-git.sh [branch]       # Deploy from git (default: master)
-./scripts/uatdeploy.sh                 # Shortcut for deploy-git.sh master
-./scripts/rollback.sh [commit]         # Rollback to previous commit/tag
-./scripts/deploy-env.sh                # Deploy .env.production to server
-./scripts/check-oauth.sh               # Diagnose OAuth configuration issues
+./scripts/first-time-setup.sh <ip>  # ⚠️ First-time server setup with security
+./scripts/uatdeploy.sh              # Build locally + deploy to UAT server
+./scripts/deploy-env.sh             # Deploy .env.uat to UAT server
+./scripts/install-ssl.sh            # Install Cloudflare Origin Certificate
+./scripts/check-oauth.sh            # Diagnose OAuth configuration issues
 ```
 
-### Deployment Process (Git-Based)
+### Deployment Process (Local Build + Binary)
 
-**Modern git-based deployment** - cleaner and faster than tarball method:
+**Local build + binary deployment** - fast and reliable:
 
-1. **Local:** Commit and push changes to GitHub
-2. **Server:** Pull latest code from GitHub repository
-3. **Server:** Install dependencies with `npm install --production`
-4. **Server:** Build with `NODE_ENV=production npm run build`
-5. **Server:** Restart PM2 process
+1. **Local:** Build with UAT environment variables from `.env.uat`
+2. **Local:** Push to GitHub (version control)
+3. **Local:** Create tarball of `.next`, `public`, and config files
+4. **Server:** Upload tarball via SCP
+5. **Server:** Extract and install dependencies
+6. **Server:** Restart PM2 process
 
-**Why git-based is better:**
-- ✅ Faster deployments (no tarball creation/upload)
-- ✅ Version control on server
-- ✅ Easy rollbacks (`git checkout <commit>`)
-- ✅ Build uses server's .env.production (NEXT_PUBLIC_ vars embedded correctly)
-- ✅ Cleaner process, less manual steps
+**Time:** ~60 seconds
+
+**Why local build is better:**
+- ✅ Build locally (catches errors before commit)
+- ✅ Fast deployment (~60 seconds)
+- ✅ Uses `.env.uat` for environment-specific builds
+- ✅ Works on 1GB droplets (no server-side builds)
+- ✅ Version control maintained via git push
 
 **Quick deploy:**
 ```bash
@@ -360,23 +372,25 @@ ssh root@<ip> "wondershaper -a eth0 -s"
 git add .
 git commit -m "Update feature"
 
-# Deploy to production
+# Deploy to UAT (builds locally with .env.uat)
 ./scripts/uatdeploy.sh
 ```
 
 **Rollback if something breaks:**
 ```bash
-# Rollback to previous commit
-./scripts/rollback.sh HEAD~1
+# Checkout previous commit
+git checkout HEAD~1
 
-# Rollback to specific commit
-./scripts/rollback.sh abc1234
+# Rebuild and deploy
+./scripts/uatdeploy.sh
 
-# Rollback to a tag
-./scripts/rollback.sh v1.2.3
+# Or rollback to specific commit
+git checkout abc1234
+./scripts/uatdeploy.sh
 
 # Go back to latest (undo rollback)
-./scripts/rollback.sh master
+git checkout master
+./scripts/uatdeploy.sh
 ```
 
 ### First-Time Server Setup (SECURE)
@@ -395,55 +409,50 @@ echo "Database Password: $DB_PASSWORD"
 export JWT_SECRET="$(openssl rand -base64 64)"
 echo "JWT Secret: $JWT_SECRET"
 
-# Save these credentials - you'll need them for .env.production
+# Save these credentials - you'll need them for .env.uat or .env.production
 ```
 
-2. **Run secure server setup**:
+2. **Run first-time server setup**:
 ```bash
 # This script will:
 # - Install Node.js 20, PostgreSQL, nginx, PM2
 # - Configure PostgreSQL to ONLY listen on localhost
-# - Set up firewall (UFW) - only ports 22, 80, 443
+# - Set up firewall with Cloudflare IP ranges (correct rule ordering)
 # - Install fail2ban for intrusion prevention
-# - Harden SSH (disable password auth)
 # - Create database with strong password
+# - Configure nginx reverse proxy with rate limiting
+# - Set up 4GB swap memory
 
-DB_PASSWORD='your-strong-password' ./scripts/secure-server-setup.sh <droplet-ip>
+DB_PASSWORD='your-strong-password' ./scripts/first-time-setup.sh 68.183.53.217
 ```
 
-3. **Update .env.production**:
+3. **Update environment file**:
 ```bash
-# Update these in .env.production:
+# For UAT, update .env.uat:
 DB_PASSWORD='<strong-password-from-step-1>'
 JWT_SECRET='<strong-secret-from-step-1>'
+NEXT_PUBLIC_APP_URL='https://uat.colourmyspace.com'
+
+# For production, update .env.production:
+NEXT_PUBLIC_APP_URL='https://www.colourmyspace.com'
 ```
 
-4. **Set up git-based deployment**:
+4. **Deploy environment file and application**:
 ```bash
-# One-time setup for git deployment
-./scripts/setup-git-deploy.sh <droplet-ip>
-```
-
-5. **Deploy .env.production and application**:
-```bash
-# Deploy environment variables
+# Deploy environment variables (.env.uat to UAT server)
 ./scripts/deploy-env.sh
 
-# Deploy application
+# Deploy application (build locally + upload)
 ./scripts/uatdeploy.sh
 ```
 
-6. **Initialize database and start application**:
+5. **Initialize database**:
 ```bash
-# SSH to server
-ssh root@<droplet-ip>
-
-# Initialize database schema
-cd /home/cms/app
-npm run init-db
+# Initialize database schema (detects .env.uat automatically)
+ssh root@68.183.53.217 "cd /home/cms/app && npm run init-db"
 
 # Should show:
-# Loading environment from: .env.production
+# Loading environment from: .env.uat
 # Connected to PostgreSQL database
 # ✅ Database initialized successfully!
 # Tables created:
@@ -509,9 +518,10 @@ npm run init-db
 ```
 
 **Important Notes:**
-- `.env.production` must be created manually on the server (security: not included in deployment)
-- The `init-db` script automatically detects and uses `.env.production` when available
-- Variables starting with `NEXT_PUBLIC_` are embedded at build time and require a rebuild to take effect
+- Environment files (`.env.uat`, `.env.production`) must be created manually and deployed separately (security: not in git)
+- The `init-db` script automatically detects and uses `.env.uat` or `.env.production` when available
+- Variables starting with `NEXT_PUBLIC_` are embedded at build time from the environment file
+- `uatdeploy.sh` reads from `.env.uat` to build with correct URLs
 - Database initialization only needs to be run once (or when schema changes)
 - Always ensure `cms_user` has full permissions on the `cms_db` database and `public` schema
 
