@@ -49,7 +49,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -62,7 +63,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -75,7 +77,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -88,7 +91,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -101,7 +105,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -115,7 +120,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           style={{
             padding: '15px 40px',
             cursor: 'pointer',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            color: '#333'
           }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -129,7 +135,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -142,7 +149,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         style={{
           padding: '15px 40px',
           cursor: 'pointer',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          color: '#333'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -179,7 +187,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             style={{
               padding: '15px 40px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              color: '#333'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -193,7 +202,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             style={{
               padding: '15px 40px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              color: '#333'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -208,7 +218,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               style={{
                 padding: '15px 40px',
                 cursor: 'pointer',
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
+                color: '#333'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
