@@ -13,7 +13,9 @@
     "setup-sample-data": "node scripts/setupSampleData.js",
     "setup": "tsx scripts/consolidatedSetup.ts",
     "add-sample-users": "node scripts/addSampleUsers.js",
-    "init-db": "node scripts/initDb.js"
+    "init-db": "node scripts/initDb.js",
+    "promote-admin": "node scripts/promote-admin.js",
+    "seed-data": "node scripts/seed-sample-data.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.965.0",
