@@ -3,7 +3,7 @@
  * Handles image uploads to Cloudflare R2 (S3-compatible storage)
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 
 interface CloudflareUploadResponse {
@@ -167,23 +167,59 @@ export async function deleteImageFromCloudflare(
 }
 
 /**
- * Get the public URL for an R2 object
+ * Get the proxy URL for an R2 object (private bucket served through API proxy)
  * @param imageKey - R2 object key
- * @returns Public URL for the image
+ * @returns URL to proxy endpoint that serves the image
  */
 export function getCloudflareImageUrl(imageKey: string): string {
-  const bucket = process.env.CLOUDFLARE_BUCKET;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-
-  if (!bucket || !accountId) {
-    console.warn('Missing CLOUDFLARE_BUCKET or CLOUDFLARE_ACCOUNT_ID');
-    return `https://r2-placeholder.com/${imageKey}`;
+  if (!imageKey) {
+    return '';
   }
 
-  // Construct R2 public URL using account ID and bucket name
-  // Format: https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>
-  // Note: This requires the bucket to have public access enabled
-  return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${imageKey}`;
+  // Encode the key to handle special characters in URLs
+  const encodedKey = encodeURIComponent(imageKey);
+
+  // Return URL to our proxy API endpoint
+  // The API endpoint will fetch from R2 with credentials
+  return `/api/images/${encodedKey}`;
+}
+
+/**
+ * Fetch an image from R2
+ * Used by the image proxy API endpoint
+ * @param imageKey - R2 object key
+ * @returns Image data as a stream
+ */
+export async function fetchImageFromR2(imageKey: string): Promise<{
+  stream: ReadableStream | null;
+  contentType: string;
+  contentLength?: number;
+}> {
+  const bucket = process.env.CLOUDFLARE_BUCKET;
+
+  if (!bucket) {
+    throw new Error('Missing CLOUDFLARE_BUCKET');
+  }
+
+  try {
+    const client = getR2Client();
+
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: imageKey,
+    });
+
+    const response = await client.send(command);
+
+    return {
+      stream: response.Body?.transformToWebStream() || null,
+      contentType: response.ContentType || 'image/jpeg',
+      contentLength: response.ContentLength,
+    };
+  } catch (error) {
+    console.error('Error fetching image from R2:', error);
+    throw error;
+  }
 }
 
 /**

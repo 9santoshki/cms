@@ -126,9 +126,10 @@ All database operations go through dedicated modules:
 
 **All product images are stored in Cloudflare R2 (S3-compatible object storage), NOT in the database.**
 
-- **Storage:** Cloudflare R2 bucket (configured via `CLOUDFLARE_BUCKET` env var)
+- **Storage:** Cloudflare R2 bucket (configured via `CLOUDFLARE_BUCKET` env var) - **PRIVATE**
 - **Upload:** Images uploaded via `src/lib/cloudflare.ts` using AWS S3 SDK
-- **Access:** Public URLs constructed from `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_BUCKET`
+- **Access:** Images served through proxy API endpoint `/api/images/[key]` with R2 credentials
+- **Authentication:** Uses `CLOUDFLARE_R2_ACCESS_KEY_ID` and `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
 - **Database Tables:**
   - `products.image_url` - Legacy single image URL (full Cloudflare R2 public URL)
   - `product_images` - Multiple images per product with gallery support
@@ -153,11 +154,16 @@ product_images (
 1. Admin uploads image(s) via dashboard `/dashboard/products/[id]`
 2. Images uploaded to Cloudflare R2 via `uploadImageToCloudflare()`
 3. R2 returns object key (e.g., `product_images/1234567890-abc123-image.jpg`)
-4. Public URL constructed as `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${CLOUDFLARE_BUCKET}/${key}`
-5. Metadata saved to `product_images` table via `addProductImage()`
-6. Product API returns `primary_image` URL from the image marked as `is_primary = true`
+4. Proxy URL constructed as `/api/images/${encodeURIComponent(key)}`
+5. Metadata saved to `product_images` table via `addProductImage()` with R2 key
+6. Product API returns `primary_image` URL (proxy endpoint)
 
-**Note:** R2 bucket must have public access enabled for images to be accessible via these URLs.
+**Image Serving (Private Bucket):**
+- R2 bucket is **private** (not publicly accessible)
+- Images served through API proxy endpoint: `/api/images/[key]`
+- Proxy endpoint (`src/app/api/images/[key]/route.ts`) fetches from R2 with credentials
+- Images cached for 1 year (`Cache-Control: public, max-age=31536000, immutable`)
+- No need for public bucket access or pre-signed URLs
 
 ### API Response Format
 
