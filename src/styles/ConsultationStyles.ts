@@ -12,7 +12,7 @@ export const ConsultationContainer = styled.div`
 // Hero section
 export const ConsultationHero = styled.section`
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-              url('https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767928644452-6a7vh9bf8fn-consultation-hero.jpg');
+              url('/api/images/product_images%2F1767928644452-6a7vh9bf8fn-consultation-hero.jpg');
   background-size: cover;
   background-position: center;
   height: 45vh;

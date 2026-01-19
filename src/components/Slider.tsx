@@ -20,19 +20,19 @@ const Slider: React.FC = () => {
       id: 1,
       title: 'MODERN LIVING ROOM DESIGN',
       subtitle: 'ELEVATING INTERIORS WITH TIMELESS ELEGANCE AND FUNCTIONAL DESIGN',
-      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927653531-x2pjprnjaw-slider-modern-living-room.jpg'
+      imageUrl: '/api/images/product_images%2F1767927653531-x2pjprnjaw-slider-modern-living-room.jpg'
     },
     {
       id: 2,
       title: 'CLASSIC ELEGANCE',
       subtitle: 'SOPHISTICATED SPACES THAT COMBINE TRADITIONAL ELEGANCE WITH MODERN COMFORT',
-      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927655512-p6cyjrf7cy-slider-classic-elegance.jpg'
+      imageUrl: '/api/images/product_images%2F1767927655512-p6cyjrf7cy-slider-classic-elegance.jpg'
     },
     {
       id: 3,
       title: 'COASTAL RETREAT',
       subtitle: 'BREATHE EASY WITH AIRY SPACES INSPIRED BY THE NATURAL COASTLINE',
-      imageUrl: 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/1767927656389-9s5gz1zz4c4-slider-coastal-retreat.jpg'
+      imageUrl: '/api/images/product_images%2F1767927656389-9s5gz1zz4c4-slider-coastal-retreat.jpg'
     }
   ];
 

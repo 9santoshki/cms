@@ -7,11 +7,14 @@ import { fetchImageFromR2 } from '@/lib/cloudflare';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
+    // Next.js 16: params is now a Promise and must be awaited
+    const { key } = await params;
+
     // Decode the image key from URL
-    const imageKey = decodeURIComponent(params.key);
+    const imageKey = decodeURIComponent(key);
 
     if (!imageKey) {
       return new NextResponse('Image key is required', { status: 400 });
