@@ -72,9 +72,9 @@ fi
 echo "📦 Installing dependencies..."
 npm install
 
-# Build application on server
+# Build application on server (with increased Node.js heap)
 echo "🔨 Building application..."
-NODE_ENV=production npm run build
+NODE_ENV=production NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Restart PM2
 echo "🔄 Restarting application..."
