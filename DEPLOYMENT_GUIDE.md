@@ -139,7 +139,50 @@ Tables created:
 ./scripts/uatdeploy.sh
 ```
 
-### Step 6: Verify Everything Works
+### Step 6: Promote Admin Users
+
+After signing in with Google for the first time, promote your user to admin:
+
+```bash
+ssh root@68.183.53.217 "cd /home/cms/app && npm run promote-admin"
+```
+
+**Expected output:**
+```
+✅ santoshk.iima@gmail.com → admin
+✅ k.santosh13@gmail.com → admin
+
+Current admin users:
+  - santoshk.iima@gmail.com (Santosh K) - Created: 2026-01-19
+```
+
+**Note:** Users must sign in at least once before they can be promoted to admin.
+
+### Step 7: Seed Sample Data (Optional)
+
+For UAT testing, add sample products:
+
+```bash
+ssh root@68.183.53.217 "cd /home/cms/app && npm run seed-data"
+```
+
+**Expected output:**
+```
+📦 Adding sample products...
+  1. Modern Velvet Sofa - ₹899.99
+  2. Marble Top Dining Table - ₹1249.99
+  ...
+  10. Crystal Chandelier - ₹549.99
+
+📊 Summary by Category:
+  Furniture: 5 products
+  Lighting: 3 products
+  Decor: 2 products
+
+✅ Sample data seeded successfully!
+```
+
+### Step 8: Verify Everything Works
 
 ```bash
 # Check PM2 status
@@ -148,9 +191,18 @@ ssh root@68.183.53.217 "pm2 status"
 # Check application logs
 ssh root@68.183.53.217 "pm2 logs cms-app --lines 20"
 
+# Verify database content
+ssh root@68.183.53.217 "sudo -u postgres psql -d cms_db -c 'SELECT role, COUNT(*) FROM users GROUP BY role;'"
+
 # Visit your site
 open https://uat.colourmyspace.com
 ```
+
+**You should see:**
+- ✅ PM2 process running
+- ✅ Site accessible via HTTPS
+- ✅ Admin users can access /dashboard
+- ✅ Sample products visible in /shop
 
 ---
 
