@@ -26,8 +26,15 @@ if ! git diff-index --quiet HEAD --; then
     fi
 fi
 
-# Step 2: Build locally
+# Step 2: Build locally with production environment variables
 echo "🔨 Building locally..."
+echo "   Using production URL: https://uat.colourmyspace.com"
+
+# Load NEXT_PUBLIC_ variables from .env.production
+export NEXT_PUBLIC_APP_URL=$(grep NEXT_PUBLIC_APP_URL .env.production | cut -d '=' -f2)
+export NEXT_PUBLIC_GOOGLE_CLIENT_ID=$(grep NEXT_PUBLIC_GOOGLE_CLIENT_ID .env.production | cut -d '=' -f2)
+export NEXT_PUBLIC_RAZORPAY_KEY_ID=$(grep NEXT_PUBLIC_RAZORPAY_KEY_ID .env.production | cut -d '=' -f2)
+
 NODE_ENV=production npm run build
 
 if [ $? -ne 0 ]; then

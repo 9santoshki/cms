@@ -1,27 +1,134 @@
-# Local Build + Binary Deployment Guide
+# Deployment Guide
 
 ## Overview
 
-The deployment system uses **local build + binary deployment**. You build locally (fast, catches errors), push to GitHub (version control), then deploy the binary to the server.
+This project uses **local build + binary deployment** with two types of deployments:
 
-## Quick Reference
+1. **First-Time Setup** (Run once on new server) - Full security configuration
+2. **Regular Deployment** (Run anytime) - Just updates the application binary
 
-### Normal Deployment
+---
+
+## Regular Deployment (Updates Only)
+
+For day-to-day deployments after initial setup:
 
 ```bash
-# 1. Deploy to production
 ./scripts/uatdeploy.sh
 ```
 
-That's it! The script will:
-1. Build locally (catches errors before committing)
-2. Push to GitHub (version control)
-3. Create deployment tarball (.next + static files)
-4. Upload to server
-5. Install production dependencies
-6. Restart PM2
+**What it does:**
+1. ✅ Builds locally (catches errors before commit)
+2. ✅ Pushes to GitHub (version control)
+3. ✅ Deploys binary to server (fast upload)
+4. ✅ Installs dependencies
+5. ✅ Restarts PM2
 
-### Rollback
+**Time:** ~60 seconds
+
+---
+
+## First-Time Setup (New Server)
+
+Run this **once** when setting up a brand new server:
+
+### Prerequisites
+
+- Fresh Ubuntu 24.04 droplet
+- Root SSH access configured
+- Strong database password generated
+
+### Step 1: Run First-Time Setup Script
+
+```bash
+# Generate a strong password first
+openssl rand -base64 32
+
+# Run setup with your password
+DB_PASSWORD='your-generated-password' ./scripts/first-time-setup.sh 68.183.53.217
+```
+
+**What it configures:**
+- ✅ System packages (Node.js 20, PostgreSQL, nginx, PM2)
+- ✅ Firewall with 13 Cloudflare IP ranges (correct rule ordering: ALLOW first, DENY last)
+- ✅ 4GB swap memory (enables builds on 1GB droplet)
+- ✅ fail2ban (SSH brute-force protection)
+- ✅ PostgreSQL database (cms_db, cms_user)
+- ✅ Nginx reverse proxy with rate limiting
+- ✅ Application directory with git
+
+**Time:** ~5-10 minutes
+
+### Step 2: Deploy Environment Variables
+
+```bash
+./scripts/deploy-env.sh
+```
+
+This uploads your `.env.production` file to the server.
+
+### Step 3: Initialize Database Schema
+
+```bash
+ssh root@68.183.53.217 "cd /home/cms/app && npm run init-db"
+```
+
+**Expected output:**
+```
+✅ Database initialized successfully!
+Tables created:
+  - users
+  - sessions
+  - temp_auth_tokens
+  - products
+  - orders
+  - order_items
+  - cart
+  - appointments
+```
+
+### Step 4: Install SSL Certificate
+
+```bash
+./scripts/install-ssl.sh
+```
+
+**Before running:**
+1. Go to Cloudflare Dashboard → SSL/TLS → Origin Server
+2. Click "Create Certificate"
+3. Settings:
+   - Key type: **RSA**
+   - Private key format: **PEM**
+   - Hostnames: `uat.colourmyspace.com`, `*.uat.colourmyspace.com`
+   - Validity: **15 years**
+4. Copy both certificate and private key
+
+**After running:**
+1. Go to Cloudflare Dashboard → SSL/TLS → Overview
+2. Set SSL mode to: **Full (strict)**
+
+### Step 5: First Deployment
+
+```bash
+./scripts/uatdeploy.sh
+```
+
+### Step 6: Verify Everything Works
+
+```bash
+# Check PM2 status
+ssh root@68.183.53.217 "pm2 status"
+
+# Check application logs
+ssh root@68.183.53.217 "pm2 logs cms-app --lines 20"
+
+# Visit your site
+open https://uat.colourmyspace.com
+```
+
+---
+
+## Rollback
 
 If something breaks after deployment:
 
@@ -43,132 +150,313 @@ git checkout master
 ./scripts/uatdeploy.sh
 ```
 
-## First-Time Setup (New Server)
+---
 
-When setting up a brand new server:
+## Security Features
+
+### Firewall (UFW)
+- ✅ **Cloudflare-only access** - Only Cloudflare IPs can reach ports 80/443 (13 IP ranges)
+- ✅ **Rule ordering** - ALLOW rules for Cloudflare IPs first, DENY rules at the end
+- ✅ **SSH protected** - fail2ban auto-bans brute-force attempts
+- ✅ **DDoS protected** - Traffic must go through Cloudflare
+
+**Important:** UFW processes rules top-to-bottom. ALLOW rules for Cloudflare must come before DENY rules, otherwise all traffic (including Cloudflare) will be blocked, causing Error 522.
+
+### Database
+- ✅ **Localhost only** - PostgreSQL only accepts connections from 127.0.0.1
+- ✅ **Strong password** - 32-character random password
+- ✅ **Proper permissions** - cms_user has minimal required privileges
+
+### Application
+- ✅ **Rate limiting** - 10 requests/second per IP (burst: 20)
+- ✅ **Security headers** - X-Frame-Options, X-XSS-Protection, HSTS
+- ✅ **SSL/TLS** - Cloudflare Origin Certificate with TLS 1.2/1.3
+
+### Server
+- ✅ **4GB swap** - Prevents out-of-memory issues
+- ✅ **fail2ban** - SSH protection (3 failed attempts = 1 hour ban)
+- ✅ **Auto-updates** - Security patches applied automatically
+
+---
+
+## Monitoring
+
+### Check Application Status
 
 ```bash
-# 1. Secure server setup (firewall, PostgreSQL, fail2ban, bandwidth limits)
-DB_PASSWORD='your-strong-password' ./scripts/secure-server-setup.sh <new-ip>
+# PM2 status
+ssh root@68.183.53.217 "pm2 status"
 
-# 2. Set up git-based deployment
-./scripts/setup-git-deploy.sh <new-ip>
-
-# 3. Deploy environment variables
-./scripts/deploy-env.sh
-
-# 4. Deploy application
-./scripts/uatdeploy.sh
-
-# 5. Initialize database
-ssh root@<new-ip> "cd /home/cms/app && npm run init-db"
-
-# 6. Set up SSL
-ssh root@<new-ip> "certbot --nginx -d uat.colourmyspace.com"
-```
-
-## Advanced Usage
-
-### Deploy Specific Branch
-
-```bash
-./scripts/deploy-git.sh feature-branch
-```
-
-### Check Server Status
-
-```bash
-# View logs
+# View logs (real-time)
 ssh root@68.183.53.217 "pm2 logs cms-app"
 
-# Monitor in real-time
-ssh root@68.183.53.217 "pm2 monit"
+# View last 50 lines
+ssh root@68.183.53.217 "pm2 logs cms-app --lines 50 --nostream"
 
-# Check application status
-ssh root@68.183.53.217 "pm2 list"
+# Monitor resources
+ssh root@68.183.53.217 "pm2 monit"
 ```
 
-### View Git History on Server
+### Check System Resources
 
 ```bash
-ssh root@68.183.53.217 "cd /home/cms/app && git log --oneline -10"
+# Memory and swap usage
+ssh root@68.183.53.217 "free -h"
+
+# Disk usage
+ssh root@68.183.53.217 "df -h"
+
+# Active connections
+ssh root@68.183.53.217 "ss -tlnp | grep -E ':(80|443|3000)'"
 ```
 
-## What Changed?
+### Check Firewall
 
-### Old Method (Server-side builds)
-1. Push to GitHub
-2. Pull on server
-3. Build on server (slow, memory intensive)
-4. Restart PM2
+```bash
+# UFW status
+ssh root@68.183.53.217 "ufw status numbered"
 
-**Problems:**
-- Slow builds (3-5 minutes)
-- Server runs out of memory (1GB RAM insufficient)
-- Can commit broken code
-- Server does heavy work
+# fail2ban status
+ssh root@68.183.53.217 "fail2ban-client status sshd"
+```
 
-### New Method (Local builds)
-1. Build locally (catches errors immediately)
-2. Push to GitHub (version control)
-3. Deploy binary to server (fast upload)
-4. Restart PM2
-
-**Benefits:**
-- ✅ Fast deployments (30-60 seconds)
-- ✅ Never commit broken code (build fails = no commit)
-- ✅ Works on small droplets (server just runs app)
-- ✅ Version control maintained
-- ✅ Test locally before deploying
-- ✅ No CI/CD complexity needed
+---
 
 ## Troubleshooting
 
-### Deployment fails with "uncommitted changes"
+### Build Fails Locally
 
+**Problem:** `npm run build` fails with errors
+
+**Solution:**
+- Fix the errors shown in the output
+- The build MUST succeed before deployment
+- This prevents broken code from being committed
+
+### Deployment Fails with "uncommitted changes"
+
+**Problem:** Script warns about uncommitted files
+
+**Solution:**
 ```bash
 # Check what's uncommitted
 git status
 
-# Commit or stash changes
+# Commit changes
 git add .
-git commit -m "Update"
+git commit -m "Your message"
 
-# Or stash if you don't want to commit yet
+# Or stash temporarily
 git stash
 ./scripts/uatdeploy.sh
 git stash pop
 ```
 
-### Build fails on server
+### Site Not Accessible
 
+**Check Cloudflare:**
+1. Dashboard → DNS → Ensure `uat` A record is **ORANGE** (proxied)
+2. Dashboard → SSL/TLS → Ensure mode is **Full (strict)**
+3. Wait 1-2 minutes for DNS propagation
+
+**Check Server:**
 ```bash
-# SSH to server and check logs
-ssh root@68.183.53.217
+# Is app running?
+ssh root@68.183.53.217 "pm2 status"
 
-cd /home/cms/app
-pm2 logs cms-app --lines 50
+# Check logs for errors
+ssh root@68.183.53.217 "pm2 logs cms-app --lines 50"
 
-# Check environment variables
-cat .env.production | grep -v PASSWORD
+# Test locally
+ssh root@68.183.53.217 "curl -s http://localhost:3000 | head -5"
 ```
 
-### Need to see what's deployed
+### Error 522 - Cloudflare Connection Timeout
 
+**Problem:** Site shows "Error 522: Connection timed out"
+
+**Root Cause:** Firewall rules blocking Cloudflare IPs
+
+**Diagnosis:**
 ```bash
-ssh root@68.183.53.217 "cd /home/cms/app && git log -1"
+# Check if nginx is running and listening
+ssh root@68.183.53.217 "ss -tlnp | grep -E ':(80|443)'"
+
+# Check firewall rules (CRITICAL: check rule order)
+ssh root@68.183.53.217 "ufw status numbered"
 ```
 
-## Security Notes
+**Common Issue:** DENY rules appearing BEFORE ALLOW rules for Cloudflare IPs
 
-- ✅ `.env.production` is **never** committed to git
-- ✅ Deploy environment separately: `./scripts/deploy-env.sh`
-- ✅ Server builds use its own `.env.production`
-- ✅ GitHub repository is private
+**Example of WRONG order:**
+```
+[ 4] 80/tcp    DENY IN     Anywhere          ❌ DENY comes first
+[ 5] 443/tcp   DENY IN     Anywhere          ❌ DENY comes first
+[ 6] 80/tcp    ALLOW IN    173.245.48.0/20   ✗ Never reached
+[ 7] 443/tcp   ALLOW IN    173.245.48.0/20   ✗ Never reached
+```
+
+**Fix:** Remove early DENY rules and add them at the end:
+```bash
+ssh root@68.183.53.217 << 'EOF'
+# Remove the early DENY rules (adjust rule numbers as needed)
+ufw delete [rule-number-for-80-deny]
+ufw delete [rule-number-for-443-deny]
+
+# Add DENY rules at the end (after all ALLOW rules)
+ufw deny 80/tcp
+ufw deny 443/tcp
+
+# Verify correct order
+ufw status numbered
+EOF
+```
+
+**Correct order should be:**
+```
+[ 2] 80/tcp    ALLOW IN    173.245.48.0/20   ✓ ALLOW first
+[ 3] 443/tcp   ALLOW IN    173.245.48.0/20   ✓ ALLOW first
+...
+[29] 443/tcp   ALLOW IN    198.41.128.0/17   ✓ All ALLOW rules
+[30] 80/tcp    DENY IN     Anywhere          ✓ DENY at end
+[31] 443/tcp   DENY IN     Anywhere          ✓ DENY at end
+```
+
+**Verify Fix:**
+```bash
+# Test from local machine
+curl -I https://uat.colourmyspace.com
+
+# Should return HTTP/2 200 with Cloudflare headers
+```
+
+### Database Connection Errors
+
+**Problem:** App can't connect to PostgreSQL
+
+**Check `.env.production`:**
+```bash
+ssh root@68.183.53.217 "cd /home/cms/app && grep DB_ .env.production"
+```
+
+**Test database connection:**
+```bash
+ssh root@68.183.53.217 "psql -U cms_user -d cms_db -c 'SELECT 1;'"
+```
+
+### Out of Memory Errors
+
+**Check swap usage:**
+```bash
+ssh root@68.183.53.217 "free -h"
+```
+
+**Expected:** Should see 4GB swap enabled
+
+**If swap is off:**
+```bash
+ssh root@68.183.53.217 "swapon /swapfile"
+```
+
+---
+
+## Architecture
+
+### Deployment Flow
+
+```
+Local Machine                Server (68.183.53.217)
+─────────────                ─────────────────────
+
+1. npm run build     →      (Nothing)
+   (.next folder
+    created locally)
+
+2. git push         →       (Git repo updated)
+
+3. Create tarball   →       Upload via SCP
+   (.next, public,           ↓
+    package.json)        Extract to /home/cms/app
+                             ↓
+                         npm install --production
+                             ↓
+                         PM2 restart cms-app
+```
+
+### Infrastructure Stack
+
+```
+Internet
+   ↓
+Cloudflare (DDoS protection, WAF, CDN, SSL termination)
+   ↓
+UFW Firewall (Cloudflare IPs only)
+   ↓
+Nginx (Reverse proxy, rate limiting, security headers)
+   ↓
+Next.js App (Port 3000, managed by PM2)
+   ↓
+PostgreSQL (Localhost only, cms_db database)
+```
+
+### File Structure on Server
+
+```
+/home/cms/app/
+├── .next/                    # Built application (deployed)
+├── public/                   # Static assets (deployed)
+├── node_modules/             # Production dependencies (installed)
+├── package.json              # Dependencies list (deployed)
+├── .env.production          # Environment variables (manual upload)
+└── .git/                     # Git repository (for version tracking)
+```
+
+---
+
+## Benefits of This Approach
+
+### ✅ Fast Deployments
+- Build locally (powerful machine, fast)
+- Upload binary (~15MB)
+- Server just runs the app
+- **Total time: ~60 seconds**
+
+### ✅ Never Deploy Broken Code
+- Build fails = deployment stops
+- Errors caught before commit
+- Clean git history
+
+### ✅ Works on Small Servers
+- 1GB droplet is sufficient
+- No memory-intensive builds on server
+- Swap handles any spikes
+
+### ✅ Version Control Maintained
+- Every deployment = git commit
+- Easy rollbacks (checkout + redeploy)
+- Full history in GitHub
+
+### ✅ Secure by Default
+- Cloudflare-only access
+- fail2ban protection
+- Rate limiting
+- SSL/TLS encryption
+
+### ✅ No CI/CD Complexity
+- No GitHub Actions setup
+- No build servers
+- Simple bash scripts
+- Easy to understand and modify
+
+---
 
 ## Support
 
-For issues or questions:
+**For issues:**
 - Check logs: `ssh root@68.183.53.217 "pm2 logs cms-app"`
-- See CLAUDE.md for full deployment documentation
-- Contact: rajnishkumarranjan@gmail.com
+- See CLAUDE.md for technical details
+- Check firewall: `ssh root@68.183.53.217 "ufw status"`
+
+**Contact:** rajnishkumarranjan@gmail.com
+
+**Production Site:** https://uat.colourmyspace.com

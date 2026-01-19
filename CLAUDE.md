@@ -228,9 +228,12 @@ CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
 
 2. **Firewall (UFW)** ⚠️ CRITICAL
    - UFW MUST be enabled
-   - ONLY ports 22 (SSH), 80 (HTTP), 443 (HTTPS) should be open
+   - Ports 80/443 MUST ONLY accept connections from Cloudflare IP ranges (13 ranges)
+   - Port 22 (SSH) open for administrative access
    - All other ports MUST be blocked
-   - Verify with: `ufw status`
+   - **IMPORTANT:** ALLOW rules for Cloudflare must come BEFORE DENY rules (UFW processes top-to-bottom)
+   - Verify with: `ufw status numbered` (check rule order)
+   - Wrong rule order causes Error 522 (Cloudflare connection timeout)
 
 3. **SSH Hardening** ⚠️ CRITICAL
    - Password authentication MUST be disabled
