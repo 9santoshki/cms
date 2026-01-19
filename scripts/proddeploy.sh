@@ -5,9 +5,9 @@
 
 set -e
 
-# Production server details
-DROPLET_IP="${PRODUCTION_SERVER_IP:-TBD}"
-APP_DIR="/home/cms/app"
+# Production server details (shared with UAT)
+DROPLET_IP="${PRODUCTION_SERVER_IP:-68.183.53.217}"
+APP_DIR="/home/cms/app-prod"
 
 echo "🚀 Deploying to PRODUCTION..."
 echo ""
@@ -25,15 +25,10 @@ if [ "$CURRENT_BRANCH" != "production" ]; then
     exit 1
 fi
 
-# Check if production server IP is set
-if [ "$DROPLET_IP" = "TBD" ]; then
-    echo "Production server IP not set."
-    read -p "Enter production server IP: " DROPLET_IP
-    if [ -z "$DROPLET_IP" ]; then
-        echo "❌ Production server IP required"
-        exit 1
-    fi
-fi
+# Production server is shared with UAT (same droplet, different directory)
+echo "Using shared server: $DROPLET_IP"
+echo "   UAT:  /home/cms/app (port 3000)"
+echo "   PROD: /home/cms/app-prod (port 3001)"
 
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
@@ -119,11 +114,12 @@ echo "📦 Creating deployment package..."
 tar -czf /tmp/cms-deploy-prod.tar.gz \
     .next \
     public \
+    scripts \
     package.json \
     package-lock.json \
     next.config.js \
     babel.config.js \
-    .env.production 2>/dev/null || tar -czf /tmp/cms-deploy-prod.tar.gz .next public package.json package-lock.json next.config.js babel.config.js
+    .env.production 2>/dev/null || tar -czf /tmp/cms-deploy-prod.tar.gz .next public scripts package.json package-lock.json next.config.js babel.config.js
 
 echo "✅ Package created ($(du -h /tmp/cms-deploy-prod.tar.gz | cut -f1))"
 echo ""
@@ -135,29 +131,31 @@ scp /tmp/cms-deploy-prod.tar.gz root@$DROPLET_IP:/tmp/
 ssh root@$DROPLET_IP << 'ENDSSH'
 set -e
 
-cd /home/cms/app
+cd /home/cms/app-prod
 
 echo "📦 Extracting deployment package..."
 tar -xzf /tmp/cms-deploy-prod.tar.gz
 rm /tmp/cms-deploy-prod.tar.gz
 
-# Rename .env.production to .env.production in app directory
+# Ensure .env.production exists
 if [ -f .env.production ]; then
-    echo "✅ Production environment file deployed"
+    echo "✅ Production environment file found"
+else
+    echo "⚠️  Warning: .env.production not found in package, using existing"
 fi
 
 echo "📦 Installing production dependencies..."
 npm install --production --prefer-offline
 
-echo "🔄 Restarting application..."
-if pm2 list | grep -q "cms-app"; then
-    pm2 restart cms-app
-    echo "✅ Application restarted"
+echo "🔄 Managing PM2 application..."
+if pm2 list | grep -q "cms-app-prod"; then
+    pm2 restart cms-app-prod
+    echo "✅ Production application restarted"
 else
-    echo "🚀 Starting application for first time..."
-    pm2 start npm --name cms-app -- start
+    echo "🚀 Starting production application for first time..."
+    PORT=3001 pm2 start npm --name cms-app-prod -- start
     pm2 save
-    echo "✅ Application started"
+    echo "✅ Production application started on port 3001"
 fi
 
 echo ""
@@ -165,12 +163,13 @@ echo "📊 Application status:"
 pm2 list | grep cms-app
 
 echo ""
-echo "📝 Recent logs:"
-pm2 logs cms-app --lines 10 --nostream
+echo "📝 Recent logs (production):"
+pm2 logs cms-app-prod --lines 10 --nostream
 
 echo ""
 echo "✅ Deployment complete!"
-echo "🌐 Site: https://www.colourmyspace.com"
+echo "🌐 Production: https://www.colourmyspace.com (port 3001)"
+echo "🌐 UAT: https://uat.colourmyspace.com (port 3000)"
 
 ENDSSH
 
