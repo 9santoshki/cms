@@ -114,11 +114,12 @@ echo "📦 Creating deployment package..."
 tar -czf /tmp/cms-deploy-prod.tar.gz \
     .next \
     public \
+    scripts \
     package.json \
     package-lock.json \
     next.config.js \
     babel.config.js \
-    .env.production 2>/dev/null || tar -czf /tmp/cms-deploy-prod.tar.gz .next public package.json package-lock.json next.config.js babel.config.js
+    .env.production 2>/dev/null || tar -czf /tmp/cms-deploy-prod.tar.gz .next public scripts package.json package-lock.json next.config.js babel.config.js
 
 echo "✅ Package created ($(du -h /tmp/cms-deploy-prod.tar.gz | cut -f1))"
 echo ""
