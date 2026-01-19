@@ -1,12 +1,14 @@
 #!/bin/bash
 # Deploy environment variables to UAT server
 # Usage: ./scripts/deploy-env.sh
+# For production, use: ./scripts/deploy-prod-env.sh
 
 DROPLET_IP="68.183.53.217"
 ENV_FILE=".env.uat"
 REMOTE_ENV_FILE=".env.uat"
+REMOTE_DIR="/home/cms/app"
 
-echo "Uploading $ENV_FILE to UAT server..."
+echo "Uploading $ENV_FILE to UAT server (uat.colourmyspace.com)..."
 
 # Check if .env.uat exists locally
 if [ ! -f "$ENV_FILE" ]; then

@@ -328,11 +328,146 @@ ssh root@<ip> "wondershaper -a eth0 -s"
 2. Add Bandwidth Alert: 10 GiB/day threshold
 3. Receive email if exceeded
 
+## Social Media Sharing & SEO
+
+The application includes comprehensive social media metadata for proper link previews when shared on platforms.
+
+### Open Graph & Twitter Cards
+
+**Configuration:** `src/app/layout.tsx`
+
+**Features:**
+- Open Graph tags (Facebook, LinkedIn, WhatsApp)
+- Twitter Card with large image preview
+- Dynamic title template: `%s | Colour My Space`
+- Location-based keywords (Bengaluru, Indiranagar)
+- Proper favicon and Apple Touch Icon
+
+**Social Media Image:**
+- File: `public/og-image.png` (1200x630 pixels, PNG format)
+- Displays brand logo, tagline, and professional design
+- Auto-generated from SVG using `scripts/convert-og-image.js`
+
+**Testing Social Previews:**
+- Facebook: https://developers.facebook.com/tools/debug/
+- Twitter: https://cards-dev.twitter.com/validator
+- LinkedIn: https://www.linkedin.com/post-inspector/
+
+**Update OG Image:**
+```bash
+# Edit public/og-image.svg, then convert to PNG
+node scripts/convert-og-image.js
+```
+
+**Metadata includes:**
+- metadataBase: Uses `NEXT_PUBLIC_APP_URL` for proper URL resolution
+- og:title, og:description, og:image, og:type, og:locale, og:siteName
+- twitter:card, twitter:title, twitter:description, twitter:image
+- Robots configuration for search engine indexing
+
+## Git Repository Strategy
+
+**Branch Structure:**
+```
+master (development + UAT)
+  ↓
+production (production only)
+```
+
+### Branch Roles
+
+**master:**
+- Active development branch
+- Deployed to UAT server for testing
+- Can be unstable, frequent commits
+- Protected: No (allows rapid development)
+
+**production:**
+- Production-only branch
+- Only updated after successful UAT testing
+- Always stable, tagged releases
+- Protected: Yes (requires careful merges, no force push)
+
+### Promotion Workflow
+
+```bash
+# 1. Develop on master
+git checkout master
+git commit -m "Add feature"
+git push
+
+# 2. Deploy to UAT for testing
+./scripts/uatdeploy.sh
+# Test on https://uat.colourmyspace.com
+
+# 3. After UAT approval, promote to production
+git checkout production
+git merge master --no-ff  # Creates merge commit for audit trail
+git tag -a v1.0.0 -m "Release v1.0.0: Feature description"
+git push origin production --tags
+
+# 4. Deploy to production
+./scripts/proddeploy.sh
+# Verify on https://www.colourmyspace.com
+```
+
+### Rollback Strategy
+
+```bash
+# Find previous version
+git tag -l
+
+# Rollback to specific version
+git checkout production
+git checkout v1.0.0
+./scripts/proddeploy.sh
+
+# Or reset production branch
+git checkout production
+git reset --hard v1.0.0
+./scripts/proddeploy.sh
+git push origin production --force-with-lease
+```
+
+### Hotfix Process
+
+```bash
+# Emergency fix on production
+git checkout production
+git checkout -b hotfix/critical-bug
+# ... fix bug ...
+git commit -m "Fix critical security issue"
+
+# Deploy immediately to production
+git checkout production
+git merge hotfix/critical-bug --no-ff
+git tag -a v1.0.1 -m "Hotfix: Critical security issue"
+./scripts/proddeploy.sh
+git push origin production --tags
+
+# Backport to master
+git checkout master
+git merge hotfix/critical-bug
+git push
+```
+
+### GitHub Branch Protection
+
+**production branch settings:**
+1. Settings → Branches → Add rule
+2. Branch name pattern: `production`
+3. Enable:
+   - ✅ Require pull request before merging (optional but recommended)
+   - ✅ Require status checks to pass
+   - ❌ Allow force pushes (NEVER)
+   - ❌ Allow deletions
+
 ## Deployment
 
 **UAT Server:** DigitalOcean Droplet (68.183.53.217)
 **UAT Domain:** https://uat.colourmyspace.com
-**Production Domain:** https://www.colourmyspace.com (TBD)
+**Production Server:** TBD (to be provisioned)
+**Production Domain:** https://www.colourmyspace.com
 **Process Manager:** PM2 (app name: `cms-app`)
 **Node.js Version:** 20.20.0 (required for Next.js 16)
 
@@ -340,10 +475,87 @@ ssh root@<ip> "wondershaper -a eth0 -s"
 
 ```bash
 ./scripts/first-time-setup.sh <ip>  # ⚠️ First-time server setup with security
-./scripts/uatdeploy.sh              # Build locally + deploy to UAT server
+./scripts/uatdeploy.sh              # Build locally + deploy to UAT server (from master)
+./scripts/proddeploy.sh             # Build locally + deploy to production (from production branch)
 ./scripts/deploy-env.sh             # Deploy .env.uat to UAT server
+./scripts/deploy-prod-env.sh        # Deploy .env.production to production server
 ./scripts/install-ssl.sh            # Install Cloudflare Origin Certificate
 ./scripts/check-oauth.sh            # Diagnose OAuth configuration issues
+```
+
+### Production Deployment Process
+
+**Prerequisites:**
+1. Production server provisioned (DigitalOcean or similar)
+2. Production domain DNS configured
+3. `.env.production` file created locally with production credentials
+4. `production` git branch created and pushed
+
+**Initial Production Setup:**
+
+```bash
+# 1. Generate strong credentials
+export DB_PASSWORD="$(openssl rand -base64 32)"
+export JWT_SECRET="$(openssl rand -base64 64)"
+echo "Save these credentials!"
+
+# 2. Create .env.production locally (NOT in git)
+# Copy from .env.uat and update:
+# - NEXT_PUBLIC_APP_URL=https://www.colourmyspace.com
+# - DB_PASSWORD=<generated-password>
+# - JWT_SECRET=<generated-secret>
+# - Update GOOGLE_CLIENT_ID with production OAuth credentials
+
+# 3. Run first-time server setup on production server
+DB_PASSWORD='<your-db-password>' ./scripts/first-time-setup.sh <production-ip>
+
+# 4. Deploy production environment file
+./scripts/deploy-prod-env.sh
+
+# 5. Create production branch (if not exists)
+git checkout -b production
+git push -u origin production
+
+# 6. Deploy to production
+git checkout production
+git merge master --no-ff
+git tag -a v1.0.0 -m "Initial production release"
+./scripts/proddeploy.sh
+
+# 7. Initialize production database
+ssh root@<production-ip> "cd /home/cms/app && npm run init-db"
+
+# 8. Set up SSL certificate
+ssh root@<production-ip>
+certbot --nginx -d www.colourmyspace.com
+
+# 9. Verify production is running
+curl -I https://www.colourmyspace.com
+```
+
+**Regular Production Deployment:**
+
+```bash
+# 1. Ensure all changes are tested on UAT
+git checkout master
+# ... develop and test on UAT ...
+
+# 2. Promote to production branch
+git checkout production
+git merge master --no-ff
+
+# 3. Tag the release
+git tag -a v1.1.0 -m "Release v1.1.0: New feature description"
+
+# 4. Push branch and tags
+git push origin production --tags
+
+# 5. Deploy to production server
+./scripts/proddeploy.sh
+
+# 6. Verify deployment
+# Check https://www.colourmyspace.com
+# Check logs: ssh root@<prod-ip> "pm2 logs cms-app --lines 50"
 ```
 
 ### Deployment Process (Local Build + Binary)
@@ -556,6 +768,12 @@ npm run init-db
 ## Recent Changes & Bug Fixes
 
 ### January 2026
+- **Added social media metadata:** Comprehensive Open Graph and Twitter Card configuration for proper link previews on Facebook, LinkedIn, Twitter
+- **Fixed mobile menu visibility:** Mobile menu text now visible with proper dark color (#333) on white background
+- **Added metadataBase:** Fixed Next.js warning and enabled proper URL resolution for social media images
+- **Created OG image:** Professional PNG social media preview image (1200x630) with brand logo
+- **Production git strategy:** Documented branch-based strategy (master for UAT, production for prod)
+- **Production deployment:** Created production deployment scripts and comprehensive documentation
 - **Fixed cart table naming:** Renamed `cart_items` to `cart` for consistency across codebase
 - **Added reviews system:** Created `reviews` table with rating (1-5), comment, and moderation status
 - **Enhanced product images:** Added `product_images` table for multi-image gallery support per product
