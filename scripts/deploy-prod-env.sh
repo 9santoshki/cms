@@ -3,26 +3,17 @@
 # Usage: ./scripts/deploy-prod-env.sh
 # For UAT, use: ./scripts/deploy-env.sh
 
-DROPLET_IP="${PRODUCTION_SERVER_IP:-TBD}"
+DROPLET_IP="${PRODUCTION_SERVER_IP:-68.183.53.217}"
 ENV_FILE=".env.production"
 REMOTE_ENV_FILE=".env.production"
-REMOTE_DIR="/home/cms/app"
+REMOTE_DIR="/home/cms/app-prod"
 
 echo "🚨 WARNING: Deploying to PRODUCTION server!"
 echo ""
 
-# Check if production server IP is set
-if [ "$DROPLET_IP" = "TBD" ]; then
-    echo "Production server IP not set."
-    read -p "Enter production server IP: " DROPLET_IP
-    if [ -z "$DROPLET_IP" ]; then
-        echo "❌ Production server IP required"
-        exit 1
-    fi
-fi
-
-echo "Uploading $ENV_FILE to PRODUCTION server (www.colourmyspace.com)..."
-echo "Server: $DROPLET_IP"
+echo "Uploading $ENV_FILE to PRODUCTION (www.colourmyspace.com)..."
+echo "Server: $DROPLET_IP (shared with UAT)"
+echo "Directory: $REMOTE_DIR"
 echo ""
 
 # Check if .env.production exists locally
