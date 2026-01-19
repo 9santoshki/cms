@@ -1,44 +1,46 @@
-# Git-Based Deployment Guide
+# Local Build + Binary Deployment Guide
 
 ## Overview
 
-The deployment system now uses **git-based deployment** instead of tarball uploads. This is faster, cleaner, and provides version control on the server.
+The deployment system uses **local build + binary deployment**. You build locally (fast, catches errors), push to GitHub (version control), then deploy the binary to the server.
 
 ## Quick Reference
 
 ### Normal Deployment
 
 ```bash
-# 1. Commit your changes
-git add .
-git commit -m "Your commit message"
-
-# 2. Deploy to production
+# 1. Deploy to production
 ./scripts/uatdeploy.sh
 ```
 
 That's it! The script will:
-- Push to GitHub
-- Pull on server
-- Install dependencies
-- Build the app
-- Restart PM2
+1. Build locally (catches errors before committing)
+2. Push to GitHub (version control)
+3. Create deployment tarball (.next + static files)
+4. Upload to server
+5. Install production dependencies
+6. Restart PM2
 
 ### Rollback
 
 If something breaks after deployment:
 
 ```bash
-# Rollback to previous commit
-./scripts/rollback.sh HEAD~1
+# Checkout previous commit
+git checkout HEAD~1
+
+# Rebuild and deploy
+./scripts/uatdeploy.sh
 
 # Or rollback to specific commit
-./scripts/rollback.sh abc1234
+git checkout abc1234
+./scripts/uatdeploy.sh
 ```
 
 To go back to latest:
 ```bash
-./scripts/rollback.sh master
+git checkout master
+./scripts/uatdeploy.sh
 ```
 
 ## First-Time Setup (New Server)
@@ -94,31 +96,31 @@ ssh root@68.183.53.217 "cd /home/cms/app && git log --oneline -10"
 
 ## What Changed?
 
-### Old Method (Tarball)
-1. Build locally
-2. Create tarball
-3. Upload to server (slow)
-4. Extract on server
-5. Restart PM2
+### Old Method (Server-side builds)
+1. Push to GitHub
+2. Pull on server
+3. Build on server (slow, memory intensive)
+4. Restart PM2
 
 **Problems:**
-- Slow uploads
-- Manual cleanup needed
-- No version control on server
-- Hard to rollback
+- Slow builds (3-5 minutes)
+- Server runs out of memory (1GB RAM insufficient)
+- Can commit broken code
+- Server does heavy work
 
-### New Method (Git)
-1. Commit and push to GitHub
-2. Pull on server
-3. Build on server
+### New Method (Local builds)
+1. Build locally (catches errors immediately)
+2. Push to GitHub (version control)
+3. Deploy binary to server (fast upload)
 4. Restart PM2
 
 **Benefits:**
-- ✅ Faster (no tarball upload)
-- ✅ Version control on server
-- ✅ Easy rollbacks
-- ✅ Cleaner process
-- ✅ Build uses server environment correctly
+- ✅ Fast deployments (30-60 seconds)
+- ✅ Never commit broken code (build fails = no commit)
+- ✅ Works on small droplets (server just runs app)
+- ✅ Version control maintained
+- ✅ Test locally before deploying
+- ✅ No CI/CD complexity needed
 
 ## Troubleshooting
 
