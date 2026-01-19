@@ -68,9 +68,9 @@ if [ ! -f ".env.production" ]; then
     exit 1
 fi
 
-# Install dependencies
+# Install dependencies (including devDependencies needed for build)
 echo "📦 Installing dependencies..."
-npm install --production
+npm install
 
 # Build application on server
 echo "🔨 Building application..."
