@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
     'CLOUDFLARE_R2_TOKEN_VALUE',
     'CLOUDFLARE_BUCKET',
     'CLOUDFLARE_PRODUCT_IMAGE_FOLDER',
-    'CLOUDFLARE_R2_PUBLIC_URL',
   ];
 
   const status = envVars.map(varName => {
