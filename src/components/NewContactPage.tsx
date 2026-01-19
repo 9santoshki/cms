@@ -101,28 +101,28 @@ const NewContactPage = () => {
                     <i className="fas fa-map-marker-alt"></i>
                   </div>
                   <div className="contact-text">
-                    <h3>Studio Location</h3>
-                    <p>123 Design Avenue<br />Creative District, CA 90210</p>
+                    <h3>Find Us</h3>
+                    <p>Indiranagar<br />Bengaluru, India</p>
                   </div>
                 </div>
-                
+
                 <div className="contact-item">
                   <div className="contact-icon">
                     <i className="fas fa-phone"></i>
                   </div>
                   <div className="contact-text">
-                    <h3>Phone</h3>
-                    <p>+1 (555) 123-4567<br />Mon-Fri: 9am-6pm PST</p>
+                    <h3>Call</h3>
+                    <p>+91 95133 51833<br />Mon-Sat: 10am-7pm IST</p>
                   </div>
                 </div>
-                
+
                 <div className="contact-item">
                   <div className="contact-icon">
                     <i className="fas fa-envelope"></i>
                   </div>
                   <div className="contact-text">
                     <h3>Email</h3>
-                    <p>hello@colourmyspace.com<br />For general inquiries</p>
+                    <p>rajnishkumarranjan@gmail.com<br />For general inquiries</p>
                   </div>
                 </div>
                 
@@ -257,14 +257,24 @@ const NewContactPage = () => {
           {/* Map Section */}
           <MapSection>
             <h2>Visit Our Studio</h2>
-            <MapPlaceholder>
-              <div className="map-content">
-                <i className="fas fa-map-marked-alt"></i>
-                <h3>Interactive Map</h3>
-                <p>123 Design Avenue, Creative District, CA 90210</p>
-                <button className="btn secondary">Get Directions</button>
-              </div>
-            </MapPlaceholder>
+            <div style={{
+              width: '100%',
+              height: '450px',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+            }}>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15551.582831734697!2d77.63152!3d12.97194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae1670c9b44e6d%3A0xf8dfc3e8517e4fe0!2sIndiranagar%2C%20Bengaluru%2C%20Karnataka!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Colour My Space Location - Indiranagar, Bengaluru"
+              ></iframe>
+            </div>
           </MapSection>
           
           {/* FAQ Section */}

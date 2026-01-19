@@ -46,9 +46,9 @@ const NewAboutPage = () => {
           <AboutIntro>
             <h2>Our Story</h2>
             <p>
-              Founded by award-winning designer Sarah Johnson, Colour My Space brings over 15 years of experience in creating
+              Founded by Rajnish Kumar Ranjan, Colour My Space brings over 10 years of real estate industry experience in creating
               transformative interiors that reflect our clients' unique lifestyles and aspirations. Our philosophy centers on
-              the belief that exceptional interior design is the intersection of artistry and functionality.
+              the belief that exceptional interior design is the intersection of artistry, functionality, and real-world execution expertise.
             </p>
           </AboutIntro>
 
@@ -59,25 +59,30 @@ const NewAboutPage = () => {
                 <div className="image-placeholder">Founder Image</div>
               </FounderImage>
               <FounderInfo>
-                <h3>Sarah Johnson</h3>
-                <h4>Founder & Principal Designer</h4>
+                <h3>Rajnish Kumar Ranjan</h3>
+                <h4>Founder & Managing Director</h4>
                 <p>
-                  With a Master's degree in Interior Architecture from Pratt Institute and over two decades of industry experience, 
-                  Sarah has established herself as a visionary in contemporary residential and commercial design. Her work has been 
-                  featured in Architectural Digest, Elle Decor, and House Beautiful.
+                  An Engineer from NIT Hamirpur and MBA graduate from IIT Kharagpur, Rajnish brings over 10 years of
+                  comprehensive real estate industry experience to Colour My Space. His unique combination of technical
+                  expertise and business acumen enables him to deliver exceptional interior design solutions that balance
+                  aesthetic vision with practical execution.
                 </p>
                 <p>
-                  Sarah's design approach combines careful listening with innovative thinking to create spaces that are not only 
-                  beautiful but also deeply personal and functional. She believes that great design tells a story and enhances 
-                  the lives of those who inhabit the space.
+                  Rajnish's professional journey includes significant roles at eBuild (Total Environment Home Customization)
+                  where he stabilized operations and created innovative Vendor Management Systems, and Jones Lang La Salle,
+                  where he managed financial and legal contracts for pan-India projects. His hands-on experience spans from
+                  on-site construction to international client management, bringing a holistic understanding of the entire
+                  design and execution process.
                 </p>
                 <div className="awards">
-                  <h5>Recognitions</h5>
+                  <h5>Core Expertise</h5>
                   <ul>
-                    <li>Interior Design Excellence Award - 2022</li>
-                    <li>Architectural Digest 50 Top Designers - 2021</li>
-                    <li>House Beautiful Designer of the Year - 2020</li>
-                    <li>Elle Decor Rising Star Award - 2019</li>
+                    <li>Design Options & Home Customization Solutions</li>
+                    <li>Vendor Management Systems & Central Procurement</li>
+                    <li>Import Procurement & Supply Chain Management</li>
+                    <li>Project Management with National & International Clients</li>
+                    <li>People & Process Management</li>
+                    <li>On-site Construction & Execution Experience</li>
                   </ul>
                 </div>
               </FounderInfo>

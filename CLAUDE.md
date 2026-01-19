@@ -2,9 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment (copy and fill in)
+cp .env.local.example .env.local
+
+# Initialize database
+npm run init-db
+
+# Start development server
+npm run dev  # http://localhost:3000
+
+# Build for production
+npm run build
+npm start
+```
+
 ## Project Overview
 
 CMS (Color My Space) is an interior design e-commerce and service booking platform built with Next.js 16, React 19, and TypeScript. It features product sales, appointment booking for design consultations, and an admin dashboard.
+
+**Live:** https://uat.colourmyspace.com
+**Contact:** Indiranagar, Bengaluru | +91 95133 51833 | rajnishkumarranjan@gmail.com
+**Founder:** Rajnish Kumar Ranjan (NIT Hamirpur, IIT Kharagpur)
 
 ## Development Commands
 
@@ -177,6 +201,120 @@ CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
 
 **Note:** Variables starting with `NEXT_PUBLIC_` are bundled into the client build and require a rebuild after changes.
 
+## Security
+
+### ⚠️ Security Incident History - MUST READ
+
+**CRITICAL**: This application was compromised **twice** (January 2026) and used in DDoS attacks, resulting in:
+- **3867 GiB bandwidth usage** per droplet
+- **$77+ in overage charges** (2 droplets)
+- **Server blacklisting** and service termination
+
+**Root Cause:**
+- PostgreSQL port 5432 exposed to internet (listening on 0.0.0.0)
+- Weak password ("cms_dbpass12!") brute-forced
+- No firewall, no fail2ban, no bandwidth limits
+- Attackers installed DDoS malware via PostgreSQL exploit
+
+### Security Requirements
+
+**ALL production deployments MUST follow these security measures:**
+
+1. **PostgreSQL Security** ⚠️ CRITICAL
+   - PostgreSQL MUST be configured to ONLY listen on localhost (127.0.0.1)
+   - Port 5432 MUST NOT be accessible from the internet
+   - Strong database password (minimum 32 characters, use `openssl rand -base64 32`)
+   - Remote connections MUST be disabled in `pg_hba.conf`
+
+2. **Firewall (UFW)** ⚠️ CRITICAL
+   - UFW MUST be enabled
+   - ONLY ports 22 (SSH), 80 (HTTP), 443 (HTTPS) should be open
+   - All other ports MUST be blocked
+   - Verify with: `ufw status`
+
+3. **SSH Hardening** ⚠️ CRITICAL
+   - Password authentication MUST be disabled
+   - Only SSH key authentication allowed
+   - Root login with password MUST be disabled
+
+4. **Intrusion Prevention**
+   - fail2ban MUST be installed and configured
+   - Automatic IP banning after failed login attempts
+   - SSH brute-force protection enabled
+
+5. **Strong Credentials**
+   - Database password: `openssl rand -base64 32` (minimum 32 chars)
+   - JWT secret: `openssl rand -base64 64` (minimum 64 chars)
+   - Never use weak passwords like "cms_dbpass12!" or "your-secret-key"
+
+6. **nginx Security**
+   - Rate limiting enabled (10 requests/second)
+   - Security headers configured (X-Frame-Options, X-XSS-Protection, etc.)
+   - Request timeout limits
+
+7. **Bandwidth Protection** ⚠️ CRITICAL
+   - Hard bandwidth caps: 50 Mbps upload, 100 Mbps download
+   - Connection rate limiting: 20 new connections/minute per IP
+   - Max concurrent connections: 50 per IP
+   - Prevents DDoS participation and excessive bandwidth charges
+   - Monitor with vnstat
+
+### Code Security
+
+**SQL Injection Prevention:**
+- ✅ All database queries use parameterized statements ($1, $2, etc.)
+- ✅ No string interpolation in SQL queries
+- ✅ User inputs never directly concatenated into queries
+
+**Best Practices:**
+- Always validate and sanitize user inputs
+- Keep dependencies updated: `npm audit fix`
+- Regular security scanning
+- Monitor for suspicious activity
+
+### Deployment Security Checklist
+
+Before deploying to production:
+
+- [ ] Generate strong credentials: `openssl rand -base64 32` and `openssl rand -base64 64`
+- [ ] Update `.env.production` with strong passwords
+- [ ] Use `secure-server-setup.sh` script (not old `setup-new-server.sh`)
+- [ ] Verify PostgreSQL only on localhost: `netstat -an | grep 5432` (should show 127.0.0.1:5432)
+- [ ] Verify firewall: `ufw status` (should show active)
+- [ ] Verify fail2ban: `fail2ban-client status`
+- [ ] Verify SSH password auth disabled: `sshd -T | grep passwordauthentication`
+- [ ] Verify bandwidth limits: `wondershaper -a eth0 -s`
+- [ ] Scan open ports: `nmap -p 1-10000 <ip>` (should ONLY show 22, 80, 443)
+- [ ] Set up SSL certificate: `certbot --nginx -d your-domain.com`
+- [ ] Set up DigitalOcean bandwidth alerts: 10 GiB/day threshold
+
+### Bandwidth Monitoring & Cost Protection
+
+**Why This Matters:** Previous security compromises resulted in 3867 GiB bandwidth usage and $38.68+ in overage charges per droplet.
+
+**Monitor bandwidth usage:**
+```bash
+# Live monitoring
+ssh root@<ip> "vnstat -l"
+
+# Daily/monthly statistics
+ssh root@<ip> "vnstat -d"  # Daily
+ssh root@<ip> "vnstat -m"  # Monthly
+
+# Verify bandwidth limits active
+ssh root@<ip> "wondershaper -a eth0 -s"
+# Should show: Upload: 50000 Kbit/s, Download: 100000 Kbit/s
+```
+
+**Normal vs Abnormal Usage:**
+- **Normal:** < 1 GiB/day, < 30 GiB/month
+- **Warning signs:** > 10 GiB/day, > 100 concurrent connections, CPU > 80%
+
+**DigitalOcean Alerts:**
+1. Dashboard → Settings → Notifications
+2. Add Bandwidth Alert: 10 GiB/day threshold
+3. Receive email if exceeded
+
 ## Deployment
 
 **Production Server:** DigitalOcean Droplet (104.236.245.179)
@@ -187,73 +325,117 @@ CLOUDFLARE_PRODUCT_IMAGE_FOLDER, CLOUDFLARE_R2_PUBLIC_URL
 ### Deployment Scripts
 
 ```bash
-./scripts/uatdeploy.sh      # Build locally and deploy to server
-./scripts/deploy-env.sh     # Deploy .env.production to server
-./scripts/check-oauth.sh    # Diagnose OAuth configuration issues
+./scripts/secure-server-setup.sh <ip>  # ⚠️ REQUIRED: Secure first-time server setup
+./scripts/setup-git-deploy.sh <ip>     # One-time: Set up git-based deployment
+./scripts/deploy-git.sh [branch]       # Deploy from git (default: master)
+./scripts/uatdeploy.sh                 # Shortcut for deploy-git.sh master
+./scripts/rollback.sh [commit]         # Rollback to previous commit/tag
+./scripts/deploy-env.sh                # Deploy .env.production to server
+./scripts/check-oauth.sh               # Diagnose OAuth configuration issues
 ```
 
-### Deployment Process
+### Deployment Process (Git-Based)
 
-1. Build locally with `NODE_ENV=production npm run build` (automatically handled by deploy script)
-2. Create tarball of `.next`, `package.json`, `src/`, `public/`, `scripts/`, and config files
-3. Upload to server at `/home/cms/app`
-4. Install dependencies with `npm install --production`
-5. Restart PM2 process
+**Modern git-based deployment** - cleaner and faster than tarball method:
 
-### First-Time Server Setup
+1. **Local:** Commit and push changes to GitHub
+2. **Server:** Pull latest code from GitHub repository
+3. **Server:** Install dependencies with `npm install --production`
+4. **Server:** Build with `NODE_ENV=production npm run build`
+5. **Server:** Restart PM2 process
 
-**IMPORTANT:** On first deployment or when setting up a new server, you MUST:
+**Why git-based is better:**
+- ✅ Faster deployments (no tarball creation/upload)
+- ✅ Version control on server
+- ✅ Easy rollbacks (`git checkout <commit>`)
+- ✅ Build uses server's .env.production (NEXT_PUBLIC_ vars embedded correctly)
+- ✅ Cleaner process, less manual steps
 
-1. **Set up PostgreSQL database and user**:
+**Quick deploy:**
 ```bash
-# Create PostgreSQL user and database
-sudo -u postgres psql << 'EOF'
-CREATE USER cms_user WITH PASSWORD 'cms_dbpass12!';
-CREATE DATABASE cms_db OWNER cms_user;
+# Commit your changes
+git add .
+git commit -m "Update feature"
 
--- Grant all permissions to cms_user
-GRANT ALL PRIVILEGES ON DATABASE cms_db TO cms_user;
-\c cms_db
-GRANT ALL PRIVILEGES ON SCHEMA public TO cms_user;
-ALTER SCHEMA public OWNER TO cms_user;
-
--- Grant default privileges for future objects
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO cms_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO cms_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO cms_user;
-EOF
+# Deploy to production
+./scripts/uatdeploy.sh
 ```
 
-2. **Configure PostgreSQL authentication** (if using password authentication):
+**Rollback if something breaks:**
 ```bash
-# Edit pg_hba.conf to allow password authentication
-sudo nano /etc/postgresql/14/main/pg_hba.conf
-# (adjust version number: 12, 13, 14, 15, etc.)
+# Rollback to previous commit
+./scripts/rollback.sh HEAD~1
 
-# Find lines like:
-# local   all             all                                     peer
+# Rollback to specific commit
+./scripts/rollback.sh abc1234
 
-# Change to:
-# local   all             all                                     md5
+# Rollback to a tag
+./scripts/rollback.sh v1.2.3
 
-# Save (Ctrl+O, Enter, Ctrl+X)
-
-# Restart PostgreSQL
-sudo systemctl restart postgresql
+# Go back to latest (undo rollback)
+./scripts/rollback.sh master
 ```
 
-3. **Create `.env.production` on the server** (not included in deployment tarball):
-```bash
-cd /home/cms/app
-nano .env.production
+### First-Time Server Setup (SECURE)
 
-# Add all required environment variables (see Environment Variables section)
-# Make sure DB_PASSWORD matches the password set in step 1
-# Save and exit (Ctrl+O, Enter, Ctrl+X)
+**⚠️ CRITICAL: ALWAYS use the secure setup script, NOT manual setup**
+
+**IMPORTANT:** On first deployment or when setting up a new server:
+
+1. **Generate strong credentials**:
+```bash
+# Generate strong database password (32 characters)
+export DB_PASSWORD="$(openssl rand -base64 32)"
+echo "Database Password: $DB_PASSWORD"
+
+# Generate strong JWT secret (64 characters)
+export JWT_SECRET="$(openssl rand -base64 64)"
+echo "JWT Secret: $JWT_SECRET"
+
+# Save these credentials - you'll need them for .env.production
 ```
 
-4. **Initialize the database schema**:
+2. **Run secure server setup**:
 ```bash
+# This script will:
+# - Install Node.js 20, PostgreSQL, nginx, PM2
+# - Configure PostgreSQL to ONLY listen on localhost
+# - Set up firewall (UFW) - only ports 22, 80, 443
+# - Install fail2ban for intrusion prevention
+# - Harden SSH (disable password auth)
+# - Create database with strong password
+
+DB_PASSWORD='your-strong-password' ./scripts/secure-server-setup.sh <droplet-ip>
+```
+
+3. **Update .env.production**:
+```bash
+# Update these in .env.production:
+DB_PASSWORD='<strong-password-from-step-1>'
+JWT_SECRET='<strong-secret-from-step-1>'
+```
+
+4. **Set up git-based deployment**:
+```bash
+# One-time setup for git deployment
+./scripts/setup-git-deploy.sh <droplet-ip>
+```
+
+5. **Deploy .env.production and application**:
+```bash
+# Deploy environment variables
+./scripts/deploy-env.sh
+
+# Deploy application
+./scripts/uatdeploy.sh
+```
+
+6. **Initialize database and start application**:
+```bash
+# SSH to server
+ssh root@<droplet-ip>
+
+# Initialize database schema
 cd /home/cms/app
 npm run init-db
 
@@ -262,48 +444,46 @@ npm run init-db
 # Connected to PostgreSQL database
 # ✅ Database initialized successfully!
 # Tables created:
-#   - users
-#   - sessions
-#   - temp_auth_tokens
-#   - products
-#   - product_images
-#   - orders
-#   - order_items
-#   - cart
-#   - appointments
-#   - reviews
+#   - users, sessions, temp_auth_tokens, products, product_images
+#   - orders, order_items, cart, appointments, reviews
+
+# Start application (PM2 will auto-start after deployment)
+pm2 logs cms-app --lines 20
 ```
 
-5. **Start the application**:
+7. **Set up SSL certificate**:
 ```bash
-pm2 start npm --name cms-app -- start
-# or if already running:
-pm2 restart cms-app
-
-# Check logs to verify everything is working
-pm2 logs cms-app --lines 50
+ssh root@<droplet-ip>
+certbot --nginx -d uat.colourmyspace.com
 ```
 
-### Troubleshooting Database Issues
-
-**If you get "permission denied for schema public":**
+8. **Verify security configuration**:
 ```bash
-sudo -u postgres psql -d cms_db
-GRANT ALL PRIVILEGES ON SCHEMA public TO cms_user;
-ALTER SCHEMA public OWNER TO cms_user;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO cms_user;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO cms_user;
-\q
+# Verify PostgreSQL only on localhost (should show 127.0.0.1:5432)
+ssh root@<droplet-ip> "netstat -an | grep 5432"
+
+# Verify firewall active
+ssh root@<droplet-ip> "ufw status"
+
+# Verify fail2ban running
+ssh root@<droplet-ip> "fail2ban-client status"
+
+# Scan open ports (should ONLY show 22, 80, 443)
+nmap -p 1-10000 <droplet-ip>
 ```
 
-**If you get "password authentication failed":**
-```bash
-# Reset the password
-sudo -u postgres psql
-ALTER USER cms_user WITH PASSWORD 'cms_dbpass12!';
-\q
+### Troubleshooting
 
-# Make sure .env.production has the matching password
+**If you get database connection errors:**
+```bash
+# Check PostgreSQL is running
+ssh root@<droplet-ip> "systemctl status postgresql"
+
+# Check logs
+ssh root@<droplet-ip> "tail -50 /var/log/postgresql/postgresql-*.log"
+
+# Verify credentials in .env.production
+ssh root@<droplet-ip> "cd /home/cms/app && grep DB_ .env.production"
 ```
 
 **If tables already exist and you need to recreate them:**

@@ -1,5 +1,5 @@
 #!/bin/bash
-DROPLET_IP="104.236.245.179"
+DROPLET_IP="68.183.53.217"
 
 echo "Uploading .env.production to server..."
 

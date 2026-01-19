@@ -59,8 +59,9 @@ CMS (Color My Space) is a full-stack Next.js application that provides:
 - **Razorpay** - Payment gateway integration
 
 ### Deployment
-- **PM2** - Process management (see DEPLOYMENT_PM2.md)
+- **PM2** - Process management
 - **Nginx** - Reverse proxy
+- **Security** - See CLAUDE.md for deployment security requirements
 
 ---
 
@@ -586,8 +587,7 @@ cms/
 ├── tests/                      # Test documentation
 │   ├── manual_qa_checklist.md
 │   └── webhook_testing_guide.md
-├── DEPLOYMENT_PM2.md           # Deployment guide
-├── CLAUDE.md                   # AI assistant instructions
+├── CLAUDE.md                   # Development & deployment guide
 └── README.md                   # This file
 ```
 
@@ -696,13 +696,14 @@ npm run test:coverage
 
 ## Deployment
 
-See **DEPLOYMENT_PM2.md** for comprehensive deployment instructions including:
-- Digital Ocean droplet setup
+See **CLAUDE.md** for comprehensive deployment instructions including:
+- Secure server setup (firewall, fail2ban, bandwidth limits)
+- PostgreSQL security configuration
 - PM2 process management
-- Nginx reverse proxy configuration
+- Nginx reverse proxy with rate limiting
 - SSL certificate setup with Let's Encrypt
-- Database backups
-- Monitoring and maintenance
+- Security verification checklist
+- Bandwidth monitoring and cost protection
 
 ---
 
