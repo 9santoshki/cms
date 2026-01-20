@@ -138,12 +138,18 @@ export const verifySessionToken = (token: string): SessionData | null => {
 // Set session cookie
 export const setSessionCookie = async (token: string) => {
   const cookieStore = await cookies();
+
+  // Get domain from APP_URL for proper cookie domain setting
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const domain = appUrl ? new URL(appUrl).hostname : undefined;
+
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
+    ...(domain && { domain }),
   });
 };
 
@@ -414,12 +420,17 @@ export const setSessionCookieWithDB = async (token: string, rememberMe: boolean 
     ? 60 * 60 * 24 * SESSION_DURATION_DAYS  // 30 days
     : 60 * 60 * 24; // 1 day
 
+  // Get domain from APP_URL for proper cookie domain setting
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const domain = appUrl ? new URL(appUrl).hostname : undefined;
+
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: maxAge,
     path: '/',
+    ...(domain && { domain }),
   });
 };
 

@@ -36,14 +36,18 @@ export async function GET(request: NextRequest) {
 
     // Build cookie string manually (bypass Next.js cookie API)
     const maxAge = 60 * 60 * 24 * 30; // 30 days
-    const secure = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Extract domain from APP_URL for proper cookie domain setting
+    const domain = appUrl ? new URL(appUrl).hostname : undefined;
 
     const cookieString = [
       `cms-session=${sessionToken}`,
       `Max-Age=${maxAge}`,
       `Path=/`,
+      domain ? `Domain=${domain}` : null,
       `SameSite=Lax`,
-      secure ? 'Secure' : null,
+      isProduction ? 'Secure' : null,
       'HttpOnly'
     ].filter(Boolean).join('; ');
 
@@ -98,8 +102,9 @@ export async function GET(request: NextRequest) {
             // Set cookie via JavaScript (not HttpOnly, but it will work!)
             var expires = new Date();
             expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-            var isProduction = ${secure};
-            var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/; SameSite=Lax" + (isProduction ? "; Secure" : "");
+            var isProduction = ${isProduction};
+            var domain = "${domain || ''}";
+            var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/" + (domain ? "; domain=" + domain : "") + "; SameSite=Lax" + (isProduction ? "; Secure" : "");
             document.cookie = cookieStr;
 
             console.log('✅ Cookie set!');
