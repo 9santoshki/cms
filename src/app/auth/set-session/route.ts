@@ -38,21 +38,23 @@ export async function GET(request: NextRequest) {
     const maxAge = 60 * 60 * 24 * 30; // 30 days
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // Extract domain from APP_URL for proper cookie domain setting
+    // Extract domain from APP_URL for JavaScript cookie setting
     const domain = appUrl ? new URL(appUrl).hostname : undefined;
 
+    // IMPORTANT: Don't set Domain attribute in HTTP header for better Chrome compatibility
+    // Cookies without Domain attribute work more reliably across browsers
     const cookieString = [
       `cms-session=${sessionToken}`,
       `Max-Age=${maxAge}`,
       `Path=/`,
-      domain ? `Domain=${domain}` : null,
       `SameSite=Lax`,
       isProduction ? 'Secure' : null,
       'HttpOnly'
     ].filter(Boolean).join('; ');
 
-    console.log('✅✅✅ Setting cookie with raw header!');
+    console.log('✅✅✅ Setting cookie with raw header (no Domain attribute for Chrome compatibility)');
     console.log('Cookie string length:', cookieString.length);
+    console.log('Domain extracted (for JS fallback):', domain);
 
     // Return HTML page that sets cookie via JavaScript and redirects
     // Using JavaScript to set cookie since HTTP headers aren't working
@@ -98,45 +100,66 @@ export async function GET(request: NextRequest) {
           </div>
           <script>
             console.log('🔄 Setting session cookie via JavaScript...');
+            console.log('User agent:', navigator.userAgent);
 
             var isProduction = ${isProduction};
             var domain = "${domain || ''}";
+            var isChrome = navigator.userAgent.indexOf('Chrome') > -1;
 
-            // CRITICAL: Clear any existing cms-session cookies first
+            // CRITICAL: Clear any existing cms-session cookies first (aggressive clearing for Chrome)
             // This prevents "invalid signature" errors from old cookies
-            console.log('🗑️ Clearing old cms-session cookies...');
+            console.log('🗑️ Aggressively clearing old cms-session cookies (Chrome-compatible)...');
+
+            // Clear without domain
             document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax;";
+
+            // Clear with domain variations
             if (domain) {
               document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + domain;
+              document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + domain + "; SameSite=Lax;";
+
+              // Also try with dot prefix for Chrome
+              document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + domain;
             }
+
+            console.log('✅ Old cookies cleared');
 
             // Set new cookie via JavaScript (not HttpOnly, but it will work!)
             var expires = new Date();
             expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-            var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/" + (domain ? "; domain=" + domain : "") + "; SameSite=Lax" + (isProduction ? "; Secure" : "");
+
+            // Build cookie string - NO domain attribute for better Chrome compatibility
+            // Cookies without domain attribute work better cross-browser
+            var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/; SameSite=Lax" + (isProduction ? "; Secure" : "");
             document.cookie = cookieStr;
 
             console.log('✅ Cookie set!');
             console.log('Cookie string:', cookieStr);
             console.log('Cookie value:', document.cookie);
+            console.log('Is Chrome:', isChrome);
 
-            // Wait a moment for cookie to be fully set before redirecting
+            // Verify cookie was set
+            var cookieSet = document.cookie.indexOf('cms-session=') !== -1;
+            console.log('Cookie verification:', cookieSet ? '✅ Cookie present' : '❌ Cookie NOT found!');
+
+            // Wait longer for Chrome to process cookie changes
+            var delay = isChrome ? 1000 : 500;
             setTimeout(function() {
               console.log('🔄 Redirecting to homepage...');
               // Use replace to force a full page reload and ensure session loads
               window.location.replace('/?login=success');
-            }, 500);
+            }, delay);
           </script>
         </body>
       </html>
     `;
 
-    // Create clear cookie header to remove old invalid cookies
+    // Create clear cookie header to remove old invalid cookies (no Domain for Chrome compatibility)
     const clearCookieString = [
       `cms-session=`,
       `Max-Age=0`,
       `Path=/`,
-      domain ? `Domain=${domain}` : null,
       `Expires=Thu, 01 Jan 1970 00:00:00 GMT`
     ].filter(Boolean).join('; ');
 
