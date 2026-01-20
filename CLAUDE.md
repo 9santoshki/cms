@@ -11,7 +11,7 @@ npm install
 # Set up environment (copy and fill in)
 cp .env.local.example .env.local
 
-# Initialize database
+# Initialize database (⚠️ ONE TIME ONLY - see DATABASE_WARNING.md)
 npm run init-db
 
 # Start development server
@@ -21,6 +21,17 @@ npm run dev  # http://localhost:3000
 npm run build
 npm start
 ```
+
+## ⚠️ CRITICAL: Database Operations
+
+**READ THIS FIRST:** [DATABASE_WARNING.md](DATABASE_WARNING.md)
+
+**Key points:**
+- ❌ **NEVER** run `npm run init-db` on UAT or production during deployment
+- ❌ **NEVER** delete or truncate database tables during deployment
+- ✅ Database initialization is **ONE TIME ONLY** at first setup
+- ✅ Regular deployments preserve all database data
+- ✅ Use migrations for schema changes, not init-db
 
 ## Project Overview
 
@@ -614,6 +625,8 @@ git add .
 git commit -m "Update feature"
 
 # Deploy to UAT (builds locally with .env.uat)
+# ✅ Preserves all database data
+# ❌ Does NOT run init-db (see DATABASE_WARNING.md)
 ./scripts/uatdeploy.sh
 ```
 
@@ -637,6 +650,8 @@ git checkout master
 ### First-Time Server Setup (SECURE)
 
 **⚠️ CRITICAL: ALWAYS use the secure setup script, NOT manual setup**
+
+**⚠️ DATABASE WARNING:** See [DATABASE_WARNING.md](DATABASE_WARNING.md) - Database initialization is **ONE TIME ONLY**
 
 **IMPORTANT:** On first deployment or when setting up a new server:
 
@@ -687,9 +702,10 @@ NEXT_PUBLIC_APP_URL='https://www.colourmyspace.com'
 ./scripts/uatdeploy.sh
 ```
 
-5. **Initialize database**:
+5. **Initialize database** (⚠️ **ONE TIME ONLY** - See [DATABASE_WARNING.md](DATABASE_WARNING.md)):
 ```bash
-# Initialize database schema (detects .env.uat automatically)
+# ⚠️ ONLY run this ONCE during first-time setup
+# ⚠️ NEVER run this during regular deployments
 ssh root@68.183.53.217 "cd /home/cms/app && npm run init-db"
 
 # Should show:
@@ -703,6 +719,8 @@ ssh root@68.183.53.217 "cd /home/cms/app && npm run init-db"
 # Start application (PM2 will auto-start after deployment)
 pm2 logs cms-app --lines 20
 ```
+
+**IMPORTANT:** You will NEVER need to run `npm run init-db` again on this server! Regular deployments preserve all database data.
 
 7. **Set up SSL certificate**:
 ```bash
@@ -760,10 +778,10 @@ npm run init-db
 
 **Important Notes:**
 - Environment files (`.env.uat`, `.env.production`) must be created manually and deployed separately (security: not in git)
-- The `init-db` script automatically detects and uses `.env.uat` or `.env.production` when available
 - Variables starting with `NEXT_PUBLIC_` are embedded at build time from the environment file
 - `uatdeploy.sh` reads from `.env.uat` to build with correct URLs
-- Database initialization only needs to be run once (or when schema changes)
+- **⚠️ Database initialization is ONE TIME ONLY** at first setup - see [DATABASE_WARNING.md](DATABASE_WARNING.md)
+- **⚠️ Regular deployments NEVER run `init-db`** - they preserve all existing data
 - Always ensure `cms_user` has full permissions on the `cms_db` database and `public` schema
 
 ## Database Architecture
