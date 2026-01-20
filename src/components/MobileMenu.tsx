@@ -11,13 +11,13 @@ interface MobileMenuProps {
   activePage?: string;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ 
-  isOpen, 
-  onClose, 
+const MobileMenu: React.FC<MobileMenuProps> = ({
+  isOpen,
+  onClose,
   onNavigate,
-  activePage = '' 
+  activePage = ''
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, signInWithGoogle } = useAuth();
 
   if (!isOpen) return null;
 
@@ -25,6 +25,15 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     logout();
     onNavigate('/');
     onClose();
+  };
+
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      onClose();
+    } catch (error) {
+      console.error('Sign in failed:', error);
+    }
   };
 
   return (
@@ -171,10 +180,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fde68a'} // amber-200
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
-          onClick={() => {
-            onNavigate('/login');
-            onClose();
-          }}
+          onClick={handleSignIn}
         >
           <i className="fas fa-user" style={{ marginRight: '10px' }}></i>
           Sign In
