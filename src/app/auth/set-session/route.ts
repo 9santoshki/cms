@@ -99,11 +99,20 @@ export async function GET(request: NextRequest) {
           <script>
             console.log('🔄 Setting session cookie via JavaScript...');
 
-            // Set cookie via JavaScript (not HttpOnly, but it will work!)
-            var expires = new Date();
-            expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
             var isProduction = ${isProduction};
             var domain = "${domain || ''}";
+
+            // CRITICAL: Clear any existing cms-session cookies first
+            // This prevents "invalid signature" errors from old cookies
+            console.log('🗑️ Clearing old cms-session cookies...');
+            document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            if (domain) {
+              document.cookie = "cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + domain;
+            }
+
+            // Set new cookie via JavaScript (not HttpOnly, but it will work!)
+            var expires = new Date();
+            expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
             var cookieStr = "cms-session=${sessionToken.replace(/"/g, '\\"')}; expires=" + expires.toUTCString() + "; path=/" + (domain ? "; domain=" + domain : "") + "; SameSite=Lax" + (isProduction ? "; Secure" : "");
             document.cookie = cookieStr;
 
@@ -122,15 +131,27 @@ export async function GET(request: NextRequest) {
       </html>
     `;
 
+    // Create clear cookie header to remove old invalid cookies
+    const clearCookieString = [
+      `cms-session=`,
+      `Max-Age=0`,
+      `Path=/`,
+      domain ? `Domain=${domain}` : null,
+      `Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    ].filter(Boolean).join('; ');
+
     const response = new NextResponse(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html',
-        'Set-Cookie': cookieString,
+        // Set multiple Set-Cookie headers: first clear old cookie, then set new one
+        'Set-Cookie': [clearCookieString, cookieString],
       },
     });
 
     console.log('🔄 Returning HTML page with cookie header...');
+    console.log('Clear cookie:', clearCookieString);
+    console.log('Set cookie:', cookieString.substring(0, 100) + '...');
 
     return response;
   } catch (error) {
