@@ -166,6 +166,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
           image_url: product.image_url && (product.image_url.startsWith('http') || product.image_url.startsWith('/'))
             ? product.image_url
             : undefined,
+          // Preserve primary_image from API response (used for product gallery images)
+          primary_image: product.primary_image || product.image_url,
           // Use the identifier to determine the appropriate CSS class
           imageClass: mapImageIdentifierToClass(product.image_url) || product.imageClass || 'modern'
         }));

@@ -126,14 +126,20 @@ All database operations go through dedicated modules:
 
 **All product images are stored in Cloudflare R2 (S3-compatible object storage), NOT in the database.**
 
-- **Storage:** Cloudflare R2 bucket (configured via `CLOUDFLARE_BUCKET` env var)
+- **Storage:** Cloudflare R2 bucket (configured via `CLOUDFLARE_BUCKET` env var) - **PRIVATE**
 - **Upload:** Images uploaded via `src/lib/cloudflare.ts` using AWS S3 SDK
-- **Access:** Public URLs constructed from `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_BUCKET`
+- **Access:** Images served through proxy API endpoint `/api/images/[key]` with R2 credentials
+- **Authentication:** Uses `CLOUDFLARE_R2_ACCESS_KEY_ID` and `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
+- **Token Note:** `CLOUDFLARE_R2_TOKEN_VALUE` is **NOT used** by the S3 SDK - only for Cloudflare Dashboard API
 - **Database Tables:**
-  - `products.image_url` - Legacy single image URL (full Cloudflare R2 public URL)
+  - `products.image_url` - Legacy single image URL (NULL for new products)
   - `product_images` - Multiple images per product with gallery support
 
-**Important:** The database stores only image metadata (Cloudflare image ID, URL, filename), not image data. Actual image files are in Cloudflare R2.
+**Important:**
+- The database stores only image metadata (Cloudflare image ID, URL, filename), not image data
+- Actual image files are in Cloudflare R2 private bucket
+- All images MUST use proxy endpoint format: `/api/images/product_images%2F{filename}`
+- Never use public R2 URLs (`https://pub-*.r2.dev`) - they won't work with private bucket
 
 **Product Images Table Structure:**
 ```sql
@@ -153,11 +159,32 @@ product_images (
 1. Admin uploads image(s) via dashboard `/dashboard/products/[id]`
 2. Images uploaded to Cloudflare R2 via `uploadImageToCloudflare()`
 3. R2 returns object key (e.g., `product_images/1234567890-abc123-image.jpg`)
-4. Public URL constructed as `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${CLOUDFLARE_BUCKET}/${key}`
-5. Metadata saved to `product_images` table via `addProductImage()`
-6. Product API returns `primary_image` URL from the image marked as `is_primary = true`
+4. Proxy URL constructed as `/api/images/${encodeURIComponent(key)}`
+5. Metadata saved to `product_images` table via `addProductImage()` with R2 key
+6. Product API returns `primary_image` URL (proxy endpoint)
 
-**Note:** R2 bucket must have public access enabled for images to be accessible via these URLs.
+**Image Serving (Private Bucket):**
+- R2 bucket is **private** (not publicly accessible)
+- Images served through API proxy endpoint: `/api/images/[key]`
+- Proxy endpoint (`src/app/api/images/[key]/route.ts`) fetches from R2 with credentials
+- Images cached for 1 year (`Cache-Control: public, max-age=31536000, immutable`)
+- No need for public bucket access or pre-signed URLs
+
+**Image URL Format Examples:**
+```typescript
+// ✅ CORRECT - Use proxy endpoint
+const imageUrl = '/api/images/product_images%2F1767927653531-slider-image.jpg';
+
+// ❌ WRONG - Never use public R2 URL
+const imageUrl = 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_images/...';
+```
+
+**Where Images Are Used:**
+- Product pages: Dynamic images from database
+- Homepage slider: 3 hardcoded images (Slider.tsx)
+- Hero sections: Page-specific backgrounds (NewHomepageStylesElegant.ts, etc.)
+- Portfolio section: 6 category showcase images
+- All use proxy endpoint format for secure R2 access
 
 ### API Response Format
 
@@ -768,6 +795,14 @@ npm run init-db
 - Protected API routes call `validateSession()` or `getSessionFromCookieWithDB()` first
 
 ## Recent Changes & Bug Fixes
+
+### January 2026 - R2 Image Migration
+- **Migrated all images to private R2 bucket with proxy access:** Converted 26 hardcoded public R2 URLs across 6 files to use secure proxy endpoint
+- **Files updated:** Slider.tsx, NewHomepageStylesElegant.ts, ConsultationStyles.ts, NewAboutStyles.ts, ElegantServicesStyles.ts, NewPortfolioStyles.ts
+- **Security improvement:** All images now served through authenticated API proxy (`/api/images/[key]`) instead of public bucket URLs
+- **Verification:** Created `scripts/verifyR2Images.js` to test all 13 critical images (slider, hero, portfolio)
+- **Documentation:** Added `R2_IMAGE_MIGRATION_COMPLETE.md` with comprehensive migration details
+- **Impact:** Homepage slider, all hero sections, and portfolio images now use secure authenticated access
 
 ### January 2026
 - **Added social media metadata:** Comprehensive Open Graph and Twitter Card configuration for proper link previews on Facebook, LinkedIn, Twitter
