@@ -140,13 +140,15 @@ export async function GET(request: NextRequest) {
       `Expires=Thu, 01 Jan 1970 00:00:00 GMT`
     ].filter(Boolean).join('; ');
 
+    // Use Headers API to set multiple Set-Cookie headers
+    const headers = new Headers();
+    headers.set('Content-Type', 'text/html');
+    headers.append('Set-Cookie', clearCookieString);
+    headers.append('Set-Cookie', cookieString);
+
     const response = new NextResponse(html, {
       status: 200,
-      headers: {
-        'Content-Type': 'text/html',
-        // Set multiple Set-Cookie headers: first clear old cookie, then set new one
-        'Set-Cookie': [clearCookieString, cookieString],
-      },
+      headers,
     });
 
     console.log('🔄 Returning HTML page with cookie header...');
