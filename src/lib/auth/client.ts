@@ -51,7 +51,8 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
 
     const data = await response.json();
     return { user: data.user || null };
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error getting session:', error);
     return { user: null };
   }
@@ -63,7 +64,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
   return user;
 };
 
-// Get user profile (with role information)
+// Get user profile (with role information)s
 export const getUserProfile = async (): Promise<{ id: string; role: string } | null> => {
   const user = await getCurrentUser();
   if (!user) return null;

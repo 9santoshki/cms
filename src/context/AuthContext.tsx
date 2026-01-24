@@ -103,6 +103,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Run immediately - don't delay with setTimeout
     checkCurrentSession();
 
+    // Add after checkCurrentSession() completes
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('login') === 'success') {
+      // Additional session check after Google login
+      setTimeout(async () => {
+        const user = await getCurrentUser();
+        if (user && !state.user) {
+          console.log('AuthContext: Detected login success, updating user state', user);
+          setUser(user);
+        }
+      }, 500);
+    }
+
+
+
     console.log('AuthContext: Subscribing to auth state changes...');
     const sub = onAuthStateChange(async (event, session) => {
       console.log('AuthContext: Auth state changed event:', event, 'Session:', session);
