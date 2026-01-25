@@ -29,33 +29,25 @@ export async function POST(request: NextRequest) {
     // Get domain for migration purposes
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
     const domain = appUrl ? new URL(appUrl).hostname : undefined;
+    const isSecure = process.env.NODE_ENV !== 'development';
 
-    // Delete cookie WITHOUT domain (new format)
-    response.cookies.set('cms-session', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development', // true for uat and production
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 0,
-      expires: new Date(0),
+    // Build cookie deletion strings manually to ensure both versions are sent
+    const cookieAttributes = `Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; ${isSecure ? 'Secure; ' : ''}HttpOnly; SameSite=lax`;
+    const cookiesToDelete = [
+      `cms-session=; ${cookieAttributes}`, // Without domain
+    ];
+
+    // Add domain version if domain exists (for migration from old cookies)
+    if (domain) {
+      cookiesToDelete.push(`cms-session=; ${cookieAttributes}; Domain=${domain}`);
+    }
+
+    // Set all Set-Cookie headers
+    cookiesToDelete.forEach(cookie => {
+      response.headers.append('Set-Cookie', cookie);
     });
 
-    // ALSO delete cookie WITH domain (old format, migration)
-    // This ensures old cookies are cleaned up
-    if (domain) {
-      response.cookies.set('cms-session', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development', // true for uat and production
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 0,
-        expires: new Date(0),
-        domain: domain,
-      });
-      console.log('✅ Cleared both cookie versions (with and without domain)');
-    } else {
-      console.log('✅ Cookie cleared (no domain parameter)');
-    }
+    console.log(`✅ Cleared cookie versions: ${cookiesToDelete.length}`, cookiesToDelete);
 
     return response;
   } catch (error) {
@@ -71,30 +63,25 @@ export async function POST(request: NextRequest) {
     // Get domain for migration purposes
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
     const domain = appUrl ? new URL(appUrl).hostname : undefined;
+    const isSecure = process.env.NODE_ENV !== 'development';
 
-    // Delete both cookie versions
-    response.cookies.set('cms-session', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development', // true for uat and production
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 0,
-      expires: new Date(0)
-    });
+    // Build cookie deletion strings manually to ensure both versions are sent
+    const cookieAttributes = `Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; ${isSecure ? 'Secure; ' : ''}HttpOnly; SameSite=lax`;
+    const cookiesToDelete = [
+      `cms-session=; ${cookieAttributes}`, // Without domain
+    ];
 
+    // Add domain version if domain exists
     if (domain) {
-      response.cookies.set('cms-session', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development', // true for uat and production
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 0,
-        expires: new Date(0),
-        domain: domain,
-      });
+      cookiesToDelete.push(`cms-session=; ${cookieAttributes}; Domain=${domain}`);
     }
 
-    console.log('✅ Cookie cleared on error (both versions)');
+    // Set all Set-Cookie headers
+    cookiesToDelete.forEach(cookie => {
+      response.headers.append('Set-Cookie', cookie);
+    });
+
+    console.log(`✅ Cookie cleared on error (${cookiesToDelete.length} versions)`);
 
     return response;
   }
