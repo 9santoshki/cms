@@ -49,8 +49,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Clean Logout
   const logout = useCallback(async () => {
+    console.log('AuthContext: Logout initiated');
     dispatch({ type: 'LOGOUT' });
-    try { await signOut(); } catch (e) {}
+
+    try {
+      await signOut();
+      console.log('AuthContext: ✅ Logout API call successful');
+
+      // Force reload to clear any cached state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    } catch (e) {
+      console.error('AuthContext: ❌ Logout error:', e);
+    }
   }, []);
 
   // Google Login
@@ -100,20 +112,67 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    // Safari workaround: Check URL for token parameter
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+
+      if (tokenFromUrl) {
+        console.log('AuthContext: 🦁 Safari fallback - Found token in URL, storing in localStorage');
+        localStorage.setItem('cms-session-token', tokenFromUrl);
+
+        // Clean up URL immediately
+        urlParams.delete('token');
+        const newUrl = urlParams.toString()
+          ? `${window.location.pathname}?${urlParams.toString()}`
+          : window.location.pathname + (urlParams.get('login') === 'success' ? '?login=success' : '');
+        window.history.replaceState({}, '', newUrl);
+      }
+
+      // Debug: Check if cookies are accessible
+      console.log('AuthContext: Browser cookies:', document.cookie);
+      console.log('AuthContext: Has cms-session cookie:', document.cookie.includes('cms-session'));
+      console.log('AuthContext: Has localStorage token:', !!localStorage.getItem('cms-session-token'));
+    }
+
     // Run immediately - don't delay with setTimeout
     checkCurrentSession();
 
-    // Add after checkCurrentSession() completes
+    // Check if login was just completed
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('login') === 'success') {
-      // Additional session check after Google login
-      setTimeout(async () => {
+      console.log('AuthContext: Login success detected, forcing immediate session check...');
+
+      // Force multiple session checks to ensure we catch the login
+      const forceSessionCheck = async (attempt = 1, maxAttempts = 5) => {
+        console.log(`AuthContext: Login check attempt ${attempt}/${maxAttempts}`);
         const user = await getCurrentUser();
-        if (user && !state.user) {
-          console.log('AuthContext: Detected login success, updating user state', user);
+
+        if (user) {
+          console.log('AuthContext: ✅ User found after login!', user);
           setUser(user);
+
+          // Load cart
+          try {
+            const { useCartStore } = await import('@/store/cartStore');
+            await useCartStore.getState().loadServerCart();
+            console.log('AuthContext: ✅ Cart loaded after login');
+          } catch (cartError) {
+            console.error('AuthContext: ❌ Error loading cart after login:', cartError);
+          }
+
+          // Clean up URL
+          window.history.replaceState({}, '', '/');
+        } else if (attempt < maxAttempts) {
+          // Try again after a short delay
+          setTimeout(() => forceSessionCheck(attempt + 1, maxAttempts), 200);
+        } else {
+          console.warn('AuthContext: ⚠️ Failed to load user after login');
         }
-      }, 500);
+      };
+
+      // Start checking immediately
+      forceSessionCheck();
     }
 
 

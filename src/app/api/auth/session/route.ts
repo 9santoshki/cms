@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookieWithDB, getUserProfile } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB, getUserProfile, validateSession } from '@/lib/db/auth';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('=== SESSION API CALLED ===');
     console.log('Cookies:', request.cookies.getAll());
     console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
+    console.log('Authorization header:', request.headers.get('authorization')?.substring(0, 20) + '...');
+    console.log('User-Agent:', request.headers.get('user-agent'));
 
-    // Use database-backed session validation
-    const session = await getSessionFromCookieWithDB();
+    // Safari workaround: Try Authorization header first (localStorage token)
+    const authHeader = request.headers.get('authorization');
+    let session = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log('🦁 Safari: Validating token from Authorization header');
+      session = await validateSession(token);
+      console.log('🦁 Safari: Token validation result:', session ? 'SUCCESS' : 'FAILED');
+    }
+
+    // Fallback to cookie-based session (Chrome, Firefox, Edge)
+    if (!session) {
+      session = await getSessionFromCookieWithDB();
+    }
     console.log('Session from cookie:', session ? {
       userId: session.userId,
       email: session.email,
@@ -21,7 +36,13 @@ export async function GET(request: NextRequest) {
 
     if (!session) {
       console.log('No session found, returning null user');
-      return NextResponse.json({ user: null }, { status: 200 });
+      const response = NextResponse.json({ user: null }, { status: 200 });
+
+      // Add CORS headers for Safari compatibility
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+
+      return response;
     }
 
     // Get fresh user data from database
@@ -52,9 +73,15 @@ export async function GET(request: NextRequest) {
       avatarLength: userData.avatar?.length || 0
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: userData,
     });
+
+    // Add CORS headers for Safari compatibility
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+
+    return response;
   } catch (error) {
     console.error('❌ Error getting session:', error);
     return NextResponse.json({ user: null }, { status: 200 });

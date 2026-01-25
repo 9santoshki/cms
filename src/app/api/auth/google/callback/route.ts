@@ -96,15 +96,22 @@ export async function GET(request: NextRequest) {
     const sessionToken = createSessionTokenWithDB(user, dbSession.id);
     console.log('JWT Token created:', sessionToken);
 
-    const response = NextResponse.redirect(new URL('/?login=success', appUrl));
-    response.cookies.set('session_token', sessionToken, {
-      name: 'cms-session',
-      value: sessionToken,
+    // Safari on localhost blocks httpOnly cookies during redirects
+    // Workaround: Pass token via URL hash for Safari to store in localStorage
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+    // Set cookie normally (works in Chrome, Firefox, Edge)
+    const response = NextResponse.redirect(new URL(`/?login=success&token=${encodeURIComponent(sessionToken)}`, appUrl));
+
+    response.cookies.set('cms-session', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: !isLocalhost && process.env.NODE_ENV === 'production',
       path: '/',
-      sameSite: 'lax'
+      ...(isLocalhost ? {} : { sameSite: 'lax' }),
+      maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
     });
+
+    console.log('✅ Cookie + URL token set for:', isLocalhost ? 'localhost (Safari fallback)' : 'production');
 
     console.log('✅ Session token set and redirecting user to homepage');
     return response;

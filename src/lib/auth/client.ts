@@ -31,9 +31,19 @@ export const signOut = async () => {
       throw new Error('Logout failed');
     }
 
+    // Safari workaround: Clear localStorage token
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+      console.log('🦁 Safari: Cleared token from localStorage');
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error signing out:', error);
+    // Still clear localStorage even if API fails
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+    }
     throw error;
   }
 };
@@ -41,11 +51,29 @@ export const signOut = async () => {
 // Get current session/user
 export const getCurrentSession = async (): Promise<{ user: User | null }> => {
   try {
+    // Safari workaround: Send token from localStorage if available
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    // Check localStorage for token (Safari fallback)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('cms-session-token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🦁 Safari: Sending token from localStorage');
+      }
+    }
+
     const response = await fetch('/api/auth/session', {
       credentials: 'include',
+      headers,
+      // Safari-specific: explicitly set cache mode
+      cache: 'no-cache'
     });
 
     if (!response.ok) {
+      console.warn('Session fetch failed:', response.status, response.statusText);
       return { user: null };
     }
 
@@ -53,7 +81,15 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
     return { user: data.user || null };
   }
   catch (error) {
+    // Enhanced error logging for Safari debugging
     console.error('Error getting session:', error);
+    if (error instanceof TypeError && error.message === 'Load failed') {
+      console.error('Safari Load failed - possible causes:');
+      console.error('1. Cookie blocked by ITP (Intelligent Tracking Prevention)');
+      console.error('2. CORS issue');
+      console.error('3. Network issue');
+      console.error('Cookies:', document.cookie);
+    }
     return { user: null };
   }
 };
@@ -131,8 +167,9 @@ export const onAuthStateChange = (callback: (event: string, session: { user: Use
   // Check immediately
   checkAuthState();
 
-  // Poll every 2 seconds for faster cart sync after login
-  const interval = setInterval(checkAuthState, 2000);
+  // Poll every 5 seconds (increased from 2 seconds to reduce server load)
+  // The ?login=success flow now handles immediate login detection
+  const interval = setInterval(checkAuthState, 5000);
 
   return {
     unsubscribe: () => {
