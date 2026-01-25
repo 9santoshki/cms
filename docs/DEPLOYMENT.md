@@ -33,6 +33,29 @@
   - Cloudflare R2 configuration (all R2 access keys)
   - Application URL (NEXT_PUBLIC_APP_URL)
 
+## Cloudflare Configuration
+
+### Page Rules (Required)
+1. **API Cache Bypass:**
+   - URL: `uat.colourmyspace.com/api/*`
+   - Setting: Cache Level → Bypass
+   - Prevents caching of dynamic API responses (authentication, cart, etc.)
+
+2. **Static Asset Caching:**
+   - URL: `uat.colourmyspace.com/_next/static/*`
+   - Setting: Cache Level → Cache Everything
+   - Browser Cache TTL: 1 year
+
+### Cache Headers
+- API routes include `Cache-Control: no-store` to prevent Cloudflare caching
+- Critical for `/api/auth/session` endpoint to avoid stale authentication state
+- See [CLOUDFLARE.md](CLOUDFLARE.md) for detailed caching configuration
+
+### SSL/TLS
+- Full (strict) encryption mode
+- Cloudflare Origin Certificate installed on server
+- Edge certificates auto-renewed by Cloudflare
+
 ## Security Requirements
 • PostgreSQL configured to listen on localhost only (not accessible from internet)
 • UFW firewall enabled with Cloudflare IP range restrictions
