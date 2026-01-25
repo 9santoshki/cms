@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== SESSION API CALLED ===');
     console.log('Cookies:', request.cookies.getAll());
+    const cmsSessionCookie = request.cookies.get('cms-session');
     console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
+    console.log('cms-session cookie value length:', cmsSessionCookie?.value?.length || 0);
+    console.log('cms-session cookie preview:', cmsSessionCookie?.value?.substring(0, 30) + '...');
     console.log('Authorization header:', request.headers.get('authorization')?.substring(0, 20) + '...');
     console.log('User-Agent:', request.headers.get('user-agent'));
 
