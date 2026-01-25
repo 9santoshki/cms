@@ -127,10 +127,18 @@ export const createSessionToken = (user: UserProfile): string => {
 // Verify session token
 export const verifySessionToken = (token: string): SessionData | null => {
   try {
+    // Validate token format before attempting JWT verification
+    if (!token || token.trim() === '' || token.length < 10) {
+      return null;
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET) as SessionData;
     return decoded;
   } catch (error) {
-    console.error('Invalid token:', error);
+    // Only log if it's not a common cleared cookie scenario
+    if (token && token.length > 10) {
+      console.error('Invalid token:', error);
+    }
     return null;
   }
 };
