@@ -105,9 +105,9 @@ export async function GET(request: NextRequest) {
 
     response.cookies.set('cms-session', sessionToken, {
       httpOnly: true,
-      secure: !isLocalhost && process.env.NODE_ENV === 'production',
+      secure: !isLocalhost, // true for HTTPS (UAT and production), false for localhost
       path: '/',
-      ...(isLocalhost ? {} : { sameSite: 'lax' }),
+      sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
     });
 

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Delete cookie WITHOUT domain (new format)
     response.cookies.set('cms-session', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV !== 'development', // true for uat and production
       path: '/',
       sameSite: 'lax',
       maxAge: 0,
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (domain) {
       response.cookies.set('cms-session', '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV !== 'development', // true for uat and production
         path: '/',
         sameSite: 'lax',
         maxAge: 0,
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Delete both cookie versions
     response.cookies.set('cms-session', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV !== 'development', // true for uat and production
       path: '/',
       sameSite: 'lax',
       maxAge: 0,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (domain) {
       response.cookies.set('cms-session', '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV !== 'development', // true for uat and production
         path: '/',
         sameSite: 'lax',
         maxAge: 0,

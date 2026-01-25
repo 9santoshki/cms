@@ -145,7 +145,7 @@ export const setSessionCookie = async (token: string) => {
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV !== 'development', // true for uat and production
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
@@ -172,7 +172,7 @@ export const clearSessionCookie = async () => {
   // Delete with same parameters used when setting (no domain parameter)
   cookieStore.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV !== 'development', // true for uat and production
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
@@ -435,7 +435,7 @@ export const setSessionCookieWithDB = async (token: string, rememberMe: boolean 
   // This avoids cookie deletion issues and subdomain problems
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV !== 'development', // true for uat and production
     sameSite: 'lax',
     maxAge: maxAge,
     path: '/',

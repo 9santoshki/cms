@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set('cms-session', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV !== 'development', // true for uat and production
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ Session cookie set successfully via finalize endpoint:', {
       name: 'cms-session',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV !== 'development',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30,
       path: '/'
