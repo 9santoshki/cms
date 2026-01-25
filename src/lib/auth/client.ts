@@ -71,11 +71,20 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
       }
     }
 
+    console.log('🌐 Fetching session from /api/auth/session with headers:', headers);
+
     const response = await fetch('/api/auth/session', {
       credentials: 'include',
       headers,
       // Safari-specific: explicitly set cache mode
       cache: 'no-cache'
+    });
+
+    console.log('🌐 Session fetch response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
     });
 
     if (!response.ok) {
