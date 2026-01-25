@@ -54,6 +54,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Clear frontend state immediately
     dispatch({ type: 'LOGOUT' });
 
+    // Clear cart state immediately
+    try {
+      const { useCartStore } = await import('@/store/cartStore');
+      useCartStore.setState({ items: [] });
+      console.log('AuthContext: ✅ Cart state cleared on logout');
+    } catch (cartError) {
+      console.error('AuthContext: ❌ Error clearing cart on logout:', cartError);
+    }
+
     // Call logout API (don't wait for completion)
     signOut().catch(e => {
       console.error('AuthContext: ❌ Logout API error (non-critical):', e);
