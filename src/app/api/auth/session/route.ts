@@ -4,6 +4,12 @@ import { getSessionFromCookieWithDB, getUserProfile, validateSession } from '@/l
 // Handle CORS preflight for custom Authorization header
 export async function OPTIONS(request: NextRequest) {
   const response = NextResponse.json({}, { status: 200 });
+
+  // CRITICAL: Prevent Cloudflare/CDN caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+  response.headers.set('CDN-Cache-Control', 'no-store');
+  response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+
   response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -52,6 +58,13 @@ export async function GET(request: NextRequest) {
       console.log('No session found, returning null user');
       const response = NextResponse.json({ user: null }, { status: 200 });
 
+      // CRITICAL: Prevent Cloudflare/CDN caching
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('CDN-Cache-Control', 'no-store');
+      response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+
       // Add CORS headers for Safari compatibility
       const origin = request.headers.get('origin');
       response.headers.set('Access-Control-Allow-Credentials', 'true');
@@ -95,6 +108,13 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json({
       user: userData,
     });
+
+    // CRITICAL: Prevent Cloudflare/CDN caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
 
     // Add CORS headers for Safari compatibility
     const origin = request.headers.get('origin');
