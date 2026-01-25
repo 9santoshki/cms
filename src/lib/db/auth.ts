@@ -1,3 +1,10 @@
+/**
+ * Authentication and session management module
+ * - Google OAuth user creation and profile management
+ * - JWT token generation and verification
+ * - Database-backed persistent sessions with expiration
+ * - Session validation with real-time role fetching from database
+ */
 import { query } from './connection';
 import { cookies, headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
@@ -124,10 +131,13 @@ export const createSessionToken = (user: UserProfile): string => {
   return jwt.sign(sessionData, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// Verify session token
+/**
+ * Verifies JWT session token
+ * - Validates token format and signature
+ * - Returns decoded session data or null if invalid
+ */
 export const verifySessionToken = (token: string): SessionData | null => {
   try {
-    // Validate token format before attempting JWT verification
     if (!token || token.trim() === '' || token.length < 10) {
       return null;
     }
@@ -135,7 +145,6 @@ export const verifySessionToken = (token: string): SessionData | null => {
     const decoded = jwt.verify(token, JWT_SECRET) as SessionData;
     return decoded;
   } catch (error) {
-    // Only log if it's not a common cleared cookie scenario
     if (token && token.length > 10) {
       console.error('Invalid token:', error);
     }
@@ -177,17 +186,14 @@ export const getSessionFromCookie = async (): Promise<SessionData | null> => {
 export const clearSessionCookie = async () => {
   const cookieStore = await cookies();
 
-  // Delete with same parameters used when setting (no domain parameter)
   cookieStore.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development', // true for uat and production
+    secure: process.env.NODE_ENV !== 'development',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
     expires: new Date(0),
   });
-
-  console.log('✅ Cleared session cookie (no domain parameter)');
 };
 
 // Update user role (admin only)
@@ -376,15 +382,18 @@ export const createSessionTokenWithDB = (user: UserProfile, sessionId: string): 
   return jwt.sign(sessionData, JWT_SECRET, { expiresIn: `${SESSION_DURATION_DAYS}d` });
 };
 
-// Enhanced session validation (checks both JWT and database)
+/**
+ * Validates session token against JWT and database
+ * - Verifies JWT signature and expiration
+ * - Checks database session validity and updates last activity
+ * - Fetches current user role from database (ensures role changes take effect immediately)
+ */
 export const validateSession = async (token: string): Promise<SessionData | null> => {
-  // First verify JWT
   const jwtData = verifySessionToken(token);
   if (!jwtData) {
     return null;
   }
 
-  // If JWT has session ID, verify against database
   if (jwtData.sessionId) {
     const dbSession = await query(
       'SELECT * FROM sessions WHERE id = $1 AND expires_at > NOW()',
@@ -392,25 +401,20 @@ export const validateSession = async (token: string): Promise<SessionData | null
     );
 
     if (dbSession.rows.length === 0) {
-      // Session was invalidated in database
       return null;
     }
 
-    // Update last activity
     await updateSessionActivity(jwtData.sessionId);
   }
 
-  // Fetch current user data from database to get latest role
-  // This ensures role changes are reflected immediately without re-login
   const userProfile = await getUserProfile(jwtData.userId);
   if (userProfile) {
-    // Override JWT data with current database values
     return {
       userId: jwtData.userId,
       email: userProfile.email,
       name: userProfile.name,
       avatar: userProfile.avatar,
-      role: userProfile.role,  // Use current role from database
+      role: userProfile.role,
       sessionId: jwtData.sessionId
     };
   }
@@ -418,17 +422,19 @@ export const validateSession = async (token: string): Promise<SessionData | null
   return jwtData;
 };
 
-// Enhanced get session from cookie with database validation
+/**
+ * Gets and validates session from cookie
+ * - Reads session cookie from request
+ * - Validates against database with real-time role fetching
+ */
 export const getSessionFromCookieWithDB = async (): Promise<SessionData | null> => {
   const cookieStore = await cookies();
-
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
 
   if (!sessionCookie) {
     return null;
   }
 
-  // Validate against database as well
   return validateSession(sessionCookie.value);
 };
 

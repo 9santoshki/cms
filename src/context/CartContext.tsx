@@ -1,7 +1,13 @@
+/**
+ * Cart context provider
+ * - Wraps Zustand cart store with React Context API
+ * - Provides cart items, counts, totals, and mutation functions
+ * - Syncs with server-side cart for authenticated users
+ */
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import { useCartStore } from '@/store/cartStore'; // Assuming you have this Zustand store
+import { useCartStore } from '@/store/cartStore';
 
 // Create context
 export const CartContext = createContext<{

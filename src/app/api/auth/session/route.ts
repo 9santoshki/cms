@@ -1,3 +1,9 @@
+/**
+ * Session API route
+ * - Validates user session from cookie or Authorization header (Safari fallback)
+ * - Returns current user profile with role information from database
+ * - Prevents CDN/Cloudflare caching of authentication responses
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB, getUserProfile, validateSession } from '@/lib/db/auth';
 
@@ -20,42 +26,19 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== SESSION API CALLED ===');
-    console.log('Cookies:', request.cookies.getAll());
-    const cmsSessionCookie = request.cookies.get('cms-session');
-    console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
-    console.log('cms-session cookie value length:', cmsSessionCookie?.value?.length || 0);
-    console.log('cms-session cookie preview:', cmsSessionCookie?.value?.substring(0, 30) + '...');
-    console.log('Authorization header:', request.headers.get('authorization')?.substring(0, 20) + '...');
-    console.log('User-Agent:', request.headers.get('user-agent'));
-
-    // Safari workaround: Try Authorization header first (localStorage token)
     const authHeader = request.headers.get('authorization');
     let session = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      console.log('🦁 Safari: Validating token from Authorization header');
       session = await validateSession(token);
-      console.log('🦁 Safari: Token validation result:', session ? 'SUCCESS' : 'FAILED');
     }
 
-    // Fallback to cookie-based session (Chrome, Firefox, Edge)
     if (!session) {
       session = await getSessionFromCookieWithDB();
     }
-    console.log('Session from cookie:', session ? {
-      userId: session.userId,
-      email: session.email,
-      name: session.name,
-      avatar: session.avatar,
-      avatarLength: session.avatar?.length,
-      role: session.role,
-      sessionId: session.sessionId
-    } : 'NULL');
 
     if (!session) {
-      console.log('No session found, returning null user');
       const response = NextResponse.json({ user: null }, { status: 200 });
 
       // CRITICAL: Prevent Cloudflare/CDN caching
@@ -77,18 +60,9 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // Get fresh user data from database
     const userProfile = await getUserProfile(session.userId);
-    console.log('User profile from DB:', userProfile ? {
-      id: userProfile.id,
-      email: userProfile.email,
-      name: userProfile.name,
-      hasAvatar: !!userProfile.avatar,
-      avatar: userProfile.avatar
-    } : 'NULL');
 
     if (!userProfile) {
-      console.log('No user profile found, returning null user');
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
@@ -99,11 +73,6 @@ export async function GET(request: NextRequest) {
       avatar: userProfile.avatar,
       role: userProfile.role,
     };
-
-    console.log('✅ Session API - Returning user data with avatar:', {
-      ...userData,
-      avatarLength: userData.avatar?.length || 0
-    });
 
     const response = NextResponse.json({
       user: userData,
