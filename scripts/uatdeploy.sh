@@ -129,7 +129,7 @@ echo "✅ Deployment complete!"
 echo ""
 
 # Step 6: Purge Cloudflare cache
-./scripts/purge-cloudflare-cache.sh
+# ./scripts/purge-cloudflare-cache.sh
 
 echo ""
 echo "📋 Next steps:"
