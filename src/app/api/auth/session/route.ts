@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB, getUserProfile, validateSession } from '@/lib/db/auth';
 
+// Handle CORS preflight for custom Authorization header
+export async function OPTIONS(request: NextRequest) {
+  const response = NextResponse.json({}, { status: 200 });
+  response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('=== SESSION API CALLED ===');
