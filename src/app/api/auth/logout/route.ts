@@ -27,13 +27,17 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true }, { status: 200 });
 
     // Explicitly set cookie deletion (max-age=0, expires in past)
+    // IMPORTANT: Must match parameters from OAuth callback (no domain parameter)
     response.cookies.set('cms-session', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
+      sameSite: 'lax',
       maxAge: 0,
-      expires: new Date(0)
+      expires: new Date(0),
     });
+
+    console.log('✅ Cookie cleared (no domain parameter)');
 
     return response;
   } catch (error) {
@@ -50,9 +54,12 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
+      sameSite: 'lax',
       maxAge: 0,
       expires: new Date(0)
     });
+
+    console.log('✅ Cookie cleared on error (no domain parameter)');
 
     return response;
   }

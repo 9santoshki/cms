@@ -168,7 +168,18 @@ export const getSessionFromCookie = async (): Promise<SessionData | null> => {
 // Clear session cookie
 export const clearSessionCookie = async () => {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+
+  // Delete with same parameters used when setting (no domain parameter)
+  cookieStore.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+    expires: new Date(0),
+  });
+
+  console.log('✅ Cleared session cookie (no domain parameter)');
 };
 
 // Update user role (admin only)
@@ -420,17 +431,14 @@ export const setSessionCookieWithDB = async (token: string, rememberMe: boolean 
     ? 60 * 60 * 24 * SESSION_DURATION_DAYS  // 30 days
     : 60 * 60 * 24; // 1 day
 
-  // Get domain from APP_URL for proper cookie domain setting
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const domain = appUrl ? new URL(appUrl).hostname : undefined;
-
+  // Do NOT set domain - let browser use current domain automatically
+  // This avoids cookie deletion issues and subdomain problems
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: maxAge,
     path: '/',
-    ...(domain && { domain }),
   });
 };
 
