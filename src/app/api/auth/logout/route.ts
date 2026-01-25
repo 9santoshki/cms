@@ -26,8 +26,11 @@ export async function POST(request: NextRequest) {
     // Create response with explicit cookie clearing headers
     const response = NextResponse.json({ success: true }, { status: 200 });
 
-    // Explicitly set cookie deletion (max-age=0, expires in past)
-    // IMPORTANT: Must match parameters from OAuth callback (no domain parameter)
+    // Get domain for migration purposes
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const domain = appUrl ? new URL(appUrl).hostname : undefined;
+
+    // Delete cookie WITHOUT domain (new format)
     response.cookies.set('cms-session', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -37,7 +40,22 @@ export async function POST(request: NextRequest) {
       expires: new Date(0),
     });
 
-    console.log('✅ Cookie cleared (no domain parameter)');
+    // ALSO delete cookie WITH domain (old format, migration)
+    // This ensures old cookies are cleaned up
+    if (domain) {
+      response.cookies.set('cms-session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 0,
+        expires: new Date(0),
+        domain: domain,
+      });
+      console.log('✅ Cleared both cookie versions (with and without domain)');
+    } else {
+      console.log('✅ Cookie cleared (no domain parameter)');
+    }
 
     return response;
   } catch (error) {
@@ -50,6 +68,11 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
+    // Get domain for migration purposes
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const domain = appUrl ? new URL(appUrl).hostname : undefined;
+
+    // Delete both cookie versions
     response.cookies.set('cms-session', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -59,7 +82,19 @@ export async function POST(request: NextRequest) {
       expires: new Date(0)
     });
 
-    console.log('✅ Cookie cleared on error (no domain parameter)');
+    if (domain) {
+      response.cookies.set('cms-session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 0,
+        expires: new Date(0),
+        domain: domain,
+      });
+    }
+
+    console.log('✅ Cookie cleared on error (both versions)');
 
     return response;
   }
