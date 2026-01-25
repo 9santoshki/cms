@@ -61,7 +61,13 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
       const token = localStorage.getItem('cms-session-token');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🦁 Safari: Sending token from localStorage');
+        console.log('🦁 Safari: Sending token from localStorage', {
+          tokenLength: token.length,
+          tokenPreview: token.substring(0, 20) + '...',
+          hasAuthHeader: !!headers['Authorization']
+        });
+      } else {
+        console.log('🦁 Safari: No token in localStorage');
       }
     }
 

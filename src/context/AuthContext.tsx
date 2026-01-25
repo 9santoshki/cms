@@ -133,8 +133,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const tokenFromUrl = urlParams.get('token');
 
       if (tokenFromUrl) {
-        console.log('AuthContext: 🦁 Safari fallback - Found token in URL, storing in localStorage');
+        console.log('AuthContext: 🦁 Safari fallback - Found token in URL, storing in localStorage', {
+          tokenLength: tokenFromUrl.length,
+          tokenPreview: tokenFromUrl.substring(0, 20) + '...'
+        });
         localStorage.setItem('cms-session-token', tokenFromUrl);
+
+        // Verify it was stored
+        const stored = localStorage.getItem('cms-session-token');
+        console.log('AuthContext: ✅ Token stored in localStorage:', !!stored, stored?.length);
 
         // Clean up URL immediately
         urlParams.delete('token');
@@ -142,6 +149,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           ? `${window.location.pathname}?${urlParams.toString()}`
           : window.location.pathname + (urlParams.get('login') === 'success' ? '?login=success' : '');
         window.history.replaceState({}, '', newUrl);
+      } else {
+        console.log('AuthContext: ⚠️ No token found in URL parameters');
       }
 
       // Debug: Check if cookies are accessible
