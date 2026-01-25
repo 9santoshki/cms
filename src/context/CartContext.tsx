@@ -32,8 +32,15 @@ interface CartProviderProps {
 }
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
-  const { items, addItem, updateItem, removeItem, clearCart, getTotalItems, getTotalPrice } = useCartStore();
-  
+  // Use Zustand selectors for reactive updates
+  const items = useCartStore(state => state.items);
+  const addItem = useCartStore(state => state.addItem);
+  const updateItem = useCartStore(state => state.updateItem);
+  const removeItem = useCartStore(state => state.removeItem);
+  const clearCart = useCartStore(state => state.clearCart);
+  const getTotalItems = useCartStore(state => state.getTotalItems);
+  const getTotalPrice = useCartStore(state => state.getTotalPrice);
+
   return (
     <CartContext.Provider
       value={{
