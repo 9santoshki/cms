@@ -50,19 +50,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Clean Logout
   const logout = useCallback(async () => {
     console.log('AuthContext: Logout initiated');
+
+    // Clear frontend state immediately
     dispatch({ type: 'LOGOUT' });
 
-    try {
-      await signOut();
-      console.log('AuthContext: ✅ Logout API call successful');
+    // Call logout API (don't wait for completion)
+    signOut().catch(e => {
+      console.error('AuthContext: ❌ Logout API error (non-critical):', e);
+    });
 
-      // Force reload to clear any cached state
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
-    } catch (e) {
-      console.error('AuthContext: ❌ Logout error:', e);
+    // Clear localStorage token immediately (Safari)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+      console.log('AuthContext: ✅ Cleared localStorage token');
     }
+
+    // Immediate redirect (don't wait for API)
+    // Use replace() to prevent back button from returning to authenticated page
+    console.log('AuthContext: Redirecting to homepage...');
+    window.location.replace('/');
   }, []);
 
   // Google Login

@@ -23,12 +23,37 @@ export async function POST(request: NextRequest) {
 
     console.log('User logged out successfully, cleared all auth cookies');
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    // Create response with explicit cookie clearing headers
+    const response = NextResponse.json({ success: true }, { status: 200 });
+
+    // Explicitly set cookie deletion (max-age=0, expires in past)
+    response.cookies.set('cms-session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 0,
+      expires: new Date(0)
+    });
+
+    return response;
   } catch (error) {
     console.error('Error during logout:', error);
-    return NextResponse.json(
-      { success: false, error: 'Logout failed' },
-      { status: 500 }
+
+    // Even on error, return success and clear cookies
+    // This ensures frontend can logout even if backend fails
+    const response = NextResponse.json(
+      { success: true, message: 'Logged out (with errors)' },
+      { status: 200 }
     );
+
+    response.cookies.set('cms-session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 0,
+      expires: new Date(0)
+    });
+
+    return response;
   }
 }
