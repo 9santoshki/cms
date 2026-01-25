@@ -53,8 +53,13 @@ export async function GET(request: NextRequest) {
       const response = NextResponse.json({ user: null }, { status: 200 });
 
       // Add CORS headers for Safari compatibility
+      const origin = request.headers.get('origin');
       response.headers.set('Access-Control-Allow-Credentials', 'true');
-      response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+      if (origin) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+      }
+      response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
       return response;
     }
@@ -92,8 +97,13 @@ export async function GET(request: NextRequest) {
     });
 
     // Add CORS headers for Safari compatibility
+    const origin = request.headers.get('origin');
     response.headers.set('Access-Control-Allow-Credentials', 'true');
-    response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+    if (origin) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    }
+    response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
     return response;
   } catch (error) {
