@@ -78,7 +78,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
 
           localStorage.removeItem('pendingCartAction');
         } catch (error) {
-          console.error('Error processing pending cart action:', error);
         }
       }
     }

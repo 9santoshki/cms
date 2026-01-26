@@ -54,20 +54,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return items.reduce((total, item) => total + ((item.price as number) * item.quantity), 0);
   }, [items]);
 
+  const value = React.useMemo(() => ({
+    items,
+    loading: false,
+    error: null,
+    cartCount,
+    cartTotal,
+    addItem,
+    updateItem,
+    removeItem,
+    clearCart
+  }), [items, cartCount, cartTotal, addItem, updateItem, removeItem, clearCart]);
+
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        loading: false,
-        error: null,
-        cartCount,
-        cartTotal,
-        addItem,
-        updateItem,
-        removeItem,
-        clearCart
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

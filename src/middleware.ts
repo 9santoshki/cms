@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
   const hasSession = !!sessionCookie;
 
   // Optionally protect certain routes
-  const protectedPaths = ['/account', '/cart', '/checkout', '/orders'];
+  const protectedPaths = ['/account', '/cart', '/checkout', '/orders', '/dashboard'];
   const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
