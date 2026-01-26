@@ -70,8 +70,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (cartError) {
     }
 
-    signOut().catch(e => {
-    });
+    // Wait for server logout to complete before redirecting
+    try {
+      await signOut();
+      console.log('[Auth] Server logout completed');
+    } catch (e) {
+      console.error('[Auth] Server logout error:', e);
+    }
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cms-session-token');
