@@ -91,8 +91,6 @@ const DashboardSettingsPage = () => {
     setSuccessMessage(null);
 
     try {
-      // In a real application, save to API
-      console.log('Saving settings:', settings);
       setSuccessMessage('Settings saved successfully!');
 
       setTimeout(() => setSuccessMessage(null), 3000);

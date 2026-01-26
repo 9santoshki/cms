@@ -2,7 +2,6 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Load environment variables - priority: .env.uat (UAT server) > .env.production (prod server) > .env.local (dev)
 let envFile = '.env.local';
 if (fs.existsSync('.env.uat')) {
   envFile = '.env.uat';
@@ -10,7 +9,6 @@ if (fs.existsSync('.env.uat')) {
   envFile = '.env.production';
 }
 require('dotenv').config({ path: envFile });
-console.log(`Loading environment from: ${envFile}`);
 
 async function initDatabase() {
   const client = new Client({
@@ -23,13 +21,10 @@ async function initDatabase() {
 
   try {
     await client.connect();
-    console.log('Connected to PostgreSQL database');
 
-    // Read the SQL file
     const sqlFilePath = path.join(__dirname, 'initDatabase.sql');
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
 
-    // Execute the SQL
     await client.query(sql);
 
     console.log('✅ Database initialized successfully!');

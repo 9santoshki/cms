@@ -103,7 +103,6 @@ interface ProductProviderProps {
 export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(productReducer, initialState);
 
-  // Actions
   const setProducts = (products: any[]) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_PRODUCTS, payload: products });
   };
@@ -124,7 +123,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     dispatch({ type: PRODUCT_ACTIONS.SET_ORDERS, payload: orders });
   };
 
-  // Fetch products
+
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
@@ -132,11 +131,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     try {
       const response = await apiClient.getProducts();
       if (response.success && response.data) {
-        // Handle the new response structure with pagination
         const productsData = Array.isArray(response.data) ? response.data : (response.data as any)?.products || [];
 
-        // Convert price strings to numbers for proper formatting
-        // Map mock image_url identifiers to appropriate imageClass values
         const mapImageIdentifierToClass = (identifier: string) => {
           if (!identifier) return 'modern';
 
@@ -152,30 +148,23 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
           } else if (lowerIdentifier.includes('wall') || lowerIdentifier.includes('art')) {
             return 'hotel'; // Using hotel for decor items
           } else if (lowerIdentifier.includes('rug')) {
-            return 'restaurant'; // Using restaurant for decor items
+            return 'restaurant';
           } else {
-            return 'modern'; // default
+            return 'modern';
           }
         };
 
         const formattedProducts = productsData.map((product: any) => ({
           ...product,
           price: typeof product.price === 'number' ? product.price : parseFloat(product.price),
-          // Only set image_url to undefined if it's not a proper URL
-          // If it looks like an actual URL (contains http), keep it
           image_url: product.image_url && (product.image_url.startsWith('http') || product.image_url.startsWith('/'))
             ? product.image_url
             : undefined,
-          // Preserve primary_image from API response (used for product gallery images)
           primary_image: product.primary_image || product.image_url,
-          // Use the identifier to determine the appropriate CSS class
           imageClass: mapImageIdentifierToClass(product.image_url) || product.imageClass || 'modern'
         }));
         setProducts(formattedProducts);
       } else {
-        console.warn('No products found:', response.error);
-        // Even if no products are found, we should still set the products state
-        // and turn off loading to avoid the infinite loading state
         setProducts([]);
       }
     } catch (error: any) {
@@ -186,7 +175,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   };
 
-  // Fetch orders
   const fetchOrders = useCallback(async () => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -205,7 +193,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  // Fetch appointments
   const fetchAppointments = useCallback(async () => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -224,7 +211,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  // Create order
   const createOrder = useCallback(async (orderData: any) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -244,7 +230,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  // Create appointment
   const createAppointment = useCallback(async (appointmentData: any) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -264,7 +249,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, [state.appointments]);
 
-  // Update product
   const updateProduct = useCallback(async (id: number, data: any) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -284,7 +268,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, [state.products]);
 
-  // Delete product
   const deleteProduct = useCallback(async (id: number) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });
@@ -304,7 +287,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, [state.products]);
 
-  // Create product
   const createProduct = useCallback(async (productData: any) => {
     dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
     dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: null });

@@ -2,7 +2,6 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { Pool } = require('pg');
 const https = require('https');
 
-// Load environment variables
 require('dotenv').config({ path: '.env.local' });
 
 const pool = new Pool({
@@ -32,7 +31,6 @@ function getR2Client() {
   });
 }
 
-// Download image from Unsplash
 function downloadImage(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
@@ -53,17 +51,9 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
     throw new Error('Missing CLOUDFLARE_BUCKET in .env.local');
   }
 
-  console.log(`\n📥 Downloading image from Unsplash...`);
   const imageBuffer = await downloadImage(imageUrl);
-  console.log(`✅ Downloaded ${imageBuffer.length} bytes`);
-
-  // Generate unique key
   const timestamp = Date.now();
   const key = `${folder}/${timestamp}-${filename}`;
-
-  console.log(`\n📤 Uploading to Cloudflare R2...`);
-  console.log(`Bucket: ${bucket}`);
-  console.log(`Key: ${key}`);
 
   try {
     const command = new PutObjectCommand({
@@ -74,13 +64,10 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
     });
 
     await client.send(command);
-    console.log('✅ Image uploaded to R2 successfully!');
 
-    // Clear old images and insert new one
     const dbClient = await pool.connect();
     try {
       await dbClient.query('DELETE FROM product_images WHERE product_id = $1', [productId]);
-      console.log('🗑️  Cleared old product images');
 
       await dbClient.query(`
         INSERT INTO product_images (product_id, cloudflare_image_id, url, filename, is_primary, display_order)
@@ -93,9 +80,6 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
         true,
         1
       ]);
-      console.log('✅ Image record added to database!');
-      console.log(`\nImage URL: /api/images/${encodeURIComponent(key)}`);
-      console.log(`\n🌐 View product: http://localhost:3000/shop`);
     } finally {
       dbClient.release();
     }
@@ -109,7 +93,6 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
 
 async function main() {
   try {
-    // Get first product
     const client = await pool.connect();
     let productId;
 
@@ -117,24 +100,20 @@ async function main() {
       const result = await client.query('SELECT id, name FROM products ORDER BY id DESC LIMIT 1');
 
       if (result.rows.length === 0) {
-        console.log('❌ No products found. Please create a product first.');
+        console.error('❌ No products found. Please create a product first.');
         process.exit(1);
       }
 
       productId = result.rows[0].id;
-      console.log(`📦 Product: ${result.rows[0].name} (ID: ${productId})`);
     } finally {
       client.release();
     }
 
-    // Upload a nice modern chair image from Unsplash
     const imageUrl = 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&q=80';
     await uploadImageFromUrl(productId, imageUrl, 'modern-chair.jpg');
 
-    console.log('\n✅ All done! Refresh http://localhost:3000/shop to see your product image');
-
   } catch (error) {
-    console.error('\n❌ Failed:', error.message);
+    console.error('❌ Failed:', error.message);
     process.exit(1);
   } finally {
     await pool.end();

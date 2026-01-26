@@ -1,14 +1,11 @@
 /**
  * Client-side authentication utilities
- * - Google OAuth sign-in flow with redirect
- * - Session management with cookie and localStorage fallback (Safari)
- * - User profile fetching and role management
+ * - Google OAuth sign-in and session management
+ * - User profile and role management
  */
 import { User } from '@/types';
 
-// Sign in with Google OAuth - redirect to Google OAuth
 export const signInWithGoogle = async () => {
-  // Use NEXT_PUBLIC_APP_URL if set, otherwise fall back to window.location.origin
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
   const redirectUri = `${appUrl}/auth/callback`;
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -24,7 +21,6 @@ export const signInWithGoogle = async () => {
   window.location.href = googleAuthUrl.toString();
 };
 
-// Sign out
 export const signOut = async () => {
   try {
     const response = await fetch('/api/auth/logout', {
@@ -50,7 +46,6 @@ export const signOut = async () => {
   }
 };
 
-// Get current session/user
 export const getCurrentSession = async (): Promise<{ user: User | null }> => {
   try {
     const headers: HeadersInit = {
@@ -71,7 +66,6 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
     });
 
     if (!response.ok) {
-      console.warn('Session fetch failed:', response.status, response.statusText);
       return { user: null };
     }
 
@@ -83,13 +77,11 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
   }
 };
 
-// Get current user
 export const getCurrentUser = async (): Promise<User | null> => {
   const { user } = await getCurrentSession();
   return user;
 };
 
-// Get user profile (with role information)s
 export const getUserProfile = async (): Promise<{ id: string; role: string } | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -100,7 +92,6 @@ export const getUserProfile = async (): Promise<{ id: string; role: string } | n
   };
 };
 
-// Update user role (admin only)
 export const updateUserRole = async (userId: string, newRole: 'customer' | 'moderator' | 'admin') => {
   const response = await fetch('/api/admin/update-role', {
     method: 'POST',
@@ -119,7 +110,6 @@ export const updateUserRole = async (userId: string, newRole: 'customer' | 'mode
   return response.json();
 };
 
-// Get all user profiles (admin only)
 export const getAllUserProfiles = async () => {
   const response = await fetch('/api/admin/users', {
     credentials: 'include',
@@ -134,7 +124,6 @@ export const getAllUserProfiles = async () => {
   return data.users || [];
 };
 
-// Listen for auth changes (polling-based since we don't have real-time subscriptions)
 export const onAuthStateChange = (callback: (event: string, session: { user: User | null }) => void) => {
   let currentUser: User | null = null;
 
@@ -153,11 +142,7 @@ export const onAuthStateChange = (callback: (event: string, session: { user: Use
     }
   };
 
-  // Check immediately
   checkAuthState();
-
-  // Poll every 5 seconds (increased from 2 seconds to reduce server load)
-  // The ?login=success flow now handles immediate login detection
   const interval = setInterval(checkAuthState, 5000);
 
   return {

@@ -1,7 +1,6 @@
 const { Client } = require('pg');
 const fs = require('fs');
 
-// Load environment variables - priority: .env.uat > .env.production > .env.local
 let envFile = '.env.local';
 if (fs.existsSync('.env.uat')) {
   envFile = '.env.uat';
@@ -9,7 +8,6 @@ if (fs.existsSync('.env.uat')) {
   envFile = '.env.production';
 }
 require('dotenv').config({ path: envFile });
-console.log(`Loading environment from: ${envFile}`);
 
 const sampleProducts = [
   {
@@ -115,21 +113,15 @@ async function seedData() {
 
   try {
     await client.connect();
-    console.log('Connected to PostgreSQL database');
 
-    // Check if products already exist
     const existingProducts = await client.query('SELECT COUNT(*) FROM products');
     const count = parseInt(existingProducts.rows[0].count);
 
     if (count > 0) {
-      console.log(`\n⚠️  Database already has ${count} products`);
-      console.log('Run this script only on empty database to avoid duplicates');
-      console.log('\nTo clear existing products:');
-      console.log('  DELETE FROM products;');
+      console.error(`\n⚠️  Database already has ${count} products`);
+      console.error('Run this script only on empty database to avoid duplicates');
       process.exit(0);
     }
-
-    console.log('\n📦 Adding sample products...\n');
 
     for (const product of sampleProducts) {
       const result = await client.query(
@@ -151,7 +143,6 @@ async function seedData() {
       console.log(`  ${id}. ${name} - ₹${price}`);
     }
 
-    // Show summary
     const summary = await client.query(`
       SELECT
         category,
@@ -173,7 +164,6 @@ async function seedData() {
     });
 
     console.log('\n✅ Sample data seeded successfully!');
-    console.log('\n🌐 Visit your site to see the products');
   } catch (error) {
     console.error('❌ Error seeding data:', error);
     process.exit(1);

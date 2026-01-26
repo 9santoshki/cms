@@ -21,11 +21,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange code for tokens
-    console.log('🔄 Exchanging code for tokens...');
-    console.log('Redirect URI:', `${appUrl}/auth/callback`);
-    console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
-
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -42,11 +37,10 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
+      console.error('Token exchange failed:', tokenResponse.status, errorText);
       throw new Error(`Failed to exchange code for tokens: ${tokenResponse.status} - ${errorText}`);
     }
 
-    console.log('✅ Token exchange successful');
     const tokens = await tokenResponse.json();
 
     // Get user info from Google
@@ -62,15 +56,6 @@ export async function GET(request: NextRequest) {
 
     const googleUser = await userInfoResponse.json();
 
-    console.log('📸 Google User Data:', {
-      id: googleUser.id,
-      email: googleUser.email,
-      name: googleUser.name,
-      picture: googleUser.picture,
-      pictureLength: googleUser.picture?.length
-    });
-
-    // Create or update user in database
     const user = await upsertUserFromGoogle({
       id: googleUser.id,
       email: googleUser.email,
@@ -78,29 +63,9 @@ export async function GET(request: NextRequest) {
       picture: googleUser.picture,
     });
 
-    console.log('✅ User authenticated:', user.email);
-    console.log('👤 User from database:', {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatar: user.avatar,
-      avatarLength: user.avatar?.length,
-      role: user.role
-    });
-
-    // Create database-backed session (30 days by default for persistent login)
     const { dbSession } = await createSession(user, true);
-    console.log('Session created in database:', dbSession.id);
-
-    // Create JWT token with session ID
     const sessionToken = createSessionTokenWithDB(user, dbSession.id);
-    console.log('JWT Token created:', sessionToken);
-
-    // Safari on localhost blocks httpOnly cookies during redirects
-    // Workaround: Pass token via URL hash for Safari to store in localStorage
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-
-    // Set cookie normally (works in Chrome, Firefox, Edge)
     const response = NextResponse.redirect(new URL(`/?login=success&token=${encodeURIComponent(sessionToken)}`, appUrl));
 
     response.cookies.set('cms-session', sessionToken, {
@@ -108,15 +73,12 @@ export async function GET(request: NextRequest) {
       secure: !isLocalhost, // true for HTTPS (UAT and production), false for localhost
       path: '/',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
+      maxAge: 30 * 24 * 60 * 60
     });
 
-    console.log('✅ Cookie + URL token set for:', isLocalhost ? 'localhost (Safari fallback)' : 'production');
-
-    console.log('✅ Session token set and redirecting user to homepage');
     return response;
   } catch (error) {
-    console.error('❌❌❌ Error in OAuth callback:', error);
+    console.error('Error in OAuth callback:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     const errorParam = encodeURIComponent(errorMsg.substring(0, 100));
     return NextResponse.redirect(new URL(`/?error=auth_failed&details=${errorParam}`, appUrl));

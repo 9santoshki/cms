@@ -132,10 +132,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Send confirmation email to user
-    // This would typically trigger an email service
-    console.log(`Sending confirmation email for order ${order.id}`);
-
     return NextResponse.json({
       success: true,
       message: 'Payment verified and order updated to paid status',

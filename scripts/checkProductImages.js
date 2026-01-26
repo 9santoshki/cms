@@ -1,21 +1,14 @@
-/**
- * Diagnostic script to check product images in the database
- * Run with: node scripts/checkProductImages.js
- */
-
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
-// Load .env.uat for UAT database connection
 const envPath = path.resolve(__dirname, '../.env.uat');
 if (fs.existsSync(envPath)) {
   const envConfig = dotenv.parse(fs.readFileSync(envPath));
   for (const key in envConfig) {
     process.env[key] = envConfig[key];
   }
-  console.log('✅ Loaded environment from .env.uat\n');
 } else {
   console.error('❌ .env.uat file not found');
   process.exit(1);
@@ -31,9 +24,6 @@ const pool = new Pool({
 
 async function checkProductImages() {
   try {
-    console.log('🔍 Checking product_images table...\n');
-
-    // Check if product_images table exists
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables
@@ -42,12 +32,10 @@ async function checkProductImages() {
     `);
 
     if (!tableCheck.rows[0].exists) {
-      console.log('❌ product_images table does not exist!');
-      console.log('   Run: npm run init-db');
+      console.error('❌ product_images table does not exist! Run: npm run init-db');
       process.exit(1);
     }
 
-    // Get all product images
     const result = await pool.query(`
       SELECT
         id,
@@ -62,11 +50,8 @@ async function checkProductImages() {
       LIMIT 20
     `);
 
-    console.log(`📊 Found ${result.rowCount} product images (showing first 20):\n`);
-
     if (result.rows.length === 0) {
-      console.log('⚠️  No product images found in database');
-      console.log('   This is expected if you haven\'t uploaded any product images yet.');
+      console.error('⚠️  No product images found');
     } else {
       result.rows.forEach((row, index) => {
         console.log(`${index + 1}. Product ID: ${row.product_id}`);
@@ -75,14 +60,12 @@ async function checkProductImages() {
         console.log(`   URL: ${row.url}`);
         console.log(`   Primary: ${row.is_primary}`);
 
-        // Check if cloudflare_image_id looks like a public URL
         if (row.cloudflare_image_id && row.cloudflare_image_id.includes('://')) {
           console.log('   ❌ PROBLEM: cloudflare_image_id contains a full URL, should be just the key!');
         } else if (row.cloudflare_image_id && row.cloudflare_image_id.startsWith('product_images/')) {
           console.log('   ✅ cloudflare_image_id looks correct (R2 key)');
         }
 
-        // Check if URL uses proxy endpoint
         if (row.url && row.url.startsWith('/api/images/')) {
           console.log('   ✅ URL uses proxy endpoint');
         } else if (row.url && row.url.includes('.r2.dev')) {
@@ -92,7 +75,6 @@ async function checkProductImages() {
         console.log('');
       });
 
-      // Summary
       const publicUrlCount = result.rows.filter(row =>
         row.url && row.url.includes('.r2.dev')
       ).length;
@@ -108,14 +90,12 @@ async function checkProductImages() {
 
       if (publicUrlCount > 0 || badKeysCount > 0) {
         console.log('\n⚠️  MIGRATION NEEDED:');
-        console.log('   Your database contains old image URLs/keys that need to be updated.');
         console.log('   Run: node scripts/migrateProductImages.js');
       } else {
         console.log('\n✅ All images look good!');
       }
     }
 
-    // Also check products table for legacy image_url
     const productsResult = await pool.query(`
       SELECT id, name, image_url
       FROM products

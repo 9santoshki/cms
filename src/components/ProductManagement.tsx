@@ -30,16 +30,11 @@ const ProductManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingProduct) {
-      // Update existing product
-      console.log('Updating product:', { ...editingProduct, ...formData });
       setEditingProduct(null);
-    } else {
-      // Add new product
-      console.log('Adding new product:', formData);
     }
-    
+
     // Reset form
     setFormData({
       name: '',
@@ -65,7 +60,6 @@ const ProductManagement = () => {
 
   const handleDelete = (productId: number) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      console.log('Deleting product:', productId);
       // In a real app, this would call an API to delete the product
     }
   };

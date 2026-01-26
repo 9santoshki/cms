@@ -68,13 +68,9 @@ const AccountPage = () => {
     setMessage(null);
 
     try {
-      // In a real application, this would call an API to update the profile
-      console.log('Updating profile:', formData);
-
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
 
-      // Clear message after 3 seconds
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Error updating profile:', error);

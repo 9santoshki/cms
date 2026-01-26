@@ -3,7 +3,6 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Load environment variables
 require('dotenv').config({ path: '.env.local' });
 
 const pool = new Pool({
@@ -33,9 +32,7 @@ function getR2Client() {
   });
 }
 
-// Create a simple test image (1x1 pixel PNG)
 function createTestImage() {
-  // 1x1 red pixel PNG
   const pngData = Buffer.from([
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
     0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
@@ -59,16 +56,10 @@ async function uploadTestImage(productId) {
     throw new Error('Missing CLOUDFLARE_BUCKET in .env.local');
   }
 
-  // Generate unique key
   const timestamp = Date.now();
   const key = `${folder}/${timestamp}-test-chair.png`;
 
-  console.log('\n📤 Uploading test image to Cloudflare R2...');
-  console.log(`Bucket: ${bucket}`);
-  console.log(`Key: ${key}`);
-
   try {
-    // Upload test image
     const imageBuffer = createTestImage();
 
     const command = new PutObjectCommand({
@@ -79,9 +70,7 @@ async function uploadTestImage(productId) {
     });
 
     await client.send(command);
-    console.log('✅ Image uploaded to R2 successfully!');
 
-    // Insert into database
     const dbClient = await pool.connect();
     try {
       await dbClient.query(`
@@ -95,9 +84,6 @@ async function uploadTestImage(productId) {
         true,
         1
       ]);
-      console.log('✅ Image record added to database!');
-      console.log(`\nImage URL: /api/images/${encodeURIComponent(key)}`);
-      console.log(`\nTest it: http://localhost:3000/api/images/${encodeURIComponent(key)}`);
     } finally {
       dbClient.release();
     }
@@ -111,7 +97,6 @@ async function uploadTestImage(productId) {
 
 async function main() {
   try {
-    // First, check if there's a product to add image to
     const client = await pool.connect();
     let productId;
 
@@ -119,9 +104,6 @@ async function main() {
       const result = await client.query('SELECT id FROM products ORDER BY id DESC LIMIT 1');
 
       if (result.rows.length === 0) {
-        console.log('No products found. Creating a sample product first...\n');
-
-        // Create sample product
         const productResult = await client.query(`
           INSERT INTO products (name, description, price, category, stock_quantity, slug)
           VALUES ($1, $2, $3, $4, $5, $6)
@@ -136,22 +118,17 @@ async function main() {
         ]);
 
         productId = productResult.rows[0].id;
-        console.log(`✅ Sample product created with ID: ${productId}`);
       } else {
         productId = result.rows[0].id;
-        console.log(`Using existing product ID: ${productId}`);
       }
     } finally {
       client.release();
     }
 
-    // Upload test image
     await uploadTestImage(productId);
 
-    console.log('\n✅ All done! Visit http://localhost:3000/shop to see your product with image');
-
   } catch (error) {
-    console.error('\n❌ Failed:', error.message);
+    console.error('❌ Failed:', error.message);
     process.exit(1);
   } finally {
     await pool.end();

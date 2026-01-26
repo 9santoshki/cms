@@ -1,23 +1,13 @@
-/**
- * Verify all R2 images are accessible through proxy endpoint
- * Tests that slider, hero, and portfolio images load correctly
- */
-
 const http = require('http');
 
 const testImages = [
-  // Slider images
   '/api/images/product_images%2F1767927653531-x2pjprnjaw-slider-modern-living-room.jpg',
   '/api/images/product_images%2F1767927655512-p6cyjrf7cy-slider-classic-elegance.jpg',
   '/api/images/product_images%2F1767927656389-9s5gz1zz4c4-slider-coastal-retreat.jpg',
-
-  // Hero images
   '/api/images/product_images%2F1767927658910-uprpaph78yh-hero-modern-office.jpg',
   '/api/images/product_images%2F1767928644452-6a7vh9bf8fn-consultation-hero.jpg',
   '/api/images/product_images%2F1767928799547-5xb59u8o1aa-about-hero.jpg',
   '/api/images/product_images%2F1767928400633-5ag0gec9a4i-services-hero.jpg',
-
-  // Portfolio images
   '/api/images/product_images%2F1767927656951-4l8ihxmzbpv-portfolio-modern.jpg',
   '/api/images/product_images%2F1767927752411-djoibj8v0mv-portfolio-classic.jpg',
   '/api/images/product_images%2F1767927657557-5gupsrfjnxk-portfolio-coastal.jpg',
@@ -67,9 +57,6 @@ function testImage(url) {
 }
 
 async function main() {
-  console.log('🔍 Verifying R2 images through proxy endpoint...\n');
-  console.log(`Testing ${testImages.length} images...\n`);
-
   const results = await Promise.all(testImages.map(testImage));
 
   let passed = 0;
@@ -99,19 +86,11 @@ async function main() {
   console.log('='.repeat(60));
 
   if (failed === 0) {
-    console.log('\n✅ All R2 images are accessible through proxy endpoint!');
-    console.log('\n📝 Summary:');
-    console.log('   - Slider images: ✅');
-    console.log('   - Hero images: ✅');
-    console.log('   - Portfolio images: ✅');
-    console.log('\n🎉 All pages should now display images correctly!');
+    console.log('\n✅ All R2 images accessible');
     process.exit(0);
   } else {
-    console.log('\n❌ Some images failed to load.');
-    console.log('   Check that:');
-    console.log('   1. Dev server is running (npm run dev)');
-    console.log('   2. Images exist in R2 bucket');
-    console.log('   3. R2 credentials in .env.local are correct');
+    console.error('\n❌ Some images failed to load');
+    console.error('   Check: Dev server running, Images exist in R2, Credentials correct');
     process.exit(1);
   }
 }
