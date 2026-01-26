@@ -20,8 +20,10 @@ async function isUserAuthenticated(): Promise<boolean> {
   try {
     const response = await fetch('/api/auth/session');
     const data = await response.json();
-    return data.authenticated === true;
+    console.log('[CartStore] Auth check response:', data);
+    return data.user !== null && data.user !== undefined;
   } catch (error) {
+    console.error('[CartStore] Auth check failed:', error);
     return false;
   }
 }
