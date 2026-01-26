@@ -1,6 +1,6 @@
 import { useAuth } from './AuthContext';
 import { useProduct } from './ProductContext';
-import { useCart } from './CartContext';
+import { useCartStore } from '@/store/cartStore';
 import { useUI } from './UIContext';
 
 // Define the types based on UIContext interface
@@ -69,8 +69,20 @@ interface CombinedAppContext {
 export const useAppContext = (): CombinedAppContext => {
   const auth = useAuth();
   const product = useProduct();
-  const cart = useCart();
   const ui = useUI();
+
+  // Get cart state and actions from Zustand
+  const cartItems = useCartStore(state => state.items);
+  const cartCount = useCartStore(state =>
+    state.items.reduce((total, item) => total + item.quantity, 0)
+  );
+  const cartTotal = useCartStore(state =>
+    state.items.reduce((total, item) => total + ((item.price as number) * item.quantity), 0)
+  );
+  const addItem = useCartStore(state => state.addItem);
+  const updateItem = useCartStore(state => state.updateItem);
+  const removeItem = useCartStore(state => state.removeItem);
+  const clearCart = useCartStore(state => state.clearCart);
 
   // Create a function to add to cart with authentication check
   const addToCartWithAuth = (product: any, quantity: number) => {
@@ -85,7 +97,7 @@ export const useAppContext = (): CombinedAppContext => {
     }
 
     // User is authenticated, add to cart
-    cart.addItem({
+    addItem({
       id: Date.now(), // temporary ID for cart item
       product_id: product.id,
       quantity: quantity,
@@ -126,14 +138,14 @@ export const useAppContext = (): CombinedAppContext => {
     deleteProduct: product.deleteProduct,
     createProduct: product.createProduct,
 
-    // Cart context
-    cartItems: cart.items,
-    cartCount: cart.cartCount,
-    cartTotal: cart.cartTotal,
-    addItem: cart.addItem,
-    updateItem: cart.updateItem,
-    removeItem: cart.removeItem,
-    clearCart: cart.clearCart,
+    // Cart (from Zustand)
+    cartItems,
+    cartCount,
+    cartTotal,
+    addItem,
+    updateItem,
+    removeItem,
+    clearCart,
     addToCartWithAuth,
 
     // UI context (adapting to match the actual UIContext interface)
