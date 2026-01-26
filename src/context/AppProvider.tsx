@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { AuthProvider } from './AuthContext';
-import { CartProvider } from './CartContext';
 import { ProductProvider } from './ProductContext';
 import { UIProvider } from './UIContext';
 
@@ -12,9 +11,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <UIProvider>
       <AuthProvider>
         <ProductProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          {children}
         </ProductProvider>
       </AuthProvider>
     </UIProvider>

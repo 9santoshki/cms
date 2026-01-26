@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
-import { useCart } from '../context/CartContext';
+import { useCartStore } from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
@@ -63,10 +63,8 @@ const NewShopPage = () => {
     fetchProducts
   } = useProduct();
 
-  const {
-    items: cartItems,
-    addItem: addToCart
-  } = useCart();
+  const cartItems = useCartStore(state => state.items);
+  const addToCart = useCartStore(state => state.addItem);
 
   const { user } = useAuth();
 

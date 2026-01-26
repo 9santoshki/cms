@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
 import { useUI } from '../context/UIContext';
-import { useCart } from '../context/CartContext';
+import { useCartStore } from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
@@ -64,7 +64,7 @@ import {
 const NewHomepage = () => {
   const router = useRouter();
   const { products, fetchProducts, loading, error } = useProduct();
-  const { items: cartItems } = useCart();
+  const cartItems = useCartStore(state => state.items);
   const { user } = useAuth();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
