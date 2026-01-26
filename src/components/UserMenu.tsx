@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
+import { useCartStore } from '@/store/cartStore';
 import LoginModal from './LoginModal';
 import { NavIcon, CartCount } from '../styles/HeaderStyles';
 
@@ -14,7 +14,14 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { items, cartCount } = useCart();
+
+  // Subscribe directly to Zustand store for cart count
+  // This selector only triggers re-render when count changes
+  const cartCount = useCartStore(state =>
+    state.items.reduce((total, item) => total + item.quantity, 0)
+  );
+
+  const cartItems = useCartStore(state => state.items);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
