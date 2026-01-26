@@ -148,64 +148,20 @@ export const useCartStore = create<CartState>()(
       loadServerCart: async () => {
         try {
           set({ isLoading: true });
+
+          // Clear localStorage to ensure server is source of truth
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('cart-storage');
+          }
+
           const response = await fetch('/api/cart');
           const data = await response.json();
 
           if (data.success && data.data) {
-            // Merge server cart with local cart
-            const serverItems = data.data;
-            const localItems = get().items;
-
-            // Create a map of server items by product_id
-            const serverItemsMap = new Map(
-              serverItems.map((item: CartItem) => [item.product_id, item])
-            );
-
-            // Merge: server items take priority, but keep local items not in server
-            const mergedItems: CartItem[] = [];
-
-            // Add all server items
-            serverItems.forEach((serverItem: CartItem) => {
-              const localItem = localItems.find(
-                item => item.product_id === serverItem.product_id
-              );
-
-              // If item exists locally, take the higher quantity
-              if (localItem && localItem.quantity > serverItem.quantity) {
-                mergedItems.push({
-                  ...serverItem,
-                  quantity: localItem.quantity
-                });
-
-                // Sync the higher quantity back to server
-                if (serverItem.product_id && localItem.quantity) {
-                  syncCartItemWithServer(serverItem.product_id, localItem.quantity);
-                }
-              } else {
-                mergedItems.push(serverItem);
-              }
-            });
-
-            // Add local items that aren't on server
-            for (const localItem of localItems) {
-              if (!serverItemsMap.has(localItem.product_id)) {
-                mergedItems.push(localItem);
-
-                // Sync new local item to server
-                fetch('/api/cart', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    product_id: localItem.product_id,
-                    quantity: localItem.quantity,
-                  }),
-                }).catch(err => console.error('Failed to sync local item:', err));
-              }
-            }
-
-            set({ items: mergedItems, isLoading: false });
+            // Server is source of truth - replace local cart entirely
+            set({ items: data.data, isLoading: false });
           } else {
-            set({ isLoading: false });
+            set({ items: [], isLoading: false });
           }
         } catch (error) {
           console.error('Failed to load server cart:', error);

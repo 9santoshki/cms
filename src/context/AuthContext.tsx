@@ -56,13 +56,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     dispatch({ type: 'LOGOUT' });
 
+    // Clear persisted cart storage first, then clear cart state
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cart-storage');
+    }
+
     try {
       const { useCartStore } = await import('@/store/cartStore');
       useCartStore.setState({ items: [] });
-      // Clear persisted cart storage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('cart-storage');
-      }
     } catch (cartError) {
     }
 
