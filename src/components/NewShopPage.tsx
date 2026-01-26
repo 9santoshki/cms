@@ -7,12 +7,10 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
-import ProductDetail from './ProductDetail'; // Assuming this component exists
 
 // Import elegant shop page styles
 import {
   ShopContainer,
-  ShopHero,
   MainContent,
   ProductsSection,
   ProductFilters,
@@ -20,11 +18,9 @@ import {
   FilterHeader,
   FilterContent,
   FilterOption,
-  ProductsGrid,
   ProductCard,
   ProductImage,
   ProductInfo,
-  ProductPrice,
   DiscountBadge,
   Pagination,
   PageButton,
@@ -67,15 +63,13 @@ const NewShopPage = () => {
     fetchProducts
   } = useProduct();
 
-  const { 
+  const {
     items: cartItems,
-    addItem: addToCart,
-    cartCount
+    addItem: addToCart
   } = useCart();
 
   const { user } = useAuth();
 
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [filters, setFilters] = useState({
     category: 'All',
     priceRange: 'All',
@@ -96,18 +90,35 @@ const NewShopPage = () => {
   // Filter and sort products based on selected filters
   const filteredProducts = products
     .filter(product => {
+      // Category filter
       if (filters.category !== 'All') {
-        return product.category === filters.category;
+        if (product.category !== filters.category) {
+          return false;
+        }
       }
+
+      // Price range filter
+      if (filters.priceRange !== 'All') {
+        const displayPrice = getDisplayPrice(product);
+
+        if (filters.priceRange === 'Under ₹5,000') {
+          if (displayPrice >= 5000) return false;
+        } else if (filters.priceRange === '₹5,000 - ₹15,000') {
+          if (displayPrice < 5000 || displayPrice > 15000) return false;
+        } else if (filters.priceRange === 'Over ₹15,000') {
+          if (displayPrice <= 15000) return false;
+        }
+      }
+
       return true;
     })
     .sort((a, b) => {
       if (filters.sortBy === 'name') {
         return a.name.localeCompare(b.name);
       } else if (filters.sortBy === 'price-low') {
-        return a.price - b.price;
+        return getDisplayPrice(a) - getDisplayPrice(b);
       } else if (filters.sortBy === 'price-high') {
-        return b.price - a.price;
+        return getDisplayPrice(b) - getDisplayPrice(a);
       }
       return 0;
     });
@@ -119,10 +130,6 @@ const NewShopPage = () => {
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
-
-  const openProductDetail = (product: any) => {
-    setSelectedProduct(product);
-  };
 
   const handleFilterChange = (filterType: string, value: string | undefined) => {
     setFilters(prev => ({

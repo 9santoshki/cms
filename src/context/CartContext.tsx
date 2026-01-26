@@ -44,8 +44,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const updateItem = useCartStore(state => state.updateItem);
   const removeItem = useCartStore(state => state.removeItem);
   const clearCart = useCartStore(state => state.clearCart);
-  const getTotalItems = useCartStore(state => state.getTotalItems);
-  const getTotalPrice = useCartStore(state => state.getTotalPrice);
+
+  // Calculate cartCount and cartTotal directly from items for reactivity
+  const cartCount = React.useMemo(() => {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }, [items]);
+
+  const cartTotal = React.useMemo(() => {
+    return items.reduce((total, item) => total + ((item.price as number) * item.quantity), 0);
+  }, [items]);
 
   return (
     <CartContext.Provider
@@ -53,8 +60,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         items,
         loading: false,
         error: null,
-        cartCount: getTotalItems(),
-        cartTotal: getTotalPrice(),
+        cartCount,
+        cartTotal,
         addItem,
         updateItem,
         removeItem,
