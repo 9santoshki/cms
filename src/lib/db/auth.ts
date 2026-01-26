@@ -53,7 +53,10 @@ export const upsertUserFromGoogle = async (googleUser: {
   name: string;
   picture?: string;
 }): Promise<UserProfile> => {
-  // Check if user exists
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = adminEmails.includes(googleUser.email.toLowerCase());
+  const defaultRole = isAdmin ? 'admin' : 'customer';
+
   const existingUser = await query(
     'SELECT * FROM users WHERE email = $1',
     [googleUser.email]
@@ -62,26 +65,33 @@ export const upsertUserFromGoogle = async (googleUser: {
   let userId: string;
 
   if (existingUser.rows.length > 0) {
-    // Update existing user
     userId = existingUser.rows[0].id;
-    await query(
-      `UPDATE users
-       SET name = $1, avatar = $2, google_id = $3, updated_at = NOW()
-       WHERE id = $4`,
-      [googleUser.name, googleUser.picture, googleUser.id, userId]
-    );
+
+    if (isAdmin && existingUser.rows[0].role !== 'admin') {
+      await query(
+        `UPDATE users
+         SET name = $1, avatar = $2, google_id = $3, role = 'admin', updated_at = NOW()
+         WHERE id = $4`,
+        [googleUser.name, googleUser.picture, googleUser.id, userId]
+      );
+    } else {
+      await query(
+        `UPDATE users
+         SET name = $1, avatar = $2, google_id = $3, updated_at = NOW()
+         WHERE id = $4`,
+        [googleUser.name, googleUser.picture, googleUser.id, userId]
+      );
+    }
   } else {
-    // Create new user
     const newUser = await query(
       `INSERT INTO users (email, name, avatar, google_id, role)
-       VALUES ($1, $2, $3, $4, 'customer')
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [googleUser.email, googleUser.name, googleUser.picture, googleUser.id]
+      [googleUser.email, googleUser.name, googleUser.picture, googleUser.id, defaultRole]
     );
     userId = newUser.rows[0].id;
   }
 
-  // Get the complete user profile
   const userProfile = await getUserProfile(userId);
   if (!userProfile) {
     throw new Error('Failed to create or fetch user profile');
