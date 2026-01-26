@@ -54,16 +54,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const setError = useCallback((e: string | null) => dispatch({ type: 'SET_ERROR', payload: e }), []);
 
   const logout = useCallback(async () => {
+    console.log('[Auth] Logout started');
     dispatch({ type: 'LOGOUT' });
 
     // Clear persisted cart storage first, then clear cart state
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cart-storage');
+      console.log('[Auth] Cleared cart-storage from localStorage');
     }
 
     try {
       const { useCartStore } = await import('@/store/cartStore');
       useCartStore.setState({ items: [] });
+      console.log('[Auth] Cleared cart state');
     } catch (cartError) {
     }
 
@@ -98,12 +101,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const user = await getCurrentUser();
         if (user) {
           setUser(user);
+          console.log('[Auth] User logged in, loading cart from server');
 
           try {
             const { useCartStore } = await import('@/store/cartStore');
             await useCartStore.getState().loadServerCart();
           } catch (cartError) {
-            console.error('Error loading cart:', cartError);
+            console.error('[Auth] Error loading cart:', cartError);
           }
         }
       } catch (error) {

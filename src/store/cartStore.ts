@@ -149,22 +149,26 @@ export const useCartStore = create<CartState>()(
         try {
           set({ isLoading: true });
 
-          // Clear localStorage to ensure server is source of truth
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('cart-storage');
-          }
-
-          const response = await fetch('/api/cart');
+          const response = await fetch('/api/cart', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            },
+          });
           const data = await response.json();
+
+          console.log('[CartStore] Loaded from server:', data);
 
           if (data.success && data.data) {
             // Server is source of truth - replace local cart entirely
             set({ items: data.data, isLoading: false });
+            console.log('[CartStore] Set cart items:', data.data.length);
           } else {
             set({ items: [], isLoading: false });
+            console.log('[CartStore] No cart data from server');
           }
         } catch (error) {
-          console.error('Failed to load server cart:', error);
+          console.error('[CartStore] Failed to load server cart:', error);
           set({ isLoading: false });
         }
       },
@@ -206,6 +210,13 @@ export const useCartStore = create<CartState>()(
     {
       name: 'cart-storage',
       partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          console.log('[CartStore] Hydrated from localStorage:', state.items.length, 'items');
+        } else {
+          console.log('[CartStore] No data to hydrate');
+        }
+      },
     }
   )
 );
