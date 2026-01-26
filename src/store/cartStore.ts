@@ -30,25 +30,27 @@ async function isUserAuthenticated(): Promise<boolean> {
 async function syncCartItemWithServer(productId: number, quantity: number) {
   try {
     const isAuth = await isUserAuthenticated();
-    if (!isAuth) return;
+    if (!isAuth) {
+      console.log('[CartStore] Not authenticated, skipping sync');
+      return;
+    }
 
-    if (quantity <= 0) {
-      // Remove from server
-      await fetch(`/api/cart`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, quantity: 0 }),
-      });
-    } else {
-      // Update on server
-      await fetch(`/api/cart`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, quantity }),
-      });
+    console.log(`[CartStore] Syncing to server: product ${productId}, quantity ${quantity}`);
+
+    const response = await fetch(`/api/cart`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, quantity }),
+    });
+
+    const result = await response.json();
+    console.log('[CartStore] Server sync response:', result);
+
+    if (!response.ok) {
+      console.error('[CartStore] Server sync failed:', result);
     }
   } catch (error) {
-    console.error('Failed to sync cart with server:', error);
+    console.error('[CartStore] Failed to sync cart with server:', error);
   }
 }
 
@@ -103,6 +105,8 @@ export const useCartStore = create<CartState>()(
       },
 
       updateItem: async (productId, quantity) => {
+        console.log(`[CartStore] updateItem called: product ${productId}, quantity ${quantity}`);
+
         // Update local state first
         set((state) => {
           if (quantity <= 0) {
@@ -118,9 +122,12 @@ export const useCartStore = create<CartState>()(
 
         // Sync with server
         await syncCartItemWithServer(productId, quantity);
+        console.log(`[CartStore] updateItem completed for product ${productId}`);
       },
 
       removeItem: async (productId) => {
+        console.log(`[CartStore] removeItem called: product ${productId}`);
+
         // Remove from local state first
         set((state) => ({
           items: state.items.filter(item => item.product_id !== productId)
@@ -128,6 +135,7 @@ export const useCartStore = create<CartState>()(
 
         // Sync with server
         await syncCartItemWithServer(productId, 0);
+        console.log(`[CartStore] removeItem completed for product ${productId}`);
       },
 
       clearCart: async () => {
