@@ -8,7 +8,6 @@ import {
   hasUserReviewedProduct,
 } from '@/lib/db/reviews';
 
-// Verify user session and get user info
 async function getUserFromRequest() {
   try {
     const session = await getSessionFromCookie();
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const includeRating = searchParams.get('include_rating') === 'true';
 
-    // If product_id is provided, return public reviews for that product
     if (productId) {
       const reviews = await getProductReviews(productId);
 
@@ -66,7 +64,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // For listing all reviews (admin/moderator only)
     const user = await getUserFromRequest();
     if (!user || (user.role !== 'admin' && user.role !== 'moderator')) {
       return NextResponse.json(
@@ -147,8 +144,6 @@ export async function POST(request: NextRequest) {
       rating,
       comment,
     });
-
-    console.log(`New review submitted by user ${user.userId} for product ${product_id} (pending approval)`);
 
     return NextResponse.json(
       {

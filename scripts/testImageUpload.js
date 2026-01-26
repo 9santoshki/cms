@@ -1,6 +1,7 @@
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { Pool } = require('pg');
-const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
 require('dotenv').config({ path: '.env.local' });
 
@@ -31,18 +32,22 @@ function getR2Client() {
   });
 }
 
-function downloadImage(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    });
-  });
+function createTestImage() {
+  const pngData = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+    0xde, 0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41,
+    0x54, 0x08, 0xd7, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
+    0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xdd, 0x8d,
+    0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e,
+    0x44, 0xae, 0x42, 0x60, 0x82
+  ]);
+  return pngData;
 }
 
-async function uploadImageFromUrl(productId, imageUrl, filename) {
+async function uploadTestImage(productId) {
   const client = getR2Client();
   const bucket = process.env.CLOUDFLARE_BUCKET;
   const folder = process.env.CLOUDFLARE_PRODUCT_IMAGE_FOLDER || 'product_images';
@@ -51,24 +56,23 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
     throw new Error('Missing CLOUDFLARE_BUCKET in .env.local');
   }
 
-  const imageBuffer = await downloadImage(imageUrl);
   const timestamp = Date.now();
-  const key = `${folder}/${timestamp}-${filename}`;
+  const key = `${folder}/${timestamp}-test-chair.png`;
 
   try {
+    const imageBuffer = createTestImage();
+
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: imageBuffer,
-      ContentType: 'image/jpeg',
+      ContentType: 'image/png',
     });
 
     await client.send(command);
 
     const dbClient = await pool.connect();
     try {
-      await dbClient.query('DELETE FROM product_images WHERE product_id = $1', [productId]);
-
       await dbClient.query(`
         INSERT INTO product_images (product_id, cloudflare_image_id, url, filename, is_primary, display_order)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -76,7 +80,7 @@ async function uploadImageFromUrl(productId, imageUrl, filename) {
         productId,
         key,
         `/api/images/${encodeURIComponent(key)}`,
-        filename,
+        'test-chair.png',
         true,
         1
       ]);
@@ -97,20 +101,31 @@ async function main() {
     let productId;
 
     try {
-      const result = await client.query('SELECT id, name FROM products ORDER BY id DESC LIMIT 1');
+      const result = await client.query('SELECT id FROM products ORDER BY id DESC LIMIT 1');
 
       if (result.rows.length === 0) {
-        console.error('❌ No products found. Please create a product first.');
-        process.exit(1);
-      }
+        const productResult = await client.query(`
+          INSERT INTO products (name, description, price, category, stock_quantity, slug)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          RETURNING id
+        `, [
+          'Modern Wooden Chair',
+          'A beautiful handcrafted wooden chair with ergonomic design. Perfect for dining rooms or home offices.',
+          12999.00,
+          'furniture',
+          10,
+          'modern-wooden-chair'
+        ]);
 
-      productId = result.rows[0].id;
+        productId = productResult.rows[0].id;
+      } else {
+        productId = result.rows[0].id;
+      }
     } finally {
       client.release();
     }
 
-    const imageUrl = 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&q=80';
-    await uploadImageFromUrl(productId, imageUrl, 'modern-chair.jpg');
+    await uploadTestImage(productId);
 
   } catch (error) {
     console.error('❌ Failed:', error.message);

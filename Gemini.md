@@ -41,22 +41,6 @@ CMS (Color My Space) is an interior design e-commerce and service booking platfo
 **Contact:** Indiranagar, Bengaluru | +91 95133 51833 | rajnishkumarranjan@gmail.com
 **Founder:** Rajnish Kumar Ranjan (NIT Hamirpur, IIT Kharagpur)
 
-## Documentation
-
-**Project documentation is located in `/docs/`:**
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture overview
-- [API.md](docs/API.md) - API endpoints and usage
-- [DATA_FLOW.md](docs/DATA_FLOW.md) - Data flow and state management
-- [CODE_STRUCTURE.md](docs/CODE_STRUCTURE.md) - Codebase organization
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment procedures and configuration
-- [CLOUDFLARE.md](docs/CLOUDFLARE.md) - Cloudflare CDN configuration and caching issues
-- [DECISIONS.md](docs/DECISIONS.md) - Key architectural decisions
-- [WIREFRAME.md](docs/WIREFRAME.md) - UI/UX wireframes
-
-**Additional references:**
-- [QWEN.md](QWEN.md) - Qwen AI assistant session notes and development history
-- [DATABASE_WARNING.md](DATABASE_WARNING.md) - Critical database initialization warnings
-
 ## Development Commands
 
 ```bash
@@ -142,21 +126,12 @@ All database operations go through dedicated modules:
 - Production: `https://uat.colourmyspace.com/auth/callback`
 - Must be added to Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs
 
-**Cloudflare Caching Prevention:**
-- `/api/auth/session` endpoint includes `Cache-Control: no-store` headers
-- Prevents Cloudflare from caching authentication responses
-- **Critical:** Without these headers, users appear logged out after login due to stale cached responses
-- See [CLOUDFLARE.md](docs/CLOUDFLARE.md) for detailed caching configuration
-
 ### State Management
 
 - **AuthContext** - User session, sign in/out
 - **cartStore (Zustand)** - Persistent cart with localStorage + server sync
-- **CartContext** - Wrapper around Zustand store for React Context API (uses selectors for reactivity)
 - **ProductContext** - Product list caching
 - **UIContext** - Modals, loading states
-
-**Important:** CartContext uses Zustand selectors (`useCartStore(state => state.items)`) to ensure reactive updates when cart changes during logout/login.
 
 ### Image Storage Architecture
 
@@ -838,12 +813,6 @@ npm run init-db
 - Protected API routes call `validateSession()` or `getSessionFromCookieWithDB()` first
 
 ## Recent Changes & Bug Fixes
-
-### January 2026 - Authentication & Cloudflare Fixes
-- **Fixed Cloudflare caching breaking authentication:** Added `Cache-Control: no-store` headers to `/api/auth/session` endpoint to prevent CDN caching
-- **Fixed cart not clearing on logout:** Updated CartContext to use Zustand selectors for reactive updates
-- **Added fetch debugging:** Enhanced client-side logging for session API requests
-- **Documented Cloudflare configuration:** Created comprehensive guide for CDN caching issues and page rules
 
 ### January 2026 - R2 Image Migration
 - **Migrated all images to private R2 bucket with proxy access:** Converted 26 hardcoded public R2 URLs across 6 files to use secure proxy endpoint

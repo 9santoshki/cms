@@ -1,41 +1,68 @@
+/**
+ * Session API route
+ * - Validates user session from cookie or Authorization header (Safari fallback)
+ * - Returns current user profile with role information from database
+ * - Prevents CDN/Cloudflare caching of authentication responses
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookieWithDB, getUserProfile } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB, getUserProfile, validateSession } from '@/lib/db/auth';
+
+// Handle CORS preflight for custom Authorization header
+export async function OPTIONS(request: NextRequest) {
+  const response = NextResponse.json({}, { status: 200 });
+
+  // CRITICAL: Prevent Cloudflare/CDN caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+  response.headers.set('CDN-Cache-Control', 'no-store');
+  response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+
+  response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  return response;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== SESSION API CALLED ===');
-    console.log('Cookies:', request.cookies.getAll());
-    console.log('Has cms-session cookie:', request.cookies.has('cms-session'));
+    const authHeader = request.headers.get('authorization');
+    let session = null;
 
-    // Use database-backed session validation
-    const session = await getSessionFromCookieWithDB();
-    console.log('Session from cookie:', session ? {
-      userId: session.userId,
-      email: session.email,
-      name: session.name,
-      avatar: session.avatar,
-      avatarLength: session.avatar?.length,
-      role: session.role,
-      sessionId: session.sessionId
-    } : 'NULL');
-
-    if (!session) {
-      console.log('No session found, returning null user');
-      return NextResponse.json({ user: null }, { status: 200 });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      session = await validateSession(token);
     }
 
-    // Get fresh user data from database
+    if (!session) {
+      session = await getSessionFromCookieWithDB();
+    }
+
+    if (!session) {
+      const response = NextResponse.json({ user: null }, { status: 200 });
+
+      // CRITICAL: Prevent Cloudflare/CDN caching
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('CDN-Cache-Control', 'no-store');
+      response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+
+      // Add CORS headers for Safari compatibility
+      const origin = request.headers.get('origin');
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      if (origin) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+      }
+      response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+
+      return response;
+    }
+
     const userProfile = await getUserProfile(session.userId);
-    console.log('User profile from DB:', userProfile ? {
-      id: userProfile.id,
-      email: userProfile.email,
-      name: userProfile.name,
-      hasAvatar: !!userProfile.avatar,
-      avatar: userProfile.avatar
-    } : 'NULL');
 
     if (!userProfile) {
-      console.log('No user profile found, returning null user');
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
@@ -47,14 +74,27 @@ export async function GET(request: NextRequest) {
       role: userProfile.role,
     };
 
-    console.log('✅ Session API - Returning user data with avatar:', {
-      ...userData,
-      avatarLength: userData.avatar?.length || 0
-    });
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: userData,
     });
+
+    // CRITICAL: Prevent Cloudflare/CDN caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+
+    // Add CORS headers for Safari compatibility
+    const origin = request.headers.get('origin');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    if (origin) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    }
+    response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+
+    return response;
   } catch (error) {
     console.error('❌ Error getting session:', error);
     return NextResponse.json({ user: null }, { status: 200 });

@@ -1,9 +1,11 @@
-// Client-side authentication utilities
+/**
+ * Client-side authentication utilities
+ * - Google OAuth sign-in and session management
+ * - User profile and role management
+ */
 import { User } from '@/types';
 
-// Sign in with Google OAuth - redirect to Google OAuth
 export const signInWithGoogle = async () => {
-  // Use NEXT_PUBLIC_APP_URL if set, otherwise fall back to window.location.origin
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
   const redirectUri = `${appUrl}/auth/callback`;
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -19,7 +21,6 @@ export const signInWithGoogle = async () => {
   window.location.href = googleAuthUrl.toString();
 };
 
-// Sign out
 export const signOut = async () => {
   try {
     const response = await fetch('/api/auth/logout', {
@@ -31,18 +32,37 @@ export const signOut = async () => {
       throw new Error('Logout failed');
     }
 
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+    }
+
     return { success: true };
   } catch (error) {
     console.error('Error signing out:', error);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+    }
     throw error;
   }
 };
 
-// Get current session/user
 export const getCurrentSession = async (): Promise<{ user: User | null }> => {
   try {
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('cms-session-token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
     const response = await fetch('/api/auth/session', {
       credentials: 'include',
+      headers,
+      cache: 'no-cache'
     });
 
     if (!response.ok) {
@@ -57,13 +77,11 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
   }
 };
 
-// Get current user
 export const getCurrentUser = async (): Promise<User | null> => {
   const { user } = await getCurrentSession();
   return user;
 };
 
-// Get user profile (with role information)
 export const getUserProfile = async (): Promise<{ id: string; role: string } | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -74,7 +92,6 @@ export const getUserProfile = async (): Promise<{ id: string; role: string } | n
   };
 };
 
-// Update user role (admin only)
 export const updateUserRole = async (userId: string, newRole: 'customer' | 'moderator' | 'admin') => {
   const response = await fetch('/api/admin/update-role', {
     method: 'POST',
@@ -93,7 +110,6 @@ export const updateUserRole = async (userId: string, newRole: 'customer' | 'mode
   return response.json();
 };
 
-// Get all user profiles (admin only)
 export const getAllUserProfiles = async () => {
   const response = await fetch('/api/admin/users', {
     credentials: 'include',
@@ -108,7 +124,6 @@ export const getAllUserProfiles = async () => {
   return data.users || [];
 };
 
-// Listen for auth changes (polling-based since we don't have real-time subscriptions)
 export const onAuthStateChange = (callback: (event: string, session: { user: User | null }) => void) => {
   let currentUser: User | null = null;
 
@@ -127,11 +142,8 @@ export const onAuthStateChange = (callback: (event: string, session: { user: Use
     }
   };
 
-  // Check immediately
   checkAuthState();
-
-  // Poll every 2 seconds for faster cart sync after login
-  const interval = setInterval(checkAuthState, 2000);
+  const interval = setInterval(checkAuthState, 5000);
 
   return {
     unsubscribe: () => {

@@ -119,18 +119,15 @@ const DashboardContent = ({ setActiveTab }: { setActiveTab: (tab: string) => voi
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch products
         await fetchProducts();
-        
-        // Fetch orders
         await fetchOrders();
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       }
     };
-    
+
     fetchDashboardData();
-  }, []); // Empty dependency array to run only once on mount
+  }, []);
 
   useEffect(() => {
     // Calculate stats based on products and orders
@@ -148,8 +145,7 @@ const DashboardContent = ({ setActiveTab }: { setActiveTab: (tab: string) => voi
       totalCustomers: uniqueCustomers,
       totalRevenue
     });
-    
-    // Get recent orders (last 5)
+
     const sortedOrders = [...orders].sort((a, b) => 
       new Date(b.created_at || '').getTime() - 
       new Date(a.created_at || '').getTime()
@@ -293,7 +289,6 @@ const ProductManagement = () => {
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setImagePreviews(newPreviews);
 
-      // Clean up the preview URLs when component unmounts or when new files are selected
       newPreviews.forEach(previewUrl => {
         return () => URL.revokeObjectURL(previewUrl);
       });
@@ -302,8 +297,7 @@ const ProductManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Prepare form data for submission
+
     const productData: any = {
       name: formData.name,
       description: formData.description,
@@ -311,11 +305,9 @@ const ProductManagement = () => {
       category: formData.category,
       imageClass: formData.imageClass
     };
-    
-    // Handle image upload if files are selected
+
     if (formData.imageFiles && formData.imageFiles.length > 0) {
       try {
-        // Process all selected images
         const imageUrls = await Promise.all(
           formData.imageFiles.map(file => {
             return new Promise<string>((resolve, reject) => {
@@ -326,10 +318,8 @@ const ProductManagement = () => {
             });
           })
         );
-        
-        // Add the image URLs to the product data
+
         productData.image_urls = imageUrls;
-        // Use the first image as the primary image for backward compatibility
         productData.image_url = imageUrls[0];
       } catch (error) {
         console.error('Error processing image files:', error);
@@ -337,21 +327,18 @@ const ProductManagement = () => {
         return;
       }
     } else if (editingProduct) {
-      // If editing and no new images were selected, use existing images
       productData.image_url = editingProduct.image_url;
       productData.image_urls = editingProduct.images || [];
     }
-    
+
     try {
       if (editingProduct) {
-        // Update existing product
         await updateProduct(editingProduct.id, productData);
         setEditingProduct(null);
       } else {
-        // Add new product
         await createProduct(productData);
       }
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -365,11 +352,9 @@ const ProductManagement = () => {
       setImagePreview(null);
       setImagePreviews([]);
       setIsAdding(false);
-      
-      // Show success message
+
       alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!');
-      
-      // Refresh products list after successful update/add
+
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -388,7 +373,6 @@ const ProductManagement = () => {
       imageFile: null,
       imageFiles: []
     });
-    // Set image previews to the existing images if available
     if (product.images && product.images.length > 0) {
       setImagePreviews(product.images);
     } else if (product.primary_image || product.image_url) {
@@ -399,7 +383,6 @@ const ProductManagement = () => {
 
   const handleDelete = (productId: number) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      console.log('Deleting product:', productId);
       // In a real app, this would call an API to delete the product
     }
   };

@@ -15,12 +15,9 @@ export async function GET(request: NextRequest) {
       'g_state',
     ];
 
-    // Delete each old cookie
     oldCookies.forEach(cookieName => {
       cookieStore.delete(cookieName);
     });
-
-    console.log('✅ Cleaned up old auth cookies');
 
     return NextResponse.json({
       success: true,

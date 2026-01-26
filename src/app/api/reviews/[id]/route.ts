@@ -94,8 +94,6 @@ export async function PATCH(
 
     const updatedReview = await updateReviewStatus(id, status);
 
-    console.log(`Review ${id} status updated to ${status} by ${user.role} ${user.userId}`);
-
     return NextResponse.json(
       {
         success: true,
@@ -147,8 +145,6 @@ export async function DELETE(
         { status: 500, headers: corsHeaders }
       );
     }
-
-    console.log(`Review ${id} deleted by ${user.role} ${user.userId}`);
 
     return NextResponse.json(
       { success: true, message: 'Review deleted successfully' },

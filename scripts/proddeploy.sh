@@ -179,6 +179,11 @@ rm /tmp/cms-deploy-prod.tar.gz
 echo ""
 echo "✅ PRODUCTION DEPLOYMENT COMPLETE!"
 echo ""
+
+# Step 6: Purge Cloudflare cache
+./scripts/purge-cloudflare-cache.sh production
+
+echo ""
 echo "📋 Next steps:"
 echo "   - Check logs: ssh root@$DROPLET_IP 'pm2 logs cms-app'"
 echo "   - Visit site: https://www.colourmyspace.com"

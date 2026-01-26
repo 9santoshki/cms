@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import {
   upsertUserFromGoogle,
   createSession,
   createSessionTokenWithDB
 } from '@/lib/db/auth';
-import { query } from '@/lib/db/connection';
 
 export async function GET(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
@@ -23,11 +21,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange code for tokens
-    console.log('🔄 Exchanging code for tokens...');
-    console.log('Redirect URI:', `${appUrl}/auth/callback`);
-    console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
-
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -44,11 +37,9 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
+      console.error('Token exchange failed:', tokenResponse.status, errorText);
       throw new Error(`Failed to exchange code for tokens: ${tokenResponse.status} - ${errorText}`);
     }
-
-    console.log('✅ Token exchange successful');
 
     const tokens = await tokenResponse.json();
 
@@ -65,15 +56,6 @@ export async function GET(request: NextRequest) {
 
     const googleUser = await userInfoResponse.json();
 
-    console.log('📸 Google User Data:', {
-      id: googleUser.id,
-      email: googleUser.email,
-      name: googleUser.name,
-      picture: googleUser.picture,
-      pictureLength: googleUser.picture?.length
-    });
-
-    // Create or update user in database
     const user = await upsertUserFromGoogle({
       id: googleUser.id,
       email: googleUser.email,
@@ -81,61 +63,22 @@ export async function GET(request: NextRequest) {
       picture: googleUser.picture,
     });
 
-    console.log('✅ User authenticated:', user.email);
-    console.log('👤 User from database:', {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatar: user.avatar,
-      avatarLength: user.avatar?.length,
-      role: user.role
-    });
-
-    // Create database-backed session (30 days by default for persistent login)
     const { dbSession } = await createSession(user, true);
-    console.log('Session created in database:', dbSession.id);
-
-    // Create JWT token with session ID
     const sessionToken = createSessionTokenWithDB(user, dbSession.id);
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+    const response = NextResponse.redirect(new URL(`/?login=success&token=${encodeURIComponent(sessionToken)}`, appUrl));
 
-    // Decode and log JWT payload to verify avatar is included
-    const jwtPayload = JSON.parse(Buffer.from(sessionToken.split('.')[1], 'base64').toString());
-    console.log('🔐 JWT Token Payload:', {
-      userId: jwtPayload.userId,
-      email: jwtPayload.email,
-      name: jwtPayload.name,
-      avatar: jwtPayload.avatar,
-      avatarLength: jwtPayload.avatar?.length,
-      role: jwtPayload.role,
-      sessionId: jwtPayload.sessionId
+    response.cookies.set('cms-session', sessionToken, {
+      httpOnly: true,
+      secure: !isLocalhost, // true for HTTPS (UAT and production), false for localhost
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60
     });
 
-    // Generate a temporary token for secure transfer
-    const tempToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // Store session token temporarily
-    await query(
-      'INSERT INTO temp_auth_tokens (temp_token, session_token, expires_at) VALUES ($1, $2, $3)',
-      [tempToken, sessionToken, expiresAt]
-    );
-
-    console.log('✅ Persistent login successful for user:', user.email);
-    console.log('✅ Temporary token created, redirecting to set-session route');
-
-    // Redirect to server-side set-session route (no client-side JavaScript needed!)
-    return NextResponse.redirect(new URL(`/auth/set-session?token=${tempToken}`, appUrl));
+    return response;
   } catch (error) {
-    console.error('❌❌❌ Error in OAuth callback:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      appUrl,
-      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20),
-      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET
-    });
-
-    // For debugging, include error message in redirect
+    console.error('Error in OAuth callback:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     const errorParam = encodeURIComponent(errorMsg.substring(0, 100));
     return NextResponse.redirect(new URL(`/?error=auth_failed&details=${errorParam}`, appUrl));

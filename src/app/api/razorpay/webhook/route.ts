@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature (requires RAZORPAY_WEBHOOK_SECRET)
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!secret) {
-      console.warn('RAZORPAY_WEBHOOK_SECRET not set. Skipping signature verification.');
       // In production, this should be properly verified
     } else {
       const expectedSignature = crypto
@@ -37,26 +36,16 @@ export async function POST(request: NextRequest) {
     const webhookData = JSON.parse(body);
     const { event, payload } = webhookData;
 
-    // Handle different event types
     if (event === 'payment.captured') {
       const { payment } = payload;
-      // Process successful payment
-      console.log('Payment captured:', payment);
-      
-      // Here you would typically:
-      // 1. Update order status in database
-      // 2. Send confirmation email
-      // 3. Update inventory
-      
+
       return NextResponse.json({ 
         success: true, 
         message: 'Payment captured successfully' 
       });
     } else if (event === 'payment.failed') {
       const { payment, reason } = payload;
-      console.log('Payment failed:', payment, reason);
-      
-      // Handle failed payment
+
       return NextResponse.json({ 
         success: true, 
         message: 'Payment failure processed' 

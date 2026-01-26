@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookie, getUserProfile } from '@/lib/db/auth';
 import { createAppointment, getAppointmentsByUserId, getAllAppointments } from '@/lib/db/appointments';
 
-// Verify user session and get user info
 async function getUserFromRequest(request: NextRequest) {
   try {
     const session = await getSessionFromCookie();
@@ -16,7 +15,6 @@ async function getUserFromRequest(request: NextRequest) {
   }
 }
 
-// Handle preflight requests
 export async function OPTIONS(request: NextRequest) {
   return NextResponse.json(
     {},
@@ -43,7 +41,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Admin/moderator can see ALL appointments, regular users see only their own
     const appointments = (user.role === 'admin' || user.role === 'moderator')
       ? await getAllAppointments()
       : await getAppointmentsByUserId(user.userId);
@@ -90,7 +87,6 @@ export async function POST(request: NextRequest) {
 
     const { appointment_date, service_type, notes, name, email, phone } = await request.json();
 
-    // Validate required fields for guest users
     if (!user) {
       if (!name || !email || !phone) {
         return NextResponse.json(
@@ -107,7 +103,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate date format and ensure it's today or in the future
     const appointmentDate = new Date(appointment_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -128,8 +123,6 @@ export async function POST(request: NextRequest) {
       guest_email: !user ? email : undefined,
       guest_phone: !user ? phone : undefined,
     });
-
-    console.log(`Created consultation request ${appointment.id} for ${user ? 'user ' + user.userId : 'guest ' + email}`);
 
     return NextResponse.json(
       {

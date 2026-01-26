@@ -14,22 +14,14 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { items, cartCount } = useCart(); // Get both items and cartCount
+  const { items, cartCount } = useCart();
 
-  // Debug logging
-  console.log('🔍 UserMenu - Current user:', user);
-  console.log('🔍 UserMenu - User avatar:', user?.avatar);
-  console.log('🔍 UserMenu - Has avatar:', !!user?.avatar);
-  console.log('🔍 UserMenu - Cart count:', cartCount);
-  console.log('🔍 UserMenu - User exists:', !!user);
-  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
-    // Clear pending cart action if user closes modal without logging in
     if (typeof window !== 'undefined') {
       localStorage.removeItem('pendingCartAction');
     }
@@ -55,10 +47,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
     };
   }, []);
 
-  // Listen for showLoginModal event (triggered when user tries to add to cart without logging in)
   useEffect(() => {
     const handleShowLoginModal = () => {
-      console.log('🔑 Login required: User tried to add item to cart');
       setIsAuthModalOpen(true);
     };
 
@@ -68,16 +58,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
     };
   }, []);
 
-  // Process pending cart action after successful login
   useEffect(() => {
     if (user && typeof window !== 'undefined') {
       const pendingAction = localStorage.getItem('pendingCartAction');
       if (pendingAction) {
         try {
           const { product, quantity } = JSON.parse(pendingAction);
-          console.log('🛒 Processing pending cart action after login:', product.name);
 
-          // Add the item to cart
           import('@/store/cartStore').then((module) => {
             module.useCartStore.getState().addItem({
               id: Date.now(),
@@ -87,10 +74,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
               price: product.price,
               image_url: product.primary_image || product.image_url,
             });
-            console.log('✅ Item added to cart after login');
           });
 
-          // Clear the pending action
           localStorage.removeItem('pendingCartAction');
         } catch (error) {
           console.error('Error processing pending cart action:', error);
@@ -118,7 +103,6 @@ const renderUserAccountIcon = () => {
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
               onError={(e) => {
-                console.error('Avatar failed to load:', user.avatar);
                 e.currentTarget.style.display = 'none';
               }}
             />
@@ -183,7 +167,6 @@ const renderUserAccountIcon = () => {
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
                     onError={(e) => {
-                      console.error('Dropdown avatar failed to load:', user.avatar);
                       const parent = e.currentTarget.parentElement;
                       e.currentTarget.style.display = 'none';
                       if (parent) {
@@ -420,7 +403,6 @@ const renderUserAccountIcon = () => {
         }
       `}</style>
 
-      {/* Cart Icon - Only visible for logged-in users */}
       {user && (
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <NavIcon onClick={() => onNavigate('/cart')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0 }}>
@@ -429,10 +411,7 @@ const renderUserAccountIcon = () => {
           {cartCount > 0 && <CartCount>{cartCount}</CartCount>}
         </div>
       )}
-      {user && console.log("Cart icon rendered - user is logged in")}
-      {!user && console.log("Cart icon not rendered - user is not logged in")}
 
-      {/* User Account - Different display based on login state */}
       {renderUserAccountIcon()}
 
       {/* Authentication Modal - Positioned relative to the account icon */}

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cookie Diagnostic Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .section {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border-left: 4px solid #4CAF50;
+    }
+    .error {
+      border-left-color: #f44336;
+    }
+    pre {
+      background: #f9f9f9;
+      padding: 10px;
+      overflow-x: auto;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .danger {
+      background: #f44336;
+    }
+    .danger:hover {
+      background: #da190b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cookie Diagnostic Test</h1>
+
+  <div class="section">
+    <h2>Current Cookies</h2>
+    <pre id="cookies"></pre>
+    <button onclick="refreshCookies()">Refresh</button>
+  </div>
+
+  <div class="section">
+    <h2>Session API Test</h2>
+    <pre id="session-result"></pre>
+    <button onclick="testSession()">Test /api/auth/session</button>
+  </div>
+
+  <div class="section error">
+    <h2>Clear Cookies</h2>
+    <p>Clear all cms-session cookies (use this to fix "invalid signature" errors)</p>
+    <button class="danger" onclick="clearCookies()">Clear All CMS Cookies</button>
+  </div>
+
+  <div class="section">
+    <h2>Domain & Location Info</h2>
+    <pre id="location-info"></pre>
+  </div>
+
+  <script>
+    function refreshCookies() {
+      const cookies = document.cookie;
+      document.getElementById('cookies').textContent = cookies || 'No cookies found';
+    }
+
+    async function testSession() {
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        document.getElementById('session-result').textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        document.getElementById('session-result').textContent = 'Error: ' + error.message;
+      }
+    }
+
+    function clearCookies() {
+      // Clear cookies for current domain
+      document.cookie = 'cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+      // Clear with explicit domain
+      const domain = window.location.hostname;
+      document.cookie = `cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`;
+
+      // Clear with dot prefix (for subdomains)
+      if (domain.includes('.')) {
+        const rootDomain = domain.split('.').slice(-2).join('.');
+        document.cookie = `cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain}`;
+        document.cookie = `cms-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${rootDomain}`;
+      }
+
+      alert('Cookies cleared! Refresh the page to verify.');
+      refreshCookies();
+    }
+
+    function showLocationInfo() {
+      const info = {
+        hostname: window.location.hostname,
+        origin: window.location.origin,
+        protocol: window.location.protocol,
+        port: window.location.port
+      };
+      document.getElementById('location-info').textContent = JSON.stringify(info, null, 2);
+    }
+
+    // Initialize
+    refreshCookies();
+    showLocationInfo();
+  </script>
+</body>
+</html>

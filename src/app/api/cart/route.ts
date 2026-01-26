@@ -10,8 +10,7 @@ import {
 } from '@/lib/db/cart';
 import { getCloudflareImageUrl } from '@/lib/cloudflare';
 
-// Verify user session and get user ID
-async function getUserIdFromRequest(request: NextRequest) {
+async function getUserIdFromRequest() {
   try {
     const session = await getSessionFromCookie();
     return session?.userId || null;
@@ -21,21 +20,14 @@ async function getUserIdFromRequest(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    console.log('🛒 API /api/cart GET: Fetching cart items...');
-    const userId = await getUserIdFromRequest(request);
-    console.log('🛒 API /api/cart GET: User ID from request:', userId);
+    const userId = await getUserIdFromRequest();
 
     if (userId) {
-      // Authenticated user - get database cart
-      console.log('🛒 API /api/cart GET: Fetching cart items from database...');
       const cartItems = await getCartItems(userId);
-      console.log('🛒 API /api/cart GET: Found', cartItems.length, 'cart items');
 
-      // Format the response to match expected format
       const formattedCartItems = cartItems.map((item: any) => {
-        // Use Cloudflare image URL if available, otherwise fall back to image_url
         const imageUrl = item.primary_image_id
           ? getCloudflareImageUrl(item.primary_image_id)
           : item.image_url || null;
@@ -48,25 +40,20 @@ export async function GET(request: NextRequest) {
           description: item.description || '',
           price: item.price || 0,
           image_url: imageUrl,
-          originalPrice: null, // Default values for compatibility
+          originalPrice: null,
           discount: 0,
         };
       });
 
-      console.log('🛒 API /api/cart GET: ✅ Returning', formattedCartItems.length, 'formatted items');
       return NextResponse.json(
         { success: true, data: formattedCartItems },
         { status: 200 }
       );
     } else {
-      // Unauthenticated user - return empty cart
-      console.log('🛒 API /api/cart GET: No user ID, returning empty cart');
       return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
   } catch (error: any) {
-    console.error('❌ API /api/cart GET: Error fetching cart:', error);
-    console.error('❌ API /api/cart GET: Error message:', error?.message);
-    console.error('❌ API /api/cart GET: Error stack:', error?.stack);
+    console.error('Error fetching cart:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Internal server error' },
       { status: 500 }
@@ -76,7 +63,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const userId = await getUserIdFromRequest();
 
     if (!userId) {
       return NextResponse.json(
@@ -101,10 +88,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add item to cart (will update if exists)
     await addCartItem(userId, product_id, quantity);
-
-    // Get the updated cart item with product details
     const cartItem = await getCartItemWithProduct(userId, product_id);
 
     if (!cartItem) {
@@ -139,7 +123,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const userId = await getUserIdFromRequest();
 
     if (!userId) {
       return NextResponse.json(
@@ -165,7 +149,6 @@ export async function PUT(request: NextRequest) {
     }
 
     if (quantity <= 0) {
-      // If quantity is 0 or negative, remove item from cart
       await removeCartItem(userId, product_id);
 
       return NextResponse.json(
@@ -173,10 +156,7 @@ export async function PUT(request: NextRequest) {
         { status: 200 }
       );
     } else {
-      // Update quantity
       await updateCartItemQuantity(userId, product_id, quantity);
-
-      // Get the updated cart item with product details
       const cartItem = await getCartItemWithProduct(userId, product_id);
 
       if (!cartItem) {
@@ -210,25 +190,18 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const userId = await getUserIdFromRequest();
 
     if (userId) {
-      // Authenticated user - clear database cart
       await clearCart(userId);
-
-      return NextResponse.json(
-        { success: true, message: 'Cart cleared' },
-        { status: 200 }
-      );
-    } else {
-      // Unauthenticated user - return success for client-side cart handling
-      return NextResponse.json(
-        { success: true, message: 'Cart cleared' },
-        { status: 200 }
-      );
     }
+
+    return NextResponse.json(
+      { success: true, message: 'Cart cleared' },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error('Error clearing cart:', error);
     return NextResponse.json(

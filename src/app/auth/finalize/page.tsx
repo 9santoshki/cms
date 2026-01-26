@@ -4,23 +4,16 @@ import { useEffect } from 'react';
 
 export default function AuthFinalizePage() {
   useEffect(() => {
-    console.log('🔄🔄🔄 FINALIZE PAGE MOUNTED 🔄🔄🔄');
-
     const finalizeAuth = async () => {
       try {
-        // Get token from URL
         const urlParams = new URLSearchParams(window.location.search);
         const tempToken = urlParams.get('token');
 
-        console.log('🔑 Temp token from URL:', tempToken ? `Found (${tempToken.substring(0, 10)}...)` : 'MISSING');
-
         if (!tempToken) {
-          console.error('❌ No temp token, redirecting...');
           setTimeout(() => window.location.href = '/', 2000);
           return;
         }
 
-        console.log('📡 Calling finalize API...');
         const response = await fetch('/api/auth/finalize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -28,22 +21,18 @@ export default function AuthFinalizePage() {
           body: JSON.stringify({ tempToken }),
         });
 
-        console.log('📡 Finalize API response status:', response.status);
         const data = await response.json();
-        console.log('📡 Finalize API response data:', data);
 
         if (response.ok) {
-          console.log('✅✅✅ LOGIN SUCCESSFUL! Redirecting in 1 second...');
           setTimeout(() => {
-            console.log('🔄 Now redirecting to homepage...');
             window.location.href = '/';
           }, 1000);
         } else {
-          console.error('❌ Login failed:', data);
+          console.error('Login failed:', data);
           setTimeout(() => window.location.href = '/', 2000);
         }
       } catch (error) {
-        console.error('❌❌❌ ERROR in finalize:', error);
+        console.error('Error in finalize:', error);
         setTimeout(() => window.location.href = '/', 2000);
       }
     };
@@ -83,9 +72,6 @@ export default function AuthFinalizePage() {
         </h2>
         <p style={{ color: '#666', fontSize: '16px' }}>
           Please wait while we complete your login
-        </p>
-        <p style={{ color: '#999', fontSize: '14px', marginTop: '1rem' }}>
-          Check browser console for details
         </p>
       </div>
       <style dangerouslySetInnerHTML={{__html: `

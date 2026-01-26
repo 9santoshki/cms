@@ -1,3 +1,9 @@
+/**
+ * Authentication context provider
+ * - Manages user session state with cookie and localStorage fallback
+ * - Handles Google OAuth sign-in and logout flows
+ * - Syncs cart state with authentication status
+ */
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
@@ -47,10 +53,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const setLoading = useCallback((l: boolean) => dispatch({ type: 'SET_LOADING', payload: l }), []);
   const setError = useCallback((e: string | null) => dispatch({ type: 'SET_ERROR', payload: e }), []);
 
-  // Clean Logout
   const logout = useCallback(async () => {
     dispatch({ type: 'LOGOUT' });
-    try { await signOut(); } catch (e) {}
+
+    try {
+      const { useCartStore } = await import('@/store/cartStore');
+      useCartStore.setState({ items: [] });
+    } catch (cartError) {
+      console.error('Error clearing cart on logout:', cartError);
+    }
+
+    signOut().catch(e => {
+      console.error('Logout API error:', e);
+    });
+
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cms-session-token');
+    }
+
+    window.location.replace('/');
   }, []);
 
   // Google Login
@@ -68,80 +89,94 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [setLoading, setError]);
 
-  // 🔥 Stable auth listener with initial session check
   useEffect(() => {
-    console.log('AuthContext: Setting up auth state change listener');
-
-    // Check current session on mount - run immediately without delay
     const checkCurrentSession = async () => {
-      console.log('AuthContext: Checking current session on mount...');
-
       try {
         const user = await getCurrentUser();
-        console.log('AuthContext: getCurrentUser result:', user);
         if (user) {
-          console.log('AuthContext: Current user found on mount:', user);
           setUser(user);
 
-          // Load user's cart from server IMMEDIATELY
           try {
             const { useCartStore } = await import('@/store/cartStore');
-            console.log('AuthContext: Loading cart from server...');
             await useCartStore.getState().loadServerCart();
-            console.log('AuthContext: ✅ Cart loaded from server successfully');
           } catch (cartError) {
-            console.error('AuthContext: ❌ Error loading cart:', cartError);
+            console.error('Error loading cart:', cartError);
           }
-        } else {
-          console.log('AuthContext: No current user found on mount');
         }
       } catch (error) {
-        console.error('AuthContext: Error checking current session:', error);
+        console.error('Error checking current session:', error);
       }
     };
 
-    // Run immediately - don't delay with setTimeout
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+
+      if (tokenFromUrl) {
+        localStorage.setItem('cms-session-token', tokenFromUrl);
+
+        urlParams.delete('token');
+        const newUrl = urlParams.toString()
+          ? `${window.location.pathname}?${urlParams.toString()}`
+          : window.location.pathname + (urlParams.get('login') === 'success' ? '?login=success' : '');
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+
     checkCurrentSession();
 
-    console.log('AuthContext: Subscribing to auth state changes...');
-    const sub = onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: Auth state changed event:', event, 'Session:', session);
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('login') === 'success') {
+      const forceSessionCheck = async (attempt = 1, maxAttempts = 5) => {
+        const user = await getCurrentUser();
 
+        if (user) {
+          setUser(user);
+
+          try {
+            const { useCartStore } = await import('@/store/cartStore');
+            await useCartStore.getState().loadServerCart();
+          } catch (cartError) {
+            console.error('Error loading cart after login:', cartError);
+          }
+
+          window.history.replaceState({}, '', '/');
+        } else if (attempt < maxAttempts) {
+          setTimeout(() => forceSessionCheck(attempt + 1, maxAttempts), 200);
+        }
+      };
+
+      forceSessionCheck();
+    }
+
+    const sub = onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         const user = session.user;
         if (!user) return;
 
-        console.log('AuthContext: Processing SIGNED_IN event for user:', user);
         setUser(user);
-        setToken(null); // We use cookie-based sessions now
+        setToken(null);
 
-        // Load user's cart from server after sign in
         try {
           const { useCartStore } = await import('@/store/cartStore');
-          console.log('AuthContext: Loading cart after sign in...');
           await useCartStore.getState().loadServerCart();
-          console.log('AuthContext: ✅ Cart loaded from server after sign in');
         } catch (cartError) {
-          console.error('AuthContext: ❌ Error loading cart after sign in:', cartError);
+          console.error('Error loading cart after sign in:', cartError);
         }
       }
 
       if (event === 'SIGNED_OUT') {
-        console.log('AuthContext: Processing SIGNED_OUT event');
         dispatch({ type: 'LOGOUT' });
 
-        // Clear local cart state only (keep database cart for when user logs back in)
         try {
           const { useCartStore } = await import('@/store/cartStore');
           useCartStore.setState({ items: [] });
-          console.log('AuthContext: ✅ Local cart state cleared after sign out (database cart preserved)');
         } catch (cartError) {
-          console.error('AuthContext: ❌ Error clearing cart after sign out:', cartError);
+          console.error('Error clearing cart after sign out:', cartError);
         }
       }
 
       if (event === 'USER_UPDATED') {
-        console.log('AuthContext: Processing USER_UPDATED event');
         const user = session.user;
         if (!user) return;
 
@@ -149,25 +184,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Reload cart when window regains focus (in case user logged in from another tab)
     const handleWindowFocus = async () => {
-      console.log('AuthContext: Window focused, checking for cart updates...');
       try {
         const user = await getCurrentUser();
         if (user) {
           const { useCartStore } = await import('@/store/cartStore');
           await useCartStore.getState().loadServerCart();
-          console.log('AuthContext: ✅ Cart reloaded on window focus');
         }
       } catch (error) {
-        console.error('AuthContext: ❌ Error reloading cart on focus:', error);
+        console.error('Error reloading cart on focus:', error);
       }
     };
 
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      console.log('AuthContext: Cleaning up auth subscription');
       window.removeEventListener('focus', handleWindowFocus);
       sub.unsubscribe();
     };

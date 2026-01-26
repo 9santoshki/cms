@@ -17,8 +17,6 @@ function getRazorpayInstance() {
           key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
       } else {
-        console.warn('Razorpay credentials not found. Payment functionality may not work properly.');
-        // Create a dummy Razorpay instance for development
         razorpayInstance = {
           orders: {
             create: async () => ({

@@ -15,16 +15,12 @@ export default function AuthCallback() {
       const errorDescription = urlParams.get('error_description');
 
       if (error) {
-        // Handle different OAuth error types
         if (error === 'access_denied') {
-          // User cancelled the sign-in - this is normal, just redirect to auth page
-          console.log('User cancelled sign-in');
           setErrorMessage('Sign-in was cancelled');
           setTimeout(() => {
             router.replace('/auth');
           }, 1500);
         } else {
-          // Other OAuth errors
           console.error('OAuth error:', error, errorDescription);
           setErrorMessage('Authentication failed. Please try again.');
           setTimeout(() => {
@@ -35,11 +31,8 @@ export default function AuthCallback() {
       }
 
       if (code) {
-        // Redirect to the API route to handle OAuth server-side
-        // The server will exchange the code for tokens and set the session cookie
         window.location.href = `/api/auth/google/callback?code=${code}`;
       } else {
-        // No code parameter, redirect to home
         router.replace('/');
       }
     };

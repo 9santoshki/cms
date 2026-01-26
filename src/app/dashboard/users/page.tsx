@@ -30,29 +30,21 @@ const DashboardUsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('🔍 [Users Page] Fetching users from API...');
 
       const response = await fetch('/api/admin/users');
-      console.log('📡 [Users Page] Response status:', response.status, response.statusText);
-
       const result = await response.json();
-      console.log('📦 [Users Page] Response data:', result);
-      console.log('📊 [Users Page] Users count:', result.data?.length);
 
       if (result.success && result.data) {
-        console.log('✅ [Users Page] Setting users:', result.data.length, 'users');
-        console.log('👥 [Users Page] Users data:', result.data);
         setUsers(result.data);
       } else {
-        console.error('❌ [Users Page] Failed to fetch users:', result.error);
+        console.error('Failed to fetch users:', result.error);
         setUsers([]);
       }
     } catch (error) {
-      console.error('💥 [Users Page] Error fetching users:', error);
+      console.error('Error fetching users:', error);
       setUsers([]);
     } finally {
       setLoading(false);
-      console.log('🏁 [Users Page] Fetch complete, loading state set to false');
     }
   };
 
@@ -117,14 +109,6 @@ const DashboardUsersPage = () => {
       u.email?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesRole && matchesSearch;
   });
-
-  console.log('🔍 [Users Page] Filter state:', {
-    totalUsers: users.length,
-    roleFilter,
-    searchTerm,
-    filteredCount: filteredUsers.length
-  });
-  console.log('📋 [Users Page] Filtered users:', filteredUsers);
 
   return (
     <>
