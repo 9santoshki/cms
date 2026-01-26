@@ -15,17 +15,26 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  // Subscribe directly to Zustand store for cart count
-  // This selector only triggers re-render when count changes
-  const cartCount = useCartStore(state =>
-    state.items.reduce((total, item) => total + item.quantity, 0)
-  );
-
-  const cartItems = useCartStore(state => state.items);
-
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Force re-render cart count with local state
+  const [cartCount, setCartCount] = useState(0);
+
+  // Subscribe to cart store changes
+  useEffect(() => {
+    const unsubscribe = useCartStore.subscribe(
+      state => state.items,
+      (items) => {
+        const count = items.reduce((total, item) => total + item.quantity, 0);
+        setCartCount(count);
+      },
+      { fireImmediately: true }
+    );
+
+    return unsubscribe;
+  }, []);
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
