@@ -59,12 +59,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { useCartStore } = await import('@/store/cartStore');
       useCartStore.setState({ items: [] });
+      // Clear persisted cart storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart-storage');
+      }
     } catch (cartError) {
-      console.error('Error clearing cart on logout:', cartError);
     }
 
     signOut().catch(e => {
-      console.error('Logout API error:', e);
     });
 
     if (typeof window !== 'undefined') {
