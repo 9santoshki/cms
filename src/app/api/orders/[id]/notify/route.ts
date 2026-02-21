@@ -9,9 +9,9 @@ export async function POST(
 ) {
   try {
     // Validate admin session
-    const session = await getSessionFromCookieWithDB(request.cookies);
+    const session = await getSessionFromCookieWithDB(request);
 
-    if (!session || !session.user || (session.role !== 'admin' && session.role !== 'moderator')) {
+    if (!session || (session.role !== 'admin' && session.role !== 'moderator')) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
         { status: 403 }
