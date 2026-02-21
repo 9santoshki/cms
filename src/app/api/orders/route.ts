@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { getOrdersByUserId, getOrderItems } from '@/lib/db/orders';
+import { query } from '@/lib/db/connection';
 
 export async function GET() {
   try {
@@ -16,8 +17,22 @@ export async function GET() {
       );
     }
 
-    // Fetch user's orders
-    const orders = await getOrdersByUserId(session.userId);
+    let orders;
+
+    // Admins and moderators can see all orders, regular users see only their own
+    if (session.user && (session.user.role === 'admin' || session.user.role === 'moderator')) {
+      // Fetch all orders with user information
+      const result = await query(
+        `SELECT o.*, u.name as user_name, u.email as user_email
+         FROM orders o
+         JOIN users u ON o.user_id = u.id
+         ORDER BY o.created_at DESC`
+      );
+      orders = result.rows;
+    } else {
+      // Fetch only user's own orders
+      orders = await getOrdersByUserId(session.userId);
+    }
 
     // Fetch items for each order
     const ordersWithItems = await Promise.all(
