@@ -13,7 +13,7 @@ export async function GET(
   try {
     const session = await getSessionFromCookieWithDB(request.cookies);
 
-    if (!session || !session.user) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -83,7 +83,7 @@ export async function PUT(
   try {
     const session = await getSessionFromCookieWithDB(request.cookies);
 
-    if (!session || !session.user) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
