@@ -54,6 +54,8 @@ CMS (Color My Space) is an interior design e-commerce and service booking platfo
 - [WIREFRAME.md](docs/WIREFRAME.md) - UI/UX wireframes
 - [EMAIL_SETUP.md](docs/EMAIL_SETUP.md) - Complete email configuration guide (Resend, SMTP)
 - [EMAIL_QUICKSTART.md](docs/EMAIL_QUICKSTART.md) - Quick start guide for order confirmation emails
+- [ORDER_MANAGEMENT.md](docs/ORDER_MANAGEMENT.md) - Order lifecycle, status workflow, and automated emails
+- [PRODUCT_PRICING.md](docs/PRODUCT_PRICING.md) - Product pricing system and migration guide
 
 **Additional references:**
 - [QWEN.md](QWEN.md) - Qwen AI assistant session notes and development history
@@ -865,6 +867,40 @@ npm run init-db
 - Protected API routes call `validateSession()` or `getSessionFromCookieWithDB()` first
 
 ## Recent Changes & Bug Fixes
+
+### February 2026 - Order Management & Pricing Enhancements
+
+#### Product Pricing Simplification
+- **Removed `original_price` field:** Simplified from 3-field to 2-field pricing model (price, sale_price)
+- **Database migration:** Created `scripts/migrate_pricing.sql` to drop `original_price` column
+- **Updated all frontend components:** NewShopPage, ProductDetailDisplay, NewHomepage
+- **Updated TypeScript interfaces:** Removed `original_price` from Product type across all files
+- **Updated API endpoints:** Removed `original_price` from POST/PUT /api/products
+- **Updated admin dashboard:** Simplified product form to 2 price fields with clear labels
+- **Documentation:** Created comprehensive [PRODUCT_PRICING.md](docs/PRODUCT_PRICING.md) guide
+- **Impact:** Clearer pricing logic, less confusion, easier maintenance
+
+#### Automated Email Notifications for Orders
+- **Auto-email on status change:** Orders now send emails automatically when status changes
+- **Shipment emails:** Sent when order status changes to "shipped" with tracking details
+- **Delivery emails:** Sent when order status changes to "completed"
+- **Tracking details form:** Added UI form for entering tracking number, carrier, tracking URL
+- **Popular carriers supported:** BlueDart, DTDC, FedEx, Delhivery, India Post, Ecom Express, Ekart
+- **Email service:** Using Resend API with branded HTML templates
+- **Documentation:** Created comprehensive [ORDER_MANAGEMENT.md](docs/ORDER_MANAGEMENT.md) guide
+- **Impact:** Customers automatically notified of shipment and delivery, professional branded emails
+
+#### Order Status Enhancements
+- **Added "shipped" status:** Fixed database CHECK constraint to include 'shipped' status
+- **Migration script:** Created `scripts/add_shipped_status.sql` for database update
+- **Order workflow:** pending → processing → shipped → completed (or cancelled)
+- **Admin dashboard improvements:** Enhanced order detail page with tracking form
+- **Impact:** Complete order lifecycle support with proper status transitions
+
+#### Bug Fixes
+- **Fixed homepage pricing display:** Removed hardcoded fake pricing logic (was showing price * 1.2)
+- **Fixed constraint violation:** Added 'shipped' to orders.status CHECK constraint
+- **Fixed SessionData usage:** Corrected multiple instances of `session.user.role` to `session.role`
 
 ### January 2026 - Authentication & Cloudflare Fixes
 - **Fixed Cloudflare caching breaking authentication:** Added `Cache-Control: no-store` headers to `/api/auth/session` endpoint to prevent CDN caching
