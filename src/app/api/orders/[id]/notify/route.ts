@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     // Validate admin session
-    const session = await getSessionFromCookieWithDB(request);
+    const session = await getSessionFromCookieWithDB();
 
     if (!session || (session.role !== 'admin' && session.role !== 'moderator')) {
       return NextResponse.json(
