@@ -35,6 +35,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [carrier, setCarrier] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
 
   useEffect(() => {
     params.then((p) => setOrderId(p.id));
@@ -67,19 +71,40 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const updateOrderStatus = async (newStatus: string) => {
     if (!orderId || !order) return;
 
+    // If changing to shipped, show tracking form
+    if (newStatus === 'shipped' && !selectedStatus) {
+      setSelectedStatus(newStatus);
+      return;
+    }
+
     try {
       setUpdating(true);
+
+      const payload: any = { status: newStatus };
+
+      // Include tracking details if status is shipped
+      if (newStatus === 'shipped') {
+        if (trackingNumber) payload.trackingNumber = trackingNumber;
+        if (carrier) payload.carrier = carrier;
+        if (trackingUrl) payload.trackingUrl = trackingUrl;
+      }
+
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (data.success) {
         setOrder({ ...order, status: newStatus });
-        alert('Order status updated successfully');
+        alert(data.message || 'Order status updated successfully');
+        // Reset tracking form
+        setSelectedStatus(null);
+        setTrackingNumber('');
+        setCarrier('');
+        setTrackingUrl('');
       } else {
         alert(data.error || 'Failed to update order status');
       }
@@ -333,12 +358,117 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '15px' }}>
               Update Status
             </h2>
+
+            {/* Tracking Details Form (shown when shipped is selected) */}
+            {selectedStatus === 'shipped' && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '20px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '15px' }}>
+                  📦 Shipment Details
+                </h3>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '5px' }}>
+                    Tracking Number *
+                  </label>
+                  <input
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="e.g., TRACK123456789"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '5px' }}>
+                    Carrier *
+                  </label>
+                  <select
+                    value={carrier}
+                    onChange={(e) => setCarrier(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="">Select carrier...</option>
+                    <option value="BlueDart">BlueDart</option>
+                    <option value="DTDC">DTDC</option>
+                    <option value="FedEx">FedEx</option>
+                    <option value="Delhivery">Delhivery</option>
+                    <option value="India Post">India Post</option>
+                    <option value="Ecom Express">Ecom Express</option>
+                    <option value="Ekart">Ekart</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '5px' }}>
+                    Tracking URL (optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={trackingUrl}
+                    onChange={(e) => setTrackingUrl(e.target.value)}
+                    placeholder="https://www.carrier.com/track/..."
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => updateOrderStatus('shipped')}
+                    disabled={updating || !trackingNumber || !carrier}
+                    className="btn primary"
+                    style={{ flex: 1 }}
+                  >
+                    {updating ? 'Updating...' : '✉️ Mark as Shipped & Send Email'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedStatus(null);
+                      setTrackingNumber('');
+                      setCarrier('');
+                      setTrackingUrl('');
+                    }}
+                    className="btn secondary"
+                    style={{ flex: 0 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Status Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {['pending', 'processing', 'shipped', 'completed', 'cancelled'].map((status) => (
                 <button
                   key={status}
                   onClick={() => updateOrderStatus(status)}
-                  disabled={updating || order.status === status}
+                  disabled={updating || order.status === status || selectedStatus === 'shipped'}
                   className={order.status === status ? 'btn primary' : 'btn secondary'}
                   style={{
                     width: '100%',
@@ -349,6 +479,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 >
                   {order.status === status && '✓ '}
                   {status}
+                  {status === 'shipped' && ' 📦'}
+                  {status === 'completed' && ' ✅'}
                 </button>
               ))}
             </div>
