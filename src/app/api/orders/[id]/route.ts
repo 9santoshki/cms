@@ -44,9 +44,9 @@ export async function GET(
     // Check authorization
     // Users can only see their own orders, admins/moderators can see all
     if (
-      order.user_id !== session.user.id &&
-      session.user.role !== 'admin' &&
-      session.user.role !== 'moderator'
+      order.user_id.toString() !== session.userId &&
+      session.role !== 'admin' &&
+      session.role !== 'moderator'
     ) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized to view this order' },
@@ -91,7 +91,7 @@ export async function PUT(
     }
 
     // Check if user is admin or moderator
-    if (session.user.role !== 'admin' && session.user.role !== 'moderator') {
+    if (session.role !== 'admin' && session.role !== 'moderator') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

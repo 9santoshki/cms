@@ -20,7 +20,7 @@ export async function GET() {
     let orders;
 
     // Admins and moderators can see all orders, regular users see only their own
-    if (session.user && (session.user.role === 'admin' || session.user.role === 'moderator')) {
+    if (session.role === 'admin' || session.role === 'moderator') {
       // Fetch all orders with user information
       const result = await query(
         `SELECT o.*, u.name as user_name, u.email as user_email
