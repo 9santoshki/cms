@@ -118,9 +118,21 @@ const OrderHistory = () => {
               const totalAmount = order.total_amount ?? order.total ?? 0;
               const status = order.status || 'pending';
               const items = order.items || [];
-              const shippingAddress = order.customer?.city
-                ? `${order.customer.city}${order.customer.zipCode ? ', ' + order.customer.zipCode : ''}`
-                : null;
+
+              // Parse shipping address from JSON if needed
+              let shippingAddress = null;
+              if (order.shipping_address) {
+                try {
+                  const addr = typeof order.shipping_address === 'string'
+                    ? JSON.parse(order.shipping_address)
+                    : order.shipping_address;
+                  if (addr && addr.city) {
+                    shippingAddress = `${addr.city}${addr.state ? ', ' + addr.state : ''}${addr.zipCode ? ' - ' + addr.zipCode : ''}`;
+                  }
+                } catch (e) {
+                  console.error('Error parsing shipping address:', e);
+                }
+              }
 
               return (
                 <OrderCard key={orderId}>
@@ -137,14 +149,14 @@ const OrderHistory = () => {
                       <div className="label">Total</div>
                       <div className="amount">
                         ₹{typeof totalAmount === 'number'
-                          ? totalAmount.toLocaleString()
-                          : parseFloat(totalAmount || '0').toLocaleString()}
+                          ? totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+                          : parseFloat(totalAmount || '0').toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </div>
                     </OrderTotal>
                   </OrderHeader>
 
                   <OrderItems>
-                    {items.map((item: any, itemIndex: number) => {
+                    {items.length > 0 ? items.map((item: any, itemIndex: number) => {
                       const itemPrice = typeof item.price === 'number'
                         ? item.price
                         : parseFloat(item.price || '0');
@@ -156,20 +168,26 @@ const OrderHistory = () => {
                             {!item.image_url && <i className="fas fa-image" />}
                           </ItemImage>
                           <ItemDetails>
-                            <h4>{item.name || item.product_name}</h4>
-                            <span className="quantity">Qty: {item.quantity}</span>
+                            <h4>{item.name || item.product_name || 'Product'}</h4>
+                            <span className="quantity">Qty: {item.quantity || 1} × ₹{itemPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                           </ItemDetails>
-                          <ItemPrice>₹{itemTotal.toLocaleString()}</ItemPrice>
+                          <ItemPrice>₹{itemTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</ItemPrice>
                         </OrderItem>
                       );
-                    })}
+                    }) : (
+                      <OrderItem>
+                        <ItemDetails>
+                          <h4>No items found</h4>
+                        </ItemDetails>
+                      </OrderItem>
+                    )}
                   </OrderItems>
 
                   {shippingAddress && (
                     <OrderFooter>
                       <ShippingInfo>
                         <i className="fas fa-map-marker-alt" />
-                        Shipped to: {shippingAddress}
+                        Delivery to: {shippingAddress}
                       </ShippingInfo>
                     </OrderFooter>
                   )}

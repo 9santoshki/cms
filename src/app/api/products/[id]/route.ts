@@ -67,7 +67,7 @@ export async function PUT(
     const { id } = params;
 
     const body = await request.json();
-    const { name, description, price, original_price, sale_price, image_url, category, stock_quantity } = body;
+    const { name, description, price, sale_price, image_url, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -102,7 +102,6 @@ export async function PUT(
       name,
       description,
       price,
-      original_price,
       sale_price,
       image_url,
       category,

@@ -45,12 +45,13 @@ CREATE TABLE IF NOT EXISTS temp_auth_tokens (
 CREATE INDEX IF NOT EXISTS idx_temp_auth_tokens_expires_at ON temp_auth_tokens(expires_at);
 
 -- Create products table
+-- Price model: price = regular/baseline price, sale_price = discounted price (optional)
+-- Display logic: Show sale_price if it exists and < price, otherwise show price
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
-    original_price DECIMAL(10, 2),
     sale_price DECIMAL(10, 2),
     image_url TEXT,
     category VARCHAR(100),

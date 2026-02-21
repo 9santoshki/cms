@@ -19,7 +19,6 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  original_price?: number;
   sale_price?: number;
   category?: string;
   stock_quantity?: number;
@@ -41,7 +40,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     name: '',
     description: '',
     price: '',
-    original_price: '',
     sale_price: '',
     category: '',
     stock_quantity: '',
@@ -87,7 +85,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           name: data.data.name,
           description: data.data.description,
           price: data.data.price.toString(),
-          original_price: data.data.original_price?.toString() || '',
           sale_price: data.data.sale_price?.toString() || '',
           category: data.data.category || '',
           stock_quantity: data.data.stock_quantity?.toString() || '0',
@@ -134,7 +131,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          original_price: formData.original_price ? parseFloat(formData.original_price) : null,
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           category: formData.category,
           stock_quantity: parseInt(formData.stock_quantity) || 0,
@@ -482,7 +478,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </h4>
               <div className="product-form-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
+                gridTemplateColumns: '1fr 1fr',
                 gap: '20px'
               }}>
                 <div>
@@ -493,7 +489,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     color: '#666',
                     marginBottom: '8px'
                   }}>
-                    Current Price (₹) *
+                    Regular Price (₹) *
                   </label>
                   <input
                     type="number"
@@ -512,37 +508,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       outline: 'none'
                     }}
                   />
-                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>The primary price used</p>
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Original Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="original_price"
-                    value={formData.original_price}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    placeholder="Full retail price"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Shown as strikethrough price</p>
+                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Base price (shown as strikethrough when on sale)</p>
                 </div>
 
                 <div>
@@ -572,10 +538,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       outline: 'none'
                     }}
                   />
-                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Displayed price (falls back to Current Price)</p>
+                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Discounted price (shown if less than regular price)</p>
                 </div>
               </div>
-              {formData.original_price && formData.sale_price && parseFloat(formData.original_price) > parseFloat(formData.sale_price) && (
+              {formData.price && formData.sale_price && parseFloat(formData.price) > parseFloat(formData.sale_price) && (
                 <div style={{
                   marginTop: '12px',
                   padding: '8px 12px',
@@ -587,7 +553,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 }}>
                   <i className="fas fa-percent" style={{ color: '#e74c3c' }}></i>
                   <span style={{ fontSize: '13px', color: '#e74c3c', fontWeight: '600' }}>
-                    Discount: {Math.round(((parseFloat(formData.original_price) - parseFloat(formData.sale_price)) / parseFloat(formData.original_price)) * 100)}% OFF
+                    Discount: {Math.round(((parseFloat(formData.price) - parseFloat(formData.sale_price)) / parseFloat(formData.price)) * 100)}% OFF
                   </span>
                 </div>
               )}

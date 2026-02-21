@@ -52,6 +52,8 @@ CMS (Color My Space) is an interior design e-commerce and service booking platfo
 - [CLOUDFLARE.md](docs/CLOUDFLARE.md) - Cloudflare CDN configuration and caching issues
 - [DECISIONS.md](docs/DECISIONS.md) - Key architectural decisions
 - [WIREFRAME.md](docs/WIREFRAME.md) - UI/UX wireframes
+- [EMAIL_SETUP.md](docs/EMAIL_SETUP.md) - Complete email configuration guide (Resend, SMTP)
+- [EMAIL_QUICKSTART.md](docs/EMAIL_QUICKSTART.md) - Quick start guide for order confirmation emails
 
 **Additional references:**
 - [QWEN.md](QWEN.md) - Qwen AI assistant session notes and development history
@@ -242,7 +244,9 @@ const imageUrl = 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_im
 - `src/lib/db/cart.ts` - Shopping cart operations (table: `cart`)
 - `src/lib/db/reviews.ts` - Product reviews operations
 - `src/lib/db/appointments.ts` - Appointment booking operations
+- `src/lib/db/orders.ts` - Order operations (create, fetch, update status)
 - `src/lib/cloudflare.ts` - Cloudflare R2 image upload/delete utilities
+- `src/lib/email.ts` - Email service (Resend/SMTP) for order confirmations
 - `src/lib/api.ts` - Client-side API wrapper class
 - `src/store/cartStore.ts` - Zustand cart store with server sync
 - `src/context/AppProvider.tsx` - Composite context provider
@@ -269,6 +273,29 @@ CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_
 CLOUDFLARE_R2_ENDPOINT, CLOUDFLARE_R2_TOKEN_VALUE, CLOUDFLARE_BUCKET
 CLOUDFLARE_PRODUCT_IMAGE_FOLDER
 ```
+
+Optional variables for email functionality:
+```
+# Option 1: Resend (recommended - 3,000 free emails/month)
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM=noreply@colourmyspace.com
+EMAIL_FROM_NAME=Colour My Space
+
+# Option 2: SMTP (Gmail, SendGrid, etc.)
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your_app_password
+EMAIL_FROM=your-email@gmail.com
+EMAIL_FROM_NAME=Colour My Space
+```
+
+**Email Configuration:**
+- Automatic order confirmation emails sent after successful payment
+- See [EMAIL_QUICKSTART.md](docs/EMAIL_QUICKSTART.md) for quick setup (5 minutes)
+- See [EMAIL_SETUP.md](docs/EMAIL_SETUP.md) for complete guide
 
 **Important Notes:**
 - Variables starting with `NEXT_PUBLIC_` are bundled into the client build at build time

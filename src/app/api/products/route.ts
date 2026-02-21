@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price, original_price, sale_price, image_url, category, stock_quantity } = body;
+    const { name, description, price, sale_price, image_url, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
       name,
       description,
       price,
-      original_price,
       sale_price,
       image_url,
       category,

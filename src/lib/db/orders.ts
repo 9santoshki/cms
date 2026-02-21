@@ -80,7 +80,10 @@ export async function getOrderItems(orderId: string): Promise<OrderItem[]> {
     `SELECT
       oi.*,
       p.name,
-      p.image_url
+      COALESCE(
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1),
+        p.image_url
+      ) as image_url
      FROM order_items oi
      JOIN products p ON oi.product_id = p.id
      WHERE oi.order_id = $1`,

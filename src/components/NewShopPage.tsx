@@ -43,9 +43,9 @@ const getDiscountPercentage = (originalPrice: number, salePrice: number): number
 
 // Helper to check if product has discount
 const hasDiscount = (product: any): boolean => {
-  const original = parsePrice(product.original_price);
-  const sale = parsePrice(product.sale_price) || parsePrice(product.price);
-  return original > 0 && original > sale;
+  const price = parsePrice(product.price);
+  const sale = parsePrice(product.sale_price);
+  return sale > 0 && price > sale;
 };
 
 // Helper to get display price
@@ -297,7 +297,7 @@ const NewShopPage = () => {
                   >
                     {hasDiscount(product) && (
                       <DiscountBadge>
-                        {getDiscountPercentage(parsePrice(product.original_price), getDisplayPrice(product))}% OFF
+                        {getDiscountPercentage(parsePrice(product.price), getDisplayPrice(product))}% OFF
                       </DiscountBadge>
                     )}
                     <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url}>
@@ -315,7 +315,7 @@ const NewShopPage = () => {
                             </span>
                             {hasDiscount(product) && (
                               <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
-                                ₹{parsePrice(product.original_price).toLocaleString()}
+                                ₹{parsePrice(product.price).toLocaleString()}
                               </span>
                             )}
                           </div>

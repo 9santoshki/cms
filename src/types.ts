@@ -31,7 +31,6 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
-  original_price?: number;
   sale_price?: number;
   category?: string;
   image_url?: string;
