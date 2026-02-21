@@ -303,3 +303,298 @@ export async function sendOrderConfirmationEmail(
 
   return await sendEmail(customerEmail, subject, html);
 }
+
+/**
+ * Generate shipment notification email HTML
+ */
+export function generateShipmentEmail(orderData: {
+  orderId: string | number;
+  customerName: string;
+  trackingNumber?: string;
+  carrier?: string;
+  trackingUrl?: string;
+  estimatedDelivery?: string;
+}): string {
+  const { orderId, customerName, trackingNumber, carrier, trackingUrl, estimatedDelivery } = orderData;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Order Shipped - Colour My Space</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f3f0; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 40px; text-align: center;">
+                  <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px;">📦</span>
+                  </div>
+                  <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: 500;">Your Order Has Shipped!</h1>
+                  <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.8); font-size: 16px;">Hi ${customerName}, your order is on its way</p>
+                </td>
+              </tr>
+
+              <!-- Shipment Details -->
+              <tr>
+                <td style="padding: 40px;">
+                  <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #c19a6b; margin: 0 0 16px 0;">
+                      Shipment Information
+                    </h3>
+                    <div style="color: #666; line-height: 1.8;">
+                      <div><strong style="color: #1a1a1a;">Order ID:</strong> #${orderId}</div>
+                      ${trackingNumber ? `<div><strong style="color: #1a1a1a;">Tracking Number:</strong> ${trackingNumber}</div>` : ''}
+                      ${carrier ? `<div><strong style="color: #1a1a1a;">Carrier:</strong> ${carrier}</div>` : ''}
+                      ${estimatedDelivery ? `<div><strong style="color: #1a1a1a;">Estimated Delivery:</strong> ${estimatedDelivery}</div>` : ''}
+                    </div>
+                  </div>
+
+                  <!-- CTA Button -->
+                  ${trackingUrl ? `
+                  <div style="margin-top: 30px; text-align: center;">
+                    <a href="${trackingUrl}"
+                       style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #c19a6b 0%, #a67c52 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                      Track Your Order
+                    </a>
+                  </div>
+                  ` : ''}
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 30px; background-color: #faf9f7; border-top: 1px solid #f0ebe5; text-align: center;">
+                  <p style="margin: 0 0 15px; color: #666; font-size: 14px; line-height: 1.6;">
+                    Need help? Contact us at:<br>
+                    <a href="tel:+919513351833" style="color: #c19a6b; text-decoration: none;">+91 95133 51833</a> |
+                    <a href="mailto:rajnishkumarranjan@gmail.com" style="color: #c19a6b; text-decoration: none;">rajnishkumarranjan@gmail.com</a>
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate delivery confirmation email HTML
+ */
+export function generateDeliveryEmail(orderData: {
+  orderId: string | number;
+  customerName: string;
+  deliveryDate: string;
+}): string {
+  const { orderId, customerName, deliveryDate } = orderData;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Order Delivered - Colour My Space</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f3f0; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 40px; text-align: center;">
+                  <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px; color: #28a745;">🎉</span>
+                  </div>
+                  <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: 500;">Your Order Has Been Delivered!</h1>
+                  <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.8); font-size: 16px;">Hi ${customerName}, enjoy your new purchase</p>
+                </td>
+              </tr>
+
+              <!-- Delivery Details -->
+              <tr>
+                <td style="padding: 40px;">
+                  <div style="margin-bottom: 30px; text-align: center;">
+                    <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #c19a6b; margin: 0 0 16px 0;">
+                      Delivery Confirmed
+                    </h3>
+                    <p style="color: #666; line-height: 1.8;">
+                      <strong style="color: #1a1a1a;">Order ID:</strong> #${orderId}<br>
+                      <strong style="color: #1a1a1a;">Delivered on:</strong> ${formatDate(deliveryDate)}
+                    </p>
+                  </div>
+
+                  <div style="margin: 30px 0; padding: 20px; background: #fef3c7; border-radius: 8px; text-align: center;">
+                    <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+                      <strong>Love your purchase?</strong><br>
+                      We'd appreciate it if you could leave a review!
+                    </p>
+                  </div>
+
+                  <!-- CTA Button -->
+                  <div style="margin-top: 30px; text-align: center;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/orders"
+                       style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #c19a6b 0%, #a67c52 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                      Leave a Review
+                    </a>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 30px; background-color: #faf9f7; border-top: 1px solid #f0ebe5; text-align: center;">
+                  <p style="margin: 0 0 15px; color: #666; font-size: 14px; line-height: 1.6;">
+                    Thank you for shopping with Colour My Space!
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate refund confirmation email HTML
+ */
+export function generateRefundEmail(orderData: {
+  orderId: string | number;
+  customerName: string;
+  refundAmount: number;
+  refundReason?: string;
+  refundDate: string;
+}): string {
+  const { orderId, customerName, refundAmount, refundReason, refundDate } = orderData;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Refund Processed - Colour My Space</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f3f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f3f0; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 40px; text-align: center;">
+                  <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px; color: #1e40af;">💳</span>
+                  </div>
+                  <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: 500;">Refund Processed</h1>
+                  <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.8); font-size: 16px;">Hi ${customerName}, your refund has been initiated</p>
+                </td>
+              </tr>
+
+              <!-- Refund Details -->
+              <tr>
+                <td style="padding: 40px;">
+                  <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #c19a6b; margin: 0 0 16px 0;">
+                      Refund Information
+                    </h3>
+                    <div style="color: #666; line-height: 1.8;">
+                      <div><strong style="color: #1a1a1a;">Order ID:</strong> #${orderId}</div>
+                      <div><strong style="color: #1a1a1a;">Refund Amount:</strong> ${formatCurrency(refundAmount)}</div>
+                      <div><strong style="color: #1a1a1a;">Processed on:</strong> ${formatDate(refundDate)}</div>
+                      ${refundReason ? `<div><strong style="color: #1a1a1a;">Reason:</strong> ${refundReason}</div>` : ''}
+                    </div>
+                  </div>
+
+                  <div style="margin: 30px 0; padding: 20px; background: #dbeafe; border-radius: 8px;">
+                    <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6; text-align: center;">
+                      <strong>Please note:</strong> It may take 5-7 business days for the refund to reflect in your account, depending on your bank or payment provider.
+                    </p>
+                  </div>
+
+                  <!-- CTA Button -->
+                  <div style="margin-top: 30px; text-align: center;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/orders"
+                       style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #c19a6b 0%, #a67c52 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                      View Order History
+                    </a>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 30px; background-color: #faf9f7; border-top: 1px solid #f0ebe5; text-align: center;">
+                  <p style="margin: 0 0 15px; color: #666; font-size: 14px; line-height: 1.6;">
+                    If you have any questions, please contact us at:<br>
+                    <a href="tel:+919513351833" style="color: #c19a6b; text-decoration: none;">+91 95133 51833</a> |
+                    <a href="mailto:rajnishkumarranjan@gmail.com" style="color: #c19a6b; text-decoration: none;">rajnishkumarranjan@gmail.com</a>
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Send shipment notification email
+ */
+export async function sendShipmentEmail(
+  customerEmail: string,
+  orderData: Parameters<typeof generateShipmentEmail>[0]
+) {
+  const subject = `Your Order #${orderData.orderId} Has Shipped - Colour My Space`;
+  const html = generateShipmentEmail(orderData);
+
+  return await sendEmail(customerEmail, subject, html);
+}
+
+/**
+ * Send delivery confirmation email
+ */
+export async function sendDeliveryEmail(
+  customerEmail: string,
+  orderData: Parameters<typeof generateDeliveryEmail>[0]
+) {
+  const subject = `Your Order #${orderData.orderId} Has Been Delivered - Colour My Space`;
+  const html = generateDeliveryEmail(orderData);
+
+  return await sendEmail(customerEmail, subject, html);
+}
+
+/**
+ * Send refund confirmation email
+ */
+export async function sendRefundEmail(
+  customerEmail: string,
+  orderData: Parameters<typeof generateRefundEmail>[0]
+) {
+  const subject = `Refund Processed for Order #${orderData.orderId} - Colour My Space`;
+  const html = generateRefundEmail(orderData);
+
+  return await sendEmail(customerEmail, subject, html);
+}
