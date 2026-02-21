@@ -12,7 +12,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSessionFromCookieWithDB(request.cookies);
+    const session = await getSessionFromCookieWithDB();
 
     if (!session) {
       return NextResponse.json(
@@ -82,7 +82,7 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSessionFromCookieWithDB(request.cookies);
+    const session = await getSessionFromCookieWithDB();
 
     if (!session) {
       return NextResponse.json(
