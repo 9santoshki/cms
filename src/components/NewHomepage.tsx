@@ -264,13 +264,27 @@ const NewHomepage = () => {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '8px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 'bold', color: '#e74c3c', fontSize: '1.1rem', marginRight: '6px' }}>
-                          ₹{product.price?.toLocaleString()}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ fontWeight: 'bold', color: '#c19a6b', fontSize: '1.1rem' }}>
+                          ₹{(product.sale_price || product.price)?.toLocaleString()}
                         </span>
-                        <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
-                          ₹{product.price ? (product.price * 1.2).toLocaleString() : product.price?.toLocaleString()}
-                        </span>
+                        {product.sale_price && product.price > product.sale_price && (
+                          <>
+                            <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
+                              ₹{product.price?.toLocaleString()}
+                            </span>
+                            <span style={{
+                              backgroundColor: '#e74c3c',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              fontWeight: '600'
+                            }}>
+                              {Math.round(((product.price - product.sale_price) / product.price) * 100)}% OFF
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <button
