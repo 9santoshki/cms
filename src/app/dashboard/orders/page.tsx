@@ -228,7 +228,7 @@ const DashboardOrdersPage = () => {
               <div className="order-card-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                    Order #{order.id?.slice(0, 8)}
+                    Order #{order.id}
                   </h3>
                   <p style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
                     Customer: {order.user_email || 'N/A'}

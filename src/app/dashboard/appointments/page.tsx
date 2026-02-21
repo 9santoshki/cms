@@ -265,7 +265,7 @@ const DashboardAppointmentsPage = () => {
               <div className="appointment-card-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                    Consultation Request #{appointment.id?.slice(0, 8)}
+                    Consultation Request #{appointment.id}
                   </h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                     <i className="fas fa-user" style={{ fontSize: '12px', color: '#999' }}></i>
