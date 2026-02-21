@@ -57,10 +57,6 @@ CMS (Color My Space) is an interior design e-commerce and service booking platfo
 - [ORDER_MANAGEMENT.md](docs/ORDER_MANAGEMENT.md) - Order lifecycle, status workflow, and automated emails
 - [PRODUCT_PRICING.md](docs/PRODUCT_PRICING.md) - Product pricing system and migration guide
 
-**Additional references:**
-- [QWEN.md](QWEN.md) - Qwen AI assistant session notes and development history
-- [DATABASE_WARNING.md](DATABASE_WARNING.md) - Critical database initialization warnings
-
 ## Development Commands
 
 ```bash
