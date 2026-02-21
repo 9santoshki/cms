@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
 import { getOrderItems } from '@/lib/db/orders';
+import { sendShipmentEmail, sendDeliveryEmail } from '@/lib/email';
 
 /**
  * GET /api/orders/[id] - Get single order details
@@ -101,7 +102,7 @@ export async function PUT(
     const params = await context.params;
     const orderId = params.id;
     const body = await request.json();
-    const { status } = body;
+    const { status, trackingNumber, carrier, trackingUrl } = body;
 
     if (!status) {
       return NextResponse.json(
@@ -119,6 +120,25 @@ export async function PUT(
       );
     }
 
+    // Get current order to check if status is actually changing
+    const currentOrderResult = await query(
+      `SELECT o.*, u.name as customer_name, u.email as customer_email
+       FROM orders o
+       JOIN users u ON o.user_id = u.id
+       WHERE o.id = $1`,
+      [orderId]
+    );
+
+    if (currentOrderResult.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    const currentOrder = currentOrderResult.rows[0];
+    const statusChanged = currentOrder.status !== status;
+
     // Update order status
     const updateResult = await query(
       `UPDATE orders
@@ -135,10 +155,48 @@ export async function PUT(
       );
     }
 
+    // Auto-send emails based on status change
+    if (statusChanged) {
+      try {
+        switch (status) {
+          case 'shipped':
+            // Send shipment notification email
+            await sendShipmentEmail(currentOrder.customer_email, {
+              orderId: currentOrder.id,
+              customerName: currentOrder.customer_name,
+              trackingNumber: trackingNumber || 'TBD',
+              carrier: carrier || 'Standard Delivery',
+              trackingUrl: trackingUrl,
+              estimatedDelivery: 'Within 5-7 business days',
+            });
+            console.log(`✓ Shipment email sent to ${currentOrder.customer_email}`);
+            break;
+
+          case 'completed':
+            // Send delivery confirmation email
+            await sendDeliveryEmail(currentOrder.customer_email, {
+              orderId: currentOrder.id,
+              customerName: currentOrder.customer_name,
+              deliveryDate: new Date().toISOString(),
+            });
+            console.log(`✓ Delivery email sent to ${currentOrder.customer_email}`);
+            break;
+
+          // Add more status-based emails as needed
+          default:
+            // No email for other statuses
+            break;
+        }
+      } catch (emailError) {
+        // Log email error but don't fail the status update
+        console.error(`⚠️ Failed to send email for status ${status}:`, emailError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: updateResult.rows[0],
-      message: `Order status updated to ${status}`,
+      message: `Order status updated to ${status}${statusChanged && (status === 'shipped' || status === 'completed') ? '. Email sent to customer.' : ''}`,
     });
   } catch (error: any) {
     console.error('Error updating order:', error);
