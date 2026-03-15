@@ -682,7 +682,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
   // Get display price (sale_price or price) - parse to ensure numeric comparison
   const displayPrice = parsePrice(product.sale_price) || parsePrice(product.price);
-  const originalPrice = parsePrice(product.original_price);
+  const originalPrice = parsePrice(product.price);
   const hasDiscount = originalPrice > 0 && originalPrice > displayPrice;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
@@ -1041,7 +1041,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                     style={{ width: '100%', height: '100%' } as React.CSSProperties}
                   />
                   {(() => {
-                    const relOriginal = parsePrice(relatedProduct.original_price);
+                    const relOriginal = parsePrice(relatedProduct.price);
                     const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
                     const relHasDiscount = relOriginal > 0 && relOriginal > relDisplay;
                     return relHasDiscount ? (
@@ -1068,7 +1068,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                       ₹{(parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price)).toLocaleString()}
                     </p>
                     {(() => {
-                      const relOriginal = parsePrice(relatedProduct.original_price);
+                      const relOriginal = parsePrice(relatedProduct.price);
                       const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
                       return relOriginal > 0 && relOriginal > relDisplay ? (
                         <span style={{ fontSize: '0.875rem', color: '#9ca3af', textDecoration: 'line-through' }}>

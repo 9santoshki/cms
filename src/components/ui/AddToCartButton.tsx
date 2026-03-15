@@ -40,11 +40,10 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     try {
       const result = addToCartWithAuth(product, quantity);
 
-      if (result.success && result.action) {
-        result.action().then(() => {
-          setIsLoading(false);
-          if (onSuccess) onSuccess();
-        });
+      if (result.success) {
+        // Item was added to cart by addToCartWithAuth
+        setIsLoading(false);
+        if (onSuccess) onSuccess();
       } else if (!result.success && result.requiresLogin) {
         // Store the pending cart action for after login
         storeLegacyPendingCartAction(product, quantity);

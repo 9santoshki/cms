@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductsWithImages } from '@/lib/db/products';
 
-// Handle preflight requests
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,DELETE,PATCH,POST,PUT,OPTIONS",
-      "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
-    },
-  });
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -36,47 +24,24 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          products: result.products,
-          pagination: result.pagination,
-          filters: {
-            search,
-            category,
-            minPrice,
-            maxPrice,
-          },
+    return NextResponse.json({
+      success: true,
+      data: {
+        products: result.products,
+        pagination: result.pagination,
+        filters: {
+          search,
+          category,
+          minPrice: minPrice ?? null,
+          maxPrice: maxPrice ?? null,
         },
       },
-      {
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
-    );
-  } catch (error) {
-    console.error('Error searching products:', error);
+    });
+  } catch (err: unknown) {
+    console.error('[search/products] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

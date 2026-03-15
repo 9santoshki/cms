@@ -1,39 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
   getAppointmentById,
   updateAppointment,
   deleteAppointment,
 } from '@/lib/db/appointments';
 
-// Verify user session and get user ID
-async function getUserIdFromRequest(request: NextRequest) {
-  try {
-    const session = await getSessionFromCookie();
-    return session?.userId || null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
-    return null;
-  }
-}
-
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const params = await context.params;
-    const { id } = params;
-
+    const { id } = await context.params;
     const appointment = await getAppointmentById(id);
 
     if (!appointment) {
@@ -43,25 +30,23 @@ export async function GET(
       );
     }
 
-    // Ensure user can only access their own appointments
-    if (appointment.user_id !== userId) {
+    // Admins/moderators can view any appointment; users can only view their own
+    if (
+      session.role !== 'admin' &&
+      session.role !== 'moderator' &&
+      appointment.user_id !== session.userId
+    ) {
       return NextResponse.json(
         { success: false, error: 'Appointment not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: appointment,
-    });
-  } catch (error) {
-    console.error('Error fetching appointment:', error);
+    return NextResponse.json({ success: true, data: appointment });
+  } catch (err: unknown) {
+    console.error('[appointments/[id] GET] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -72,39 +57,40 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const params = await context.params;
-    const { id } = params;
+    const { id } = await context.params;
     const { status, notes, service_type, appointment_date } = await request.json();
 
-    // Verify the appointment exists and belongs to the user
     const existingAppointment = await getAppointmentById(id);
 
-    if (!existingAppointment || existingAppointment.user_id !== userId) {
+    if (
+      !existingAppointment ||
+      (session.role !== 'admin' &&
+        session.role !== 'moderator' &&
+        existingAppointment.user_id !== session.userId)
+    ) {
       return NextResponse.json(
         { success: false, error: 'Appointment not found' },
         { status: 404 }
       );
     }
 
-    // Validate status if provided
-    if (status && !['scheduled', 'completed', 'cancelled'].includes(status)) {
+    if (status && !['scheduled', 'confirmed', 'completed', 'cancelled'].includes(status)) {
       return NextResponse.json(
         { success: false, error: 'Invalid status' },
         { status: 400 }
       );
     }
 
-    // Prepare update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
     if (service_type) updateData.service_type = service_type;
@@ -119,50 +105,45 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: updatedAppointment,
-    });
-  } catch (error) {
-    console.error('Error updating appointment:', error);
+    return NextResponse.json({ success: true, data: updatedAppointment });
+  } catch (err: unknown) {
+    console.error('[appointments/[id] PUT] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const params = await context.params;
-    const { id } = params;
-
-    // Verify the appointment exists and belongs to the user
+    const { id } = await context.params;
     const existingAppointment = await getAppointmentById(id);
 
-    if (!existingAppointment || existingAppointment.user_id !== userId) {
+    if (
+      !existingAppointment ||
+      (session.role !== 'admin' &&
+        session.role !== 'moderator' &&
+        existingAppointment.user_id !== session.userId)
+    ) {
       return NextResponse.json(
         { success: false, error: 'Appointment not found' },
         { status: 404 }
       );
     }
 
-    // Only allow deletion for scheduled or cancelled appointments
     if (existingAppointment.status === 'completed') {
       return NextResponse.json(
         { success: false, error: 'Cannot delete a completed appointment' },
@@ -170,26 +151,20 @@ export async function DELETE(
       );
     }
 
-    const success = await deleteAppointment(id);
+    const deleted = await deleteAppointment(id);
 
-    if (!success) {
+    if (!deleted) {
       return NextResponse.json(
         { success: false, error: 'Failed to delete appointment' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Appointment deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting appointment:', error);
+    return NextResponse.json({ success: true, message: 'Appointment deleted successfully' });
+  } catch (err: unknown) {
+    console.error('[appointments/[id] DELETE] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

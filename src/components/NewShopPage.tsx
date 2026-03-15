@@ -3,16 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
-import { useCart } from '../context/CartContext';
+import { useCartStore } from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
-import ProductDetail from './ProductDetail'; // Assuming this component exists
 
 // Import elegant shop page styles
 import {
   ShopContainer,
-  ShopHero,
   MainContent,
   ProductsSection,
   ProductFilters,
@@ -20,11 +18,9 @@ import {
   FilterHeader,
   FilterContent,
   FilterOption,
-  ProductsGrid,
   ProductCard,
   ProductImage,
   ProductInfo,
-  ProductPrice,
   DiscountBadge,
   Pagination,
   PageButton,
@@ -47,9 +43,9 @@ const getDiscountPercentage = (originalPrice: number, salePrice: number): number
 
 // Helper to check if product has discount
 const hasDiscount = (product: any): boolean => {
-  const original = parsePrice(product.original_price);
-  const sale = parsePrice(product.sale_price) || parsePrice(product.price);
-  return original > 0 && original > sale;
+  const price = parsePrice(product.price);
+  const sale = parsePrice(product.sale_price);
+  return sale > 0 && price > sale;
 };
 
 // Helper to get display price
@@ -67,15 +63,11 @@ const NewShopPage = () => {
     fetchProducts
   } = useProduct();
 
-  const { 
-    items: cartItems,
-    addItem: addToCart,
-    cartCount
-  } = useCart();
+  const cartItems = useCartStore(state => state.items);
+  const addToCart = useCartStore(state => state.addItem);
 
   const { user } = useAuth();
 
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [filters, setFilters] = useState({
     category: 'All',
     priceRange: 'All',
@@ -96,18 +88,35 @@ const NewShopPage = () => {
   // Filter and sort products based on selected filters
   const filteredProducts = products
     .filter(product => {
+      // Category filter
       if (filters.category !== 'All') {
-        return product.category === filters.category;
+        if (product.category !== filters.category) {
+          return false;
+        }
       }
+
+      // Price range filter
+      if (filters.priceRange !== 'All') {
+        const displayPrice = getDisplayPrice(product);
+
+        if (filters.priceRange === 'Under ₹5,000') {
+          if (displayPrice >= 5000) return false;
+        } else if (filters.priceRange === '₹5,000 - ₹15,000') {
+          if (displayPrice < 5000 || displayPrice > 15000) return false;
+        } else if (filters.priceRange === 'Over ₹15,000') {
+          if (displayPrice <= 15000) return false;
+        }
+      }
+
       return true;
     })
     .sort((a, b) => {
       if (filters.sortBy === 'name') {
         return a.name.localeCompare(b.name);
       } else if (filters.sortBy === 'price-low') {
-        return a.price - b.price;
+        return getDisplayPrice(a) - getDisplayPrice(b);
       } else if (filters.sortBy === 'price-high') {
-        return b.price - a.price;
+        return getDisplayPrice(b) - getDisplayPrice(a);
       }
       return 0;
     });
@@ -119,10 +128,6 @@ const NewShopPage = () => {
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
-
-  const openProductDetail = (product: any) => {
-    setSelectedProduct(product);
-  };
 
   const handleFilterChange = (filterType: string, value: string | undefined) => {
     setFilters(prev => ({
@@ -292,7 +297,7 @@ const NewShopPage = () => {
                   >
                     {hasDiscount(product) && (
                       <DiscountBadge>
-                        {getDiscountPercentage(parsePrice(product.original_price), getDisplayPrice(product))}% OFF
+                        {getDiscountPercentage(parsePrice(product.price), getDisplayPrice(product))}% OFF
                       </DiscountBadge>
                     )}
                     <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url}>
@@ -310,7 +315,7 @@ const NewShopPage = () => {
                             </span>
                             {hasDiscount(product) && (
                               <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
-                                ₹{parsePrice(product.original_price).toLocaleString()}
+                                ₹{parsePrice(product.price).toLocaleString()}
                               </span>
                             )}
                           </div>

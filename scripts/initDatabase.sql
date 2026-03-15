@@ -45,12 +45,13 @@ CREATE TABLE IF NOT EXISTS temp_auth_tokens (
 CREATE INDEX IF NOT EXISTS idx_temp_auth_tokens_expires_at ON temp_auth_tokens(expires_at);
 
 -- Create products table
+-- Price model: price = regular/baseline price, sale_price = discounted price (optional)
+-- Display logic: Show sale_price if it exists and < price, otherwise show price
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
-    original_price DECIMAL(10, 2),
     sale_price DECIMAL(10, 2),
     image_url TEXT,
     category VARCHAR(100),
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     total_amount DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'cancelled')),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'completed', 'cancelled')),
     payment_id VARCHAR(255),
     payment_status VARCHAR(50),
     shipping_address JSONB,

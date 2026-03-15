@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
+import { query } from '@/lib/db/connection';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionFromCookieWithDB();
+    const userId = session?.userId || null;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     // Initialize Razorpay client inside the function to handle missing env vars gracefully
     const razorpayKey = process.env.RAZORPAY_KEY_ID;
     const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!razorpayKey || !razorpaySecret) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Payment gateway not configured. Please contact the site administrator.' 
+        {
+          success: false,
+          error: 'Payment gateway not configured. Please contact the site administrator.'
         },
         { status: 500 }
       );
@@ -61,24 +73,38 @@ export async function POST(request: NextRequest) {
       receipt: `receipt_${Date.now()}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const razorpayOrder = await razorpay.orders.create(options);
 
-    // Here we would typically save the order to our database
-    // For now, we'll just return the order info to be used in the frontend
+    // Create order in our database
+    const orderResult = await query(
+      `INSERT INTO orders (user_id, total_amount, status, payment_id, shipping_address, created_at)
+       VALUES ($1, $2, 'pending', $3, $4, NOW())
+       RETURNING id`,
+      [userId, totalAmount, razorpayOrder.id, shipping_address]
+    );
+
+    // Insert order items into the order_items table
+    for (const item of items) {
+      await query(
+        `INSERT INTO order_items (order_id, product_id, quantity, price)
+         VALUES ($1, $2, $3, $4)`,
+        [orderResult.rows[0].id, item.product_id, item.quantity, item.price]
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        razorpay_order_id: order.id,
-        amount: order.amount,
-        currency: order.currency,
+        razorpay_order_id: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
         total_amount: totalAmount,
       }
     });
-  } catch (error: any) {
-    console.error('Error creating checkout session:', error);
+  } catch (err: unknown) {
+    console.error('[checkout/create] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

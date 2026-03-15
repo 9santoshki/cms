@@ -19,19 +19,9 @@ function getRazorpayInstance() {
       } else {
         razorpayInstance = {
           orders: {
-            create: async () => ({
-              id: 'order_test',
-              entity: 'order',
-              amount: 0,
-              amount_paid: 0,
-              amount_due: 0,
-              currency: 'INR',
-              receipt: 'receipt#1',
-              status: 'created',
-              attempts: 0,
-              notes: [],
-              created_at: Math.floor(Date.now() / 1000),
-            }),
+            create: async () => {
+              throw new Error('Payment gateway not configured. Please contact the site administrator.');
+            },
           },
         } as any;
       }
@@ -40,19 +30,9 @@ function getRazorpayInstance() {
       // Return dummy instance if initialization fails
       razorpayInstance = {
         orders: {
-          create: async () => ({
-            id: 'order_test',
-            entity: 'order',
-            amount: 0,
-            amount_paid: 0,
-            amount_due: 0,
-            currency: 'INR',
-            receipt: 'receipt#1',
-            status: 'created',
-            attempts: 0,
-            notes: [],
-            created_at: Math.floor(Date.now() / 1000),
-          }),
+          create: async () => {
+            throw new Error('Payment gateway not configured. Please contact the site administrator.');
+          },
         },
       } as any;
     }

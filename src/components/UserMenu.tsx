@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
+import { useCartStore } from '@/store/cartStore';
 import LoginModal from './LoginModal';
 import { NavIcon, CartCount } from '../styles/HeaderStyles';
 
@@ -14,11 +14,27 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { items, cartCount } = useCart();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Force re-render cart count with local state
+  const [cartCount, setCartCount] = useState(0);
+
+  // Subscribe to cart store changes
+  useEffect(() => {
+    const unsubscribe = useCartStore.subscribe(
+      state => state.items,
+      (items) => {
+        const count = items.reduce((total, item) => total + item.quantity, 0);
+        setCartCount(count);
+      },
+      { fireImmediately: true }
+    );
+
+    return unsubscribe;
+  }, []);
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
@@ -78,7 +94,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
 
           localStorage.removeItem('pendingCartAction');
         } catch (error) {
-          console.error('Error processing pending cart action:', error);
         }
       }
     }

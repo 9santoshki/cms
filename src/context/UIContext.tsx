@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 
 interface LoadingState {
   products: boolean;
@@ -25,19 +25,11 @@ interface UIState {
   error: ErrorState;
 }
 
-interface UIAction {
-  type: string;
-  payload?: any;
-}
+type UIAction =
+  | { type: 'SET_LOADING'; payload: { type: keyof LoadingState; value: boolean } }
+  | { type: 'SET_ERROR'; payload: { type: keyof ErrorState; value: string | null } }
+  | { type: 'CLEAR_ERROR'; payload: { type: keyof ErrorState } };
 
-// Action types
-const UI_ACTIONS = {
-  SET_LOADING: 'SET_LOADING',
-  SET_ERROR: 'SET_ERROR',
-  CLEAR_ERROR: 'CLEAR_ERROR'
-};
-
-// Initial state
 const initialState: UIState = {
   loading: {
     products: false,
@@ -45,7 +37,7 @@ const initialState: UIState = {
     orders: false,
     appointments: false,
     auth: false,
-    user: false
+    user: false,
   },
   error: {
     products: null,
@@ -53,90 +45,73 @@ const initialState: UIState = {
     orders: null,
     appointments: null,
     auth: null,
-    user: null
-  }
+    user: null,
+  },
 };
 
-// Reducer
 const uiReducer = (state: UIState, action: UIAction): UIState => {
   switch (action.type) {
-    case UI_ACTIONS.SET_LOADING:
+    case 'SET_LOADING':
       return {
         ...state,
-        loading: {
-          ...state.loading,
-          [action.payload.type]: action.payload.value
-        }
+        loading: { ...state.loading, [action.payload.type]: action.payload.value },
       };
-    case UI_ACTIONS.SET_ERROR:
+    case 'SET_ERROR':
       return {
         ...state,
-        error: {
-          ...state.error,
-          [action.payload.type]: action.payload.value
-        }
+        error: { ...state.error, [action.payload.type]: action.payload.value },
       };
-    case UI_ACTIONS.CLEAR_ERROR:
+    case 'CLEAR_ERROR':
       return {
         ...state,
-        error: {
-          ...state.error,
-          [action.payload.type]: null
-        }
+        error: { ...state.error, [action.payload.type]: null },
       };
     default:
       return state;
   }
 };
 
-// Create context
-export const UIContext = createContext<{
+interface UIContextValue {
   loading: LoadingState;
   error: ErrorState;
   setLoading: (type: keyof LoadingState, value: boolean) => void;
   setError: (type: keyof ErrorState, value: string | null) => void;
   clearError: (type: keyof ErrorState) => void;
-} | undefined>(undefined);
+}
 
-// Provider component
+export const UIContext = createContext<UIContextValue | undefined>(undefined);
+
 interface UIProviderProps {
   children: React.ReactNode;
 }
 
-export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
+export function UIProvider({ children }: UIProviderProps) {
   const [state, dispatch] = useReducer(uiReducer, initialState);
 
-  const setLoading = (type: keyof LoadingState, value: boolean) => {
-    dispatch({ type: UI_ACTIONS.SET_LOADING, payload: { type, value } });
-  };
+  const setLoading = useCallback((type: keyof LoadingState, value: boolean) => {
+    dispatch({ type: 'SET_LOADING', payload: { type, value } });
+  }, []);
 
-  const setError = (type: keyof ErrorState, value: string | null) => {
-    dispatch({ type: UI_ACTIONS.SET_ERROR, payload: { type, value } });
-  };
+  const setError = useCallback((type: keyof ErrorState, value: string | null) => {
+    dispatch({ type: 'SET_ERROR', payload: { type, value } });
+  }, []);
 
-  const clearError = (type: keyof ErrorState) => {
-    dispatch({ type: UI_ACTIONS.CLEAR_ERROR, payload: { type } });
-  };
+  const clearError = useCallback((type: keyof ErrorState) => {
+    dispatch({ type: 'CLEAR_ERROR', payload: { type } });
+  }, []);
 
-  return (
-    <UIContext.Provider
-      value={{
-        loading: state.loading,
-        error: state.error,
-        setLoading,
-        setError,
-        clearError
-      }}
-    >
-      {children}
-    </UIContext.Provider>
+  const value = useMemo<UIContextValue>(
+    () => ({ loading: state.loading, error: state.error, setLoading, setError, clearError }),
+    [state.loading, state.error, setLoading, setError, clearError]
   );
-};
 
-export const useUI = () => {
+  return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
+}
+
+export function useUI(): UIContextValue {
   const context = useContext(UIContext);
   if (context === undefined) {
     throw new Error('useUI must be used within a UIProvider');
   }
   return context;
-};
+}

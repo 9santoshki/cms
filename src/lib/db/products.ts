@@ -7,7 +7,6 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  original_price?: number;
   sale_price?: number;
   image_url?: string;
   category?: string;
@@ -41,7 +40,7 @@ export async function getProducts(filters: {
   const offset = (page - 1) * limit;
 
   let whereConditions: string[] = [];
-  let params: any[] = [];
+  let params: unknown[] = [];
   let paramCount = 1;
 
   if (filters.search) {
@@ -112,7 +111,6 @@ export async function createProduct(product: {
   name: string;
   description: string;
   price: number;
-  original_price?: number;
   sale_price?: number;
   image_url?: string;
   category?: string;
@@ -120,15 +118,14 @@ export async function createProduct(product: {
   stock_quantity?: number;
 }): Promise<Product> {
   const result = await query(
-    `INSERT INTO products (name, description, price, original_price, sale_price, image_url, category, slug, stock_quantity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO products (name, description, price, sale_price, image_url, category, slug, stock_quantity)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       product.name,
       product.description,
       product.price,
-      product.original_price || null,
-      product.sale_price || product.price,
+      product.sale_price || null,
       product.image_url,
       product.category,
       product.slug,
@@ -143,7 +140,7 @@ export async function updateProduct(
   updates: Partial<Product>
 ): Promise<Product | null> {
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   let paramCount = 1;
 
   Object.entries(updates).forEach(([key, value]) => {

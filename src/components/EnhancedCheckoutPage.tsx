@@ -108,16 +108,24 @@ const CheckoutPage = () => {
     
     try {
       // Create order data
-      const orderData = { 
-        customer: formData,
+      const orderData = {
+        customer: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          zipCode: formData.zipCode,
+        },
         items: cartItems.map(item => ({
           id: item.id,
+          product_id: item.product_id,
           quantity: item.quantity,
-          price: typeof item.price === 'number' ? item.price.toString() : item.price,
-          name: item.name
+          price: item.price,
+          name: item.name,
         })),
-        total_amount: total.toString(),
-        status: 'pending',
+        total_amount: total,
+        status: 'pending' as const,
         created_at: new Date().toISOString()
       };
       

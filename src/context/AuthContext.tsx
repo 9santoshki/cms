@@ -6,9 +6,10 @@
  */
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from 'react';
 import { User } from '@/types';
-import { signInWithGoogle as googleSignIn, signOut, onAuthStateChange, getCurrentUser, getUserProfile } from '@/lib/auth/client';
+import { toErrorMessage } from '@/lib/error-utils';
+import { signInWithGoogle as googleSignIn, signOut, onAuthStateChange, getCurrentUser } from '@/lib/auth/client';
 
 interface AuthState {
   user: User | null;
@@ -23,6 +24,15 @@ type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOGOUT' };
+
+export interface AuthContextValue extends AuthState {
+  setUser: (u: User | null) => void;
+  setToken: (t: string | null) => void;
+  setLoading: (l: boolean) => void;
+  setError: (e: string | null) => void;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+}
 
 const initialState: AuthState = {
   user: null,
@@ -42,12 +52,11 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
-export const AuthContext = createContext<any>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Memoized setters
   const setUser = useCallback((u: User | null) => dispatch({ type: 'SET_USER', payload: u }), []);
   const setToken = useCallback((t: string | null) => dispatch({ type: 'SET_TOKEN', payload: t }), []);
   const setLoading = useCallback((l: boolean) => dispatch({ type: 'SET_LOADING', payload: l }), []);
@@ -56,16 +65,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     dispatch({ type: 'LOGOUT' });
 
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cart-storage');
+    }
+
     try {
       const { useCartStore } = await import('@/store/cartStore');
       useCartStore.setState({ items: [] });
-    } catch (cartError) {
-      console.error('Error clearing cart on logout:', cartError);
+    } catch {
+      // Ignore cart clear errors during logout
     }
 
-    signOut().catch(e => {
-      console.error('Logout API error:', e);
-    });
+    try {
+      await signOut();
+    } catch (err: unknown) {
+      console.error('[Auth] Server logout error:', toErrorMessage(err));
+    }
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cms-session-token');
@@ -74,15 +89,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.location.replace('/');
   }, []);
 
-  // Google Login
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       await googleSignIn();
-    } catch (err: any) {
-      setError(err?.message || 'Google sign-in failed');
+    } catch (err: unknown) {
+      const msg = toErrorMessage(err);
+      setError(msg || 'Google sign-in failed');
       throw err;
     } finally {
       setLoading(false);
@@ -99,12 +114,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           try {
             const { useCartStore } = await import('@/store/cartStore');
             await useCartStore.getState().loadServerCart();
-          } catch (cartError) {
-            console.error('Error loading cart:', cartError);
+          } catch {
+            // Non-critical — cart load failed
           }
         }
-      } catch (error) {
-        console.error('Error checking current session:', error);
+      } catch {
+        // Non-critical — session check failed
       }
     };
 
@@ -136,8 +151,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           try {
             const { useCartStore } = await import('@/store/cartStore');
             await useCartStore.getState().loadServerCart();
-          } catch (cartError) {
-            console.error('Error loading cart after login:', cartError);
+          } catch {
+            // Non-critical
           }
 
           window.history.replaceState({}, '', '/');
@@ -160,8 +175,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const { useCartStore } = await import('@/store/cartStore');
           await useCartStore.getState().loadServerCart();
-        } catch (cartError) {
-          console.error('Error loading cart after sign in:', cartError);
+        } catch {
+          // Non-critical
         }
       }
 
@@ -171,15 +186,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const { useCartStore } = await import('@/store/cartStore');
           useCartStore.setState({ items: [] });
-        } catch (cartError) {
-          console.error('Error clearing cart after sign out:', cartError);
+        } catch {
+          // Non-critical
         }
       }
 
       if (event === 'USER_UPDATED') {
         const user = session.user;
         if (!user) return;
-
         setUser(user);
       }
     });
@@ -191,8 +205,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const { useCartStore } = await import('@/store/cartStore');
           await useCartStore.getState().loadServerCart();
         }
-      } catch (error) {
-        console.error('Error reloading cart on focus:', error);
+      } catch {
+        // Non-critical
       }
     };
 
@@ -204,25 +218,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [setUser, setToken]);
 
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      ...state,
+      setUser,
+      setToken,
+      setLoading,
+      setError,
+      signInWithGoogle,
+      logout,
+    }),
+    [state, setUser, setToken, setLoading, setError, signInWithGoogle, logout]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        ...state,
-        setUser,
-        setToken,
-        setLoading,
-        setError,
-        signInWithGoogle,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-};
+}

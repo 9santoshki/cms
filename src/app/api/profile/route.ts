@@ -1,33 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie, getUserProfile, updateUserProfile } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB, getUserProfile, updateUserProfile } from '@/lib/db/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getSessionFromCookie();
+    const session = await getSessionFromCookieWithDB();
 
     if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Get user profile from database
     const profile = await getUserProfile(session.userId);
 
     if (!profile) {
       return NextResponse.json(
-        { success: false, error: 'Failed to get user profile' },
-        { status: 500 }
+        { success: false, error: 'User profile not found' },
+        { status: 404 }
       );
     }
 
-    return NextResponse.json(
-      { success: true, data: profile },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Error in profile API:', error);
+    return NextResponse.json({ success: true, data: profile });
+  } catch (err: unknown) {
+    console.error('[profile GET] Error:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -37,19 +33,17 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSessionFromCookie();
+    const session = await getSessionFromCookieWithDB();
 
     if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Get the updated profile data from the request
     const { name, avatar } = await request.json();
 
-    // Update the user profile in database
     const updatedProfile = await updateUserProfile(session.userId, { name, avatar });
 
     if (!updatedProfile) {
@@ -59,12 +53,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { success: true, data: updatedProfile },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Error in profile update API:', error);
+    return NextResponse.json({ success: true, data: updatedProfile });
+  } catch (err: unknown) {
+    console.error('[profile PUT] Error:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

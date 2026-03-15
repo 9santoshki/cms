@@ -36,10 +36,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
       // Trigger a global event or callback to show login modal
       // We'll handle this by creating a custom event that Header can listen to
       window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: result.quantity } }));
-    } else if (result.success && !result.requiresLogin && result.action) {
-      // User is authenticated, proceed with adding to cart
-      result.action();
     }
+    // If result.success, item was already added to cart by addToCartWithAuth
   };
 
   return (

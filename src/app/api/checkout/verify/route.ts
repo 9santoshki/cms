@@ -3,6 +3,8 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { query } from '@/lib/db/connection';
 import { clearCart } from '@/lib/db/cart';
+import { sendOrderConfirmationEmail } from '@/lib/email';
+import { getOrderItems } from '@/lib/db/orders';
 
 export async function POST(request: NextRequest) {
   try {
@@ -107,6 +109,58 @@ export async function POST(request: NextRequest) {
 
     // Clear the user's cart after successful payment
     await clearCart(order.user_id);
+
+    // Send order confirmation email (async, don't wait)
+    try {
+      // Fetch complete order details for email
+      const orderDetailsResult = await query(
+        `SELECT o.*, u.name as customer_name, u.email as customer_email
+         FROM orders o
+         JOIN users u ON o.user_id = u.id
+         WHERE o.id = $1`,
+        [order.id]
+      );
+
+      if (orderDetailsResult.rows.length > 0) {
+        const orderDetails = orderDetailsResult.rows[0];
+        const orderItems = await getOrderItems(order.id);
+
+        // Parse shipping address
+        let shippingAddress = null;
+        if (orderDetails.shipping_address) {
+          try {
+            shippingAddress = typeof orderDetails.shipping_address === 'string'
+              ? JSON.parse(orderDetails.shipping_address)
+              : orderDetails.shipping_address;
+          } catch (e) {
+            console.error('Error parsing shipping address for email:', e);
+          }
+        }
+
+        // Send email in background (don't await to avoid delaying response)
+        sendOrderConfirmationEmail(orderDetails.customer_email, {
+          orderId: orderDetails.id,
+          customerName: orderDetails.customer_name,
+          customerEmail: orderDetails.customer_email,
+          orderDate: orderDetails.created_at,
+          items: orderItems.map((item: any) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: parseFloat(item.price),
+            image_url: item.image_url ? `${process.env.NEXT_PUBLIC_APP_URL}${item.image_url}` : undefined,
+          })),
+          totalAmount: parseFloat(orderDetails.total_amount),
+          shippingAddress: shippingAddress,
+          paymentStatus: orderDetails.payment_status || 'Paid',
+        }).catch(emailError => {
+          // Log email error but don't fail the request
+          console.error('Error sending order confirmation email:', emailError);
+        });
+      }
+    } catch (emailError) {
+      // Log email error but don't fail the payment verification
+      console.error('Error preparing order confirmation email:', emailError);
+    }
 
     return NextResponse.json({
       success: true,

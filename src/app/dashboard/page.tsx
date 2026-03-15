@@ -41,11 +41,8 @@ const DashboardPage = () => {
 
       if (data.success) {
         setStats(data.data);
-      } else {
-        console.error('Failed to fetch stats:', data.error);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
     }

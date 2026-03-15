@@ -13,7 +13,7 @@ export default function ReviewsModerationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -49,7 +49,7 @@ export default function ReviewsModerationPage() {
     }
   };
 
-  const handleUpdateStatus = async (reviewId: string, newStatus: 'approved' | 'rejected') => {
+  const handleUpdateStatus = async (reviewId: number, newStatus: 'approved' | 'rejected') => {
     setActionLoading(reviewId);
     try {
       const response = await fetch(`/api/reviews/${reviewId}`, {
@@ -76,7 +76,7 @@ export default function ReviewsModerationPage() {
     }
   };
 
-  const handleDelete = async (reviewId: string) => {
+  const handleDelete = async (reviewId: number) => {
     if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
       return;
     }

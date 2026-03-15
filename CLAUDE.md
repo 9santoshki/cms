@@ -52,10 +52,10 @@ CMS (Color My Space) is an interior design e-commerce and service booking platfo
 - [CLOUDFLARE.md](docs/CLOUDFLARE.md) - Cloudflare CDN configuration and caching issues
 - [DECISIONS.md](docs/DECISIONS.md) - Key architectural decisions
 - [WIREFRAME.md](docs/WIREFRAME.md) - UI/UX wireframes
-
-**Additional references:**
-- [QWEN.md](QWEN.md) - Qwen AI assistant session notes and development history
-- [DATABASE_WARNING.md](DATABASE_WARNING.md) - Critical database initialization warnings
+- [EMAIL_SETUP.md](docs/EMAIL_SETUP.md) - Complete email configuration guide (Resend, SMTP)
+- [EMAIL_QUICKSTART.md](docs/EMAIL_QUICKSTART.md) - Quick start guide for order confirmation emails
+- [ORDER_MANAGEMENT.md](docs/ORDER_MANAGEMENT.md) - Order lifecycle, status workflow, and automated emails
+- [PRODUCT_PRICING.md](docs/PRODUCT_PRICING.md) - Product pricing system and migration guide
 
 ## Development Commands
 
@@ -112,7 +112,7 @@ All database operations go through dedicated modules:
 **Key Database Tables:**
 - `users` - User accounts with roles (customer, moderator, admin)
 - `sessions` - JWT session tracking with `last_activity` timestamp
-- `products` - Product catalog with `price`, `original_price`, `sale_price`, and `image_url` (legacy Cloudflare R2 URL)
+- `products` - Product catalog with `price`, `sale_price`, and `image_url` (legacy Cloudflare R2 URL)
 - `product_images` - Product image gallery with Cloudflare R2 image IDs, URLs, and display order
 - `orders` - Order records with payment details
 - `order_items` - Order line items
@@ -242,7 +242,9 @@ const imageUrl = 'https://pub-f991142b10cf4e8098836944eaf05d12.r2.dev/product_im
 - `src/lib/db/cart.ts` - Shopping cart operations (table: `cart`)
 - `src/lib/db/reviews.ts` - Product reviews operations
 - `src/lib/db/appointments.ts` - Appointment booking operations
+- `src/lib/db/orders.ts` - Order operations (create, fetch, update status)
 - `src/lib/cloudflare.ts` - Cloudflare R2 image upload/delete utilities
+- `src/lib/email.ts` - Email service (Resend/SMTP) for order confirmations
 - `src/lib/api.ts` - Client-side API wrapper class
 - `src/store/cartStore.ts` - Zustand cart store with server sync
 - `src/context/AppProvider.tsx` - Composite context provider
@@ -269,6 +271,29 @@ CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_
 CLOUDFLARE_R2_ENDPOINT, CLOUDFLARE_R2_TOKEN_VALUE, CLOUDFLARE_BUCKET
 CLOUDFLARE_PRODUCT_IMAGE_FOLDER
 ```
+
+Optional variables for email functionality:
+```
+# Option 1: Resend (recommended - 3,000 free emails/month)
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM=noreply@colourmyspace.com
+EMAIL_FROM_NAME=Colour My Space
+
+# Option 2: SMTP (Gmail, SendGrid, etc.)
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your_app_password
+EMAIL_FROM=your-email@gmail.com
+EMAIL_FROM_NAME=Colour My Space
+```
+
+**Email Configuration:**
+- Automatic order confirmation emails sent after successful payment
+- See [EMAIL_QUICKSTART.md](docs/EMAIL_QUICKSTART.md) for quick setup (5 minutes)
+- See [EMAIL_SETUP.md](docs/EMAIL_SETUP.md) for complete guide
 
 **Important Notes:**
 - Variables starting with `NEXT_PUBLIC_` are bundled into the client build at build time
@@ -838,6 +863,83 @@ npm run init-db
 - Protected API routes call `validateSession()` or `getSessionFromCookieWithDB()` first
 
 ## Recent Changes & Bug Fixes
+
+### March 2026 - Full Codebase Refactoring (Security, Types, Architecture)
+
+#### Security Fixes ⚠️ CRITICAL
+- **Deleted SQL-injection route:** `src/app/api/moderator/update/` — built SQL with dynamic table name from user input (`UPDATE ${tableName}`), had fake auth that never actually verified JWT, created its own `new Pool()` connection leak
+- **Deleted debug routes exposing env vars:** `src/app/api/debug/check-env/`, `debug/checkout-env/`, `debug/env-check/`, `debug/oauth-config/` — unauthenticated callers could read all environment variables
+- **Deleted test utility routes:** `src/app/api/auth/cleanup-cookies/`, `src/app/api/auth/test-cookie/`
+- **Added auth to product mutations:** `PUT /api/products/[id]` and `DELETE /api/products/[id]` previously had no session check — anyone on the internet could update or delete products
+- **Added auth to Razorpay order creation:** `POST /api/razorpay/create-order` previously had no auth — anyone could create payment orders
+
+#### Database Layer Fixes
+- **Fixed critical transaction bug in `productImages.ts`:** `setPrimaryImage()` and `addProductImage()` were using `query('BEGIN')` / `query('COMMIT')` / `query('ROLLBACK')` — each call could land on a different pool connection, making transactions meaningless. Rewrote to use `getClient()` with a single dedicated connection per transaction
+- **Removed `process.exit(-1)` from pool error handler** (`connection.ts`) — was killing the entire Next.js server on any idle client error; now logs and lets the pool self-heal
+- **Fixed double-await bug in `auth.ts`:** `(await headersList).get(...)` where `headersList` was already awaited on the prior line
+- **Migrated all routes from `getSessionFromCookie()` to `getSessionFromCookieWithDB()`** — DB-backed validation ensures role changes take effect immediately without logout/login
+
+#### API Standardization
+- **Deleted legacy duplicate route:** `src/app/api/order/[id]/` — superseded by `/api/orders/[id]/`
+- **Moved CORS to `next.config.js`** — removed 20+ inline CORS header blocks from individual routes; now applied globally to all `/api/*` routes
+- **Standardized all error handling:** `catch (error: any)` → `catch (err: unknown)` across all route files; raw DB error messages never exposed to clients
+
+#### Type System Overhaul
+- **Deleted legacy `src/types.ts`** — was shadowing `src/types/index.ts` (TypeScript resolves `.ts` files before directory index files), causing all `@/types` imports to use old loose types
+- **Hardened `src/types/index.ts`:** Added `UserRole` and `OrderStatus` union types; `CartItem.price` is now always `number` (not `string`); `CartItem.product_id` is required; added `OrderCustomer` interface with all 6 address fields; `Order.customer` uses `OrderCustomer`
+- **Rewrote context files with proper typing:** `AuthContext.tsx`, `ProductContext.tsx`, `UIContext.tsx` — replaced `createContext<any>`, `type: string; payload?: any` action shapes with typed discriminated unions; all context values wrapped in `useMemo`
+- **Fixed `CombinedAppContext.ts`:** `loading` now correctly exposes `UILoadingState` object (`.user`, `.products`, `.orders`, etc.); added separate `authLoading: boolean` for auth-specific checks
+- **Rewrote `cartStore.ts`:** Removed 15+ debug `console.log` calls; fixed operator-precedence bug in total price calculation
+- **Rewrote `api.ts`:** `headers: any` → `Record<string, string>`; removed duplicate `Authorization` header
+
+#### New Utility Files
+- `src/lib/api-response.ts` — unified response factory for all routes (`ok`, `created`, `badRequest`, `unauthorized`, `forbidden`, `notFound`, `serverError`, `fromError`)
+- `src/lib/validation.ts` — shared input validators (`validatePositiveInt`, `validateReviewRating`, `validateOrderStatus`, etc.)
+- `src/lib/error-utils.ts` — `toErrorMessage(err: unknown)` for safe error narrowing
+- `src/lib/cors.ts` — single CORS definition
+- `src/types/api.ts` — `ApiResponse<T>`, `PaginatedResponse<T>` type exports
+- `src/lib/__tests__/` — unit tests for api-response, validation, and error-utils helpers
+
+#### Component Fixes
+- `cartUtils.ts` — simplified by removing dead string-price branches (price is now always `number`)
+- `OrderHistory.tsx` — uses `order.customer.city/zipCode` instead of legacy `order.shipping_address` JSON string
+- `dashboard/reviews/page.tsx` — review IDs corrected from `string` to `number` (matches DB INTEGER)
+- `AdminDashboard.tsx` — uses `order.total_amount` instead of old `order.total`
+- `AddToCartButton.tsx`, `ProductDetail.tsx`, `useAddToCart.ts` — removed dead `result.action` callback pattern
+
+### February 2026 - Order Management & Pricing Enhancements
+
+#### Product Pricing Simplification
+- **Removed `original_price` field:** Simplified from 3-field to 2-field pricing model (price, sale_price)
+- **Database migration:** Created `scripts/migrate_pricing.sql` to drop `original_price` column
+- **Updated all frontend components:** NewShopPage, ProductDetailDisplay, NewHomepage
+- **Updated TypeScript interfaces:** Removed `original_price` from Product type across all files
+- **Updated API endpoints:** Removed `original_price` from POST/PUT /api/products
+- **Updated admin dashboard:** Simplified product form to 2 price fields with clear labels
+- **Documentation:** Created comprehensive [PRODUCT_PRICING.md](docs/PRODUCT_PRICING.md) guide
+- **Impact:** Clearer pricing logic, less confusion, easier maintenance
+
+#### Automated Email Notifications for Orders
+- **Auto-email on status change:** Orders now send emails automatically when status changes
+- **Shipment emails:** Sent when order status changes to "shipped" with tracking details
+- **Delivery emails:** Sent when order status changes to "completed"
+- **Tracking details form:** Added UI form for entering tracking number, carrier, tracking URL
+- **Popular carriers supported:** BlueDart, DTDC, FedEx, Delhivery, India Post, Ecom Express, Ekart
+- **Email service:** Using Resend API with branded HTML templates
+- **Documentation:** Created comprehensive [ORDER_MANAGEMENT.md](docs/ORDER_MANAGEMENT.md) guide
+- **Impact:** Customers automatically notified of shipment and delivery, professional branded emails
+
+#### Order Status Enhancements
+- **Added "shipped" status:** Fixed database CHECK constraint to include 'shipped' status
+- **Migration script:** Created `scripts/add_shipped_status.sql` for database update
+- **Order workflow:** pending → processing → shipped → completed (or cancelled)
+- **Admin dashboard improvements:** Enhanced order detail page with tracking form
+- **Impact:** Complete order lifecycle support with proper status transitions
+
+#### Bug Fixes
+- **Fixed homepage pricing display:** Removed hardcoded fake pricing logic (was showing price * 1.2)
+- **Fixed constraint violation:** Added 'shipped' to orders.status CHECK constraint
+- **Fixed SessionData usage:** Corrected multiple instances of `session.user.role` to `session.role`
 
 ### January 2026 - Authentication & Cloudflare Fixes
 - **Fixed Cloudflare caching breaking authentication:** Added `Cache-Control: no-store` headers to `/api/auth/session` endpoint to prevent CDN caching

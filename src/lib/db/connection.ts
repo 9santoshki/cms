@@ -12,12 +12,12 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+// Log idle client errors but do NOT exit — let the pool self-heal.
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  console.error('Unexpected error on idle database client:', err);
 });
 
-export const query = async (text: string, params?: any[]) => {
+export const query = async (text: string, params?: unknown[]) => {
   try {
     const res = await pool.query(text, params);
     return res;

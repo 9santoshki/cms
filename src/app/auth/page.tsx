@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import AuthForm from '@/components/AuthForm'
 
 function AuthContent() {
-  const { user, loading } = useAppContext();
+  const { user, authLoading } = useAppContext();
   const router = useRouter();
   const [redirect, setRedirect] = useState<string>('/');
 
@@ -19,15 +19,15 @@ function AuthContent() {
   }, []);
 
   useEffect(() => {
-    if (!loading.user && user) {
+    if (!authLoading && user) {
       // If user is already logged in, redirect to the target page or home
       const targetPath = redirect && redirect !== '/' ? decodeURIComponent(redirect) : '/';
       router.push(targetPath);
     }
-  }, [user, loading.user, redirect, router]);
+  }, [user, authLoading, redirect, router]);
 
   // Show loading or redirecting message while checking user status
-  if (!loading.user && user) {
+  if (!authLoading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

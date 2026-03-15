@@ -93,6 +93,15 @@ echo "📦 Extracting deployment package..."
 tar -xzf /tmp/cms-deploy.tar.gz
 rm /tmp/cms-deploy.tar.gz
 
+echo "⚙️  Configuring environment..."
+# Copy .env.uat to .env.production so Next.js loads the correct environment
+if [ -f .env.uat ]; then
+    cp .env.uat .env.production
+    echo "✅ Environment configured (.env.uat → .env.production)"
+else
+    echo "⚠️  Warning: .env.uat not found"
+fi
+
 echo "📦 Installing production dependencies..."
 npm install --production --prefer-offline
 
