@@ -1,96 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie, getUserProfile } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { createAppointment, getAppointmentsByUserId, getAllAppointments } from '@/lib/db/appointments';
 
-async function getUserFromRequest(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const session = await getSessionFromCookie();
-    if (!session?.userId) return null;
+    const session = await getSessionFromCookieWithDB();
 
-    const profile = await getUserProfile(session.userId);
-    return profile ? { userId: session.userId, role: profile.role } : null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
-    return null;
-  }
-}
-
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json(
-    {},
-    {
-      headers: {
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-        'Access-Control-Allow-Headers':
-          'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-      },
-    }
-  );
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const user = await getUserFromRequest(request);
-
-    if (!user) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const appointments = (user.role === 'admin' || user.role === 'moderator')
+    const appointments = (session.role === 'admin' || session.role === 'moderator')
       ? await getAllAppointments()
-      : await getAppointmentsByUserId(user.userId);
+      : await getAppointmentsByUserId(session.userId);
 
+    return NextResponse.json({ success: true, data: appointments });
+  } catch (err: unknown) {
+    console.error('[appointments GET] Error:', err);
     return NextResponse.json(
-      {
-        success: true,
-        data: appointments,
-      },
-      {
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
-    );
-  } catch (error) {
-    console.error('Error fetching appointments:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
 
     const { appointment_date, service_type, notes, name, email, phone } = await request.json();
 
-    if (!user) {
+    if (!session) {
+      // Guest booking — require name, email, phone
       if (!name || !email || !phone) {
         return NextResponse.json(
-          { success: false, error: 'Name, email, and phone are required' },
+          { success: false, error: 'Name, email, and phone are required for guest bookings' },
           { status: 400 }
         );
       }
@@ -115,48 +62,21 @@ export async function POST(request: NextRequest) {
     }
 
     const appointment = await createAppointment({
-      user_id: user?.userId || undefined,
+      user_id: session?.userId ?? undefined,
       appointment_date,
       service_type,
       notes,
-      guest_name: !user ? name : undefined,
-      guest_email: !user ? email : undefined,
-      guest_phone: !user ? phone : undefined,
+      guest_name: !session ? name : undefined,
+      guest_email: !session ? email : undefined,
+      guest_phone: !session ? phone : undefined,
     });
 
+    return NextResponse.json({ success: true, data: appointment }, { status: 201 });
+  } catch (err: unknown) {
+    console.error('[appointments POST] Error:', err);
     return NextResponse.json(
-      {
-        success: true,
-        data: appointment,
-      },
-      {
-        status: 201,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
-    );
-  } catch (error) {
-    console.error('Error creating appointment:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

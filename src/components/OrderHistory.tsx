@@ -114,24 +114,15 @@ const OrderHistory = () => {
           <OrdersList>
             {[...orders].reverse().map((order, index) => {
               const orderId = order.id || index + 1;
-              const orderDate = formatDateLocal(order.created_at || order.date);
-              const totalAmount = order.total_amount ?? order.total ?? 0;
+              const orderDate = formatDateLocal(order.created_at);
+              const totalAmount = order.total_amount ?? 0;
               const status = order.status || 'pending';
               const items = order.items || [];
 
-              // Parse shipping address from JSON if needed
+              // Extract shipping address from order customer
               let shippingAddress = null;
-              if (order.shipping_address) {
-                try {
-                  const addr = typeof order.shipping_address === 'string'
-                    ? JSON.parse(order.shipping_address)
-                    : order.shipping_address;
-                  if (addr && addr.city) {
-                    shippingAddress = `${addr.city}${addr.state ? ', ' + addr.state : ''}${addr.zipCode ? ' - ' + addr.zipCode : ''}`;
-                  }
-                } catch (e) {
-                  console.error('Error parsing shipping address:', e);
-                }
+              if (order.customer?.city) {
+                shippingAddress = `${order.customer.city}${order.customer.zipCode ? ' - ' + order.customer.zipCode : ''}`;
               }
 
               return (

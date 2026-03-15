@@ -1,20 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie, getUserProfile } from '@/lib/db/auth';
+import { NextResponse } from 'next/server';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Verify user is admin or moderator
-    const session = await getSessionFromCookie();
-    if (!session?.userId) {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const profile = await getUserProfile(session.userId);
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
+    if (session.role !== 'admin' && session.role !== 'moderator') {
       return NextResponse.json(
         { success: false, error: 'Forbidden' },
         { status: 403 }
@@ -36,12 +34,9 @@ export async function GET(request: NextRequest) {
       pendingAppointments: parseInt(appointmentsResult.rows[0]?.count || '0'),
     };
 
-    return NextResponse.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    return NextResponse.json({ success: true, data: stats });
+  } catch (err: unknown) {
+    console.error('[dashboard/stats] Error:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

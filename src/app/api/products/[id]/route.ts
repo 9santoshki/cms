@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { getProductById, getProductBySlug, getProductWithImages, getProductBySlugWithImages, updateProduct, deleteProduct } from '@/lib/db/products';
 
 export async function GET(
@@ -63,6 +64,14 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return NextResponse.json({ success: false, error: 'Admin or moderator access required' }, { status: 403 });
+    }
+
     const params = await context.params;
     const { id } = params;
 
@@ -143,6 +152,14 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+    if (session.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+    }
+
     const params = await context.params;
     const { id } = params;
 

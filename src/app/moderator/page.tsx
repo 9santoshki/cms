@@ -71,7 +71,8 @@ interface ExtendedUser {
 }
 
 const ModeratorDashboard = () => {
-  const { user: currentUser, token, loading } = useAppContext();
+  const { user: rawUser, token, loading } = useAppContext();
+  const currentUser = rawUser as ExtendedUser | null;
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);

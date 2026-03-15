@@ -133,7 +133,7 @@ const DashboardContent = ({ setActiveTab }: { setActiveTab: (tab: string) => voi
     // Calculate stats based on products and orders
     const totalProducts = products.length;
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     
     // Note: For customers, we'll need to get unique users from orders
     // For now, we'll use a placeholder count - in a real app you'd fetch actual customer count

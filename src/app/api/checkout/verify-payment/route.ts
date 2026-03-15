@@ -1,31 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { getSessionFromCookie } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
-
-// Verify user session and get user ID
-async function getUserIdFromRequest(request: NextRequest) {
-  try {
-    const session = await getSessionFromCookie();
-    return session?.userId || null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Razorpay client inside the function to handle missing env vars gracefully
     const razorpayKey = process.env.RAZORPAY_KEY_ID;
     const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!razorpayKey || !razorpaySecret) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Payment gateway not configured. Please contact the site administrator.' 
+        {
+          success: false,
+          error: 'Payment gateway not configured. Please contact the site administrator.',
         },
         { status: 500 }
       );
@@ -36,8 +24,8 @@ export async function POST(request: NextRequest) {
       key_secret: razorpaySecret,
     });
 
-    // Verify user authentication
-    const userId = await getUserIdFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
+    const userId = session?.userId || null;
 
     if (!userId) {
       return NextResponse.json(
@@ -139,10 +127,10 @@ export async function POST(request: NextRequest) {
         order_id: order.id
       }
     });
-  } catch (error: any) {
-    console.error('Error verifying payment:', error);
+  } catch (err: unknown) {
+    console.error('[checkout/verify-payment] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

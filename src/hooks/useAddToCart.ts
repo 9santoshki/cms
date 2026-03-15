@@ -31,9 +31,8 @@ export const useAddToCart = () => {
         requiresLogin: true,
         message: 'Please sign in to add items to your cart'
       };
-    } else if (result.success && result.action) {
-      result.action();
-
+    } else if (result.success) {
+      // Item was already added to cart by addToCartWithAuth
       return {
         success: true,
         message: 'Item added to cart successfully'

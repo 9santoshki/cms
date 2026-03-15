@@ -51,7 +51,7 @@ const CheckoutSuccessContent = () => {
         setLoading(true);
 
         // Fetch real order data from API
-        const response = await fetch(`/api/order/${orderId}`);
+        const response = await fetch(`/api/orders/${orderId}`);
         const result = await response.json();
 
         if (!response.ok || !result.success) {

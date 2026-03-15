@@ -1,10 +1,14 @@
-import { useAuth } from './AuthContext';
+import { useMemo } from 'react';
+import { useAuth, type AuthContextValue } from './AuthContext';
 import { useProduct } from './ProductContext';
 import { useCartStore } from '@/store/cartStore';
 import { useUI } from './UIContext';
+import type { User, Product, Order, Appointment, CartItem } from '@/types';
 
-// Define the types based on UIContext interface
-interface LoadingState {
+// ---------------------------------------------------------------------------
+// Local aliases for UIContext state shapes
+// ---------------------------------------------------------------------------
+interface UILoadingState {
   products: boolean;
   cart: boolean;
   orders: boolean;
@@ -13,7 +17,7 @@ interface LoadingState {
   user: boolean;
 }
 
-interface ErrorState {
+interface UIErrorState {
   products: string | null;
   cart: string | null;
   orders: string | null;
@@ -22,136 +26,141 @@ interface ErrorState {
   user: string | null;
 }
 
-// Define the combined context interface
-interface CombinedAppContext {
-  // Auth context
-  user: any;
+// ---------------------------------------------------------------------------
+// Typed combined context interface
+// ---------------------------------------------------------------------------
+export interface CombinedAppContextValue {
+  // Auth
+  user: User | null;
   token: string | null;
-  loading: any;
+  /** UIContext loading state — use `.user`, `.products`, `.orders`, etc. */
+  loading: UILoadingState;
+  /** Auth-specific boolean loading flag (for auth/login checks) */
+  authLoading: boolean;
   error: string | null;
-  setUser: (user: any) => void;
-  setToken: (token: string | null) => void;
-  setLoading: (loading: any) => void;
-  setError: (error: string | null) => void;
-  logout: () => void;
+  setUser: AuthContextValue['setUser'];
+  setToken: AuthContextValue['setToken'];
+  setLoading: AuthContextValue['setLoading'];
+  setError: AuthContextValue['setError'];
+  logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
 
-  // Product context
-  products: any[];
-  orders: any[];
-  appointments: any[];
+  // Products / orders / appointments
+  products: Product[];
+  orders: Order[];
+  appointments: Appointment[];
   fetchProducts: () => Promise<void>;
   fetchOrders: () => Promise<void>;
   fetchAppointments: () => Promise<void>;
-  createOrder: (orderData: any) => Promise<any>;
-  createAppointment: (appointmentData: any) => Promise<any>;
-  updateProduct: (id: number, data: any) => Promise<any>;
-  deleteProduct: (id: number) => Promise<any>;
-  createProduct: (productData: any) => Promise<any>;
+  createOrder: (orderData: Partial<Order>) => Promise<Order>;
+  createAppointment: (appointmentData: Partial<Appointment>) => Promise<Appointment>;
+  updateProduct: (id: number, data: Partial<Product>) => Promise<Product>;
+  deleteProduct: (id: number) => Promise<boolean>;
+  createProduct: (productData: Partial<Product>) => Promise<Product>;
 
-  // Cart context
-  cartItems: any[];
+  // Cart (from Zustand)
+  cartItems: CartItem[];
   cartCount: number;
   cartTotal: number;
-  addItem: (item: any) => void;
+  addItem: (item: CartItem) => void;
   updateItem: (productId: number, quantity: number) => void;
   removeItem: (productId: number) => void;
   clearCart: () => void;
-  addToCartWithAuth: (product: any, quantity: number) => any;
+  addToCartWithAuth: (product: Product, quantity: number) => { success: boolean; requiresLogin: boolean; product?: Product; quantity?: number };
 
-  // UI context (adapting to match the actual UIContext interface)
-  uiLoading: LoadingState;
-  uiError: ErrorState;
-  setUILoading: (type: keyof LoadingState, value: boolean) => void;
-  setUIError: (type: keyof ErrorState, value: string | null) => void;
+  // UI state
+  uiLoading: UILoadingState;
+  uiError: UIErrorState;
+  setUILoading: (type: keyof UILoadingState, value: boolean) => void;
+  setUIError: (type: keyof UIErrorState, value: string | null) => void;
 }
 
-export const useAppContext = (): CombinedAppContext => {
+export function useAppContext(): CombinedAppContextValue {
   const auth = useAuth();
   const product = useProduct();
   const ui = useUI();
 
-  // Get cart state and actions from Zustand
-  const cartItems = useCartStore(state => state.items);
-  const cartCount = useCartStore(state =>
+  const cartItems = useCartStore((state) => state.items);
+  const cartCount = useCartStore((state) =>
     state.items.reduce((total, item) => total + item.quantity, 0)
   );
-  const cartTotal = useCartStore(state =>
-    state.items.reduce((total, item) => total + ((item.price as number) * item.quantity), 0)
+  const cartTotal = useCartStore((state) =>
+    state.items.reduce((total, item) => total + item.price * item.quantity, 0)
   );
-  const addItem = useCartStore(state => state.addItem);
-  const updateItem = useCartStore(state => state.updateItem);
-  const removeItem = useCartStore(state => state.removeItem);
-  const clearCart = useCartStore(state => state.clearCart);
+  const addItem = useCartStore((state) => state.addItem);
+  const updateItem = useCartStore((state) => state.updateItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const clearCart = useCartStore((state) => state.clearCart);
 
-  // Create a function to add to cart with authentication check
-  const addToCartWithAuth = (product: any, quantity: number) => {
-    if (!auth.user) {
-      // Not authenticated
-      return {
-        success: false,
-        requiresLogin: true,
-        product,
-        quantity
-      };
-    }
+  const addToCartWithAuth = useMemo(
+    () => (p: Product, quantity: number) => {
+      if (!auth.user) {
+        return { success: false, requiresLogin: true, product: p, quantity };
+      }
 
-    // User is authenticated, add to cart
-    addItem({
-      id: Date.now(), // temporary ID for cart item
-      product_id: product.id,
-      quantity: quantity,
-      name: product.name,
-      price: product.price,
-      image_url: product.image_url
-    });
+      addItem({
+        id: Date.now(),
+        product_id: p.id,
+        quantity,
+        name: p.name,
+        price: p.price,
+        image_url: p.image_url,
+      });
 
-    return {
-      success: true,
-      requiresLogin: false
-    };
-  };
+      return { success: true, requiresLogin: false };
+    },
+    [auth.user, addItem]
+  );
 
-  return {
-    // Auth context
-    user: auth.user,
-    token: auth.token,
-    loading: auth.loading,
-    error: auth.error,
-    setUser: auth.setUser,
-    setToken: auth.setToken,
-    setLoading: auth.setLoading,
-    setError: auth.setError,
-    logout: auth.logout,
-    signInWithGoogle: auth.signInWithGoogle,
+  return useMemo<CombinedAppContextValue>(
+    () => ({
+      // Auth
+      user: auth.user,
+      token: auth.token,
+      loading: ui.loading,
+      authLoading: auth.loading,
+      error: auth.error,
+      setUser: auth.setUser,
+      setToken: auth.setToken,
+      setLoading: auth.setLoading,
+      setError: auth.setError,
+      logout: auth.logout,
+      signInWithGoogle: auth.signInWithGoogle,
 
-    // Product context
-    products: product.products,
-    orders: product.orders,
-    appointments: product.appointments,
-    fetchProducts: product.fetchProducts,
-    fetchOrders: product.fetchOrders,
-    fetchAppointments: product.fetchAppointments,
-    createOrder: product.createOrder,
-    createAppointment: product.createAppointment,
-    updateProduct: product.updateProduct,
-    deleteProduct: product.deleteProduct,
-    createProduct: product.createProduct,
+      // Product
+      products: product.products,
+      orders: product.orders,
+      appointments: product.appointments,
+      fetchProducts: product.fetchProducts,
+      fetchOrders: product.fetchOrders,
+      fetchAppointments: product.fetchAppointments,
+      createOrder: product.createOrder,
+      createAppointment: product.createAppointment,
+      updateProduct: product.updateProduct,
+      deleteProduct: product.deleteProduct,
+      createProduct: product.createProduct,
 
-    // Cart (from Zustand)
-    cartItems,
-    cartCount,
-    cartTotal,
-    addItem,
-    updateItem,
-    removeItem,
-    clearCart,
-    addToCartWithAuth,
+      // Cart
+      cartItems,
+      cartCount,
+      cartTotal,
+      addItem,
+      updateItem,
+      removeItem,
+      clearCart,
+      addToCartWithAuth,
 
-    // UI context (adapting to match the actual UIContext interface)
-    uiLoading: ui.loading,
-    uiError: ui.error,
-    setUILoading: ui.setLoading,
-    setUIError: ui.setError
-  };
-};
+      // UI
+      uiLoading: ui.loading,
+      uiError: ui.error,
+      setUILoading: ui.setLoading,
+      setUIError: ui.setError,
+    }),
+    [
+      auth, product,
+      cartItems, cartCount, cartTotal,
+      addItem, updateItem, removeItem, clearCart, addToCartWithAuth,
+      ui,
+    ]
+  );
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
   getCartItems,
   addCartItem,
@@ -10,34 +10,34 @@ import {
 } from '@/lib/db/cart';
 import { getCloudflareImageUrl } from '@/lib/cloudflare';
 
-async function getUserIdFromRequest() {
+async function getUserId() {
   try {
-    const session = await getSessionFromCookie();
+    const session = await getSessionFromCookieWithDB();
     return session?.userId || null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
+  } catch {
     return null;
   }
 }
 
 export async function GET() {
   try {
-    const userId = await getUserIdFromRequest();
+    const userId = await getUserId();
 
     if (userId) {
       const cartItems = await getCartItems(userId);
 
-      const formattedCartItems = cartItems.map((item: any) => {
-        const imageUrl = item.primary_image_id
-          ? getCloudflareImageUrl(item.primary_image_id)
-          : item.image_url || null;
+      const formattedCartItems = cartItems.map((item) => {
+        const raw = item as unknown as Record<string, unknown>;
+        const imageUrl = raw.primary_image_id
+          ? getCloudflareImageUrl(raw.primary_image_id as string)
+          : (raw.image_url as string) || null;
 
         return {
           id: item.id,
           product_id: item.product_id,
           quantity: item.quantity,
-          name: item.name || 'Unknown Product',
-          description: item.description || '',
+          name: (raw.name as string) || 'Unknown Product',
+          description: (raw.description as string) || '',
           price: item.price || 0,
           image_url: imageUrl,
           originalPrice: null,
@@ -45,17 +45,14 @@ export async function GET() {
         };
       });
 
-      return NextResponse.json(
-        { success: true, data: formattedCartItems },
-        { status: 200 }
-      );
+      return NextResponse.json({ success: true, data: formattedCartItems });
     } else {
-      return NextResponse.json({ success: true, data: [] }, { status: 200 });
+      return NextResponse.json({ success: true, data: [] });
     }
-  } catch (error: any) {
-    console.error('Error fetching cart:', error);
+  } catch (err: unknown) {
+    console.error('[cart GET] Error:', err);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -63,7 +60,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest();
+    const userId = await getUserId();
 
     if (!userId) {
       return NextResponse.json(
@@ -74,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const { product_id, quantity = 1 } = await request.json();
 
-    if (!product_id) {
+    if (!product_id || !Number.isInteger(Number(product_id)) || Number(product_id) <= 0) {
       return NextResponse.json(
         { success: false, error: 'Valid product ID is required' },
         { status: 400 }
@@ -98,24 +95,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          id: cartItem.id,
-          product_id: cartItem.product_id,
-          name: cartItem.name || 'Unknown Product',
-          price: cartItem.price || 0,
-          quantity: cartItem.quantity,
-          image_url: cartItem.image_url || null,
-        },
+    const rawItem = cartItem as unknown as Record<string, unknown>;
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: cartItem.id,
+        product_id: cartItem.product_id,
+        name: (rawItem.name as string) || 'Unknown Product',
+        price: cartItem.price || 0,
+        quantity: cartItem.quantity,
+        image_url: (rawItem.image_url as string) || null,
       },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error('Error adding to cart:', error);
+    });
+  } catch (err: unknown) {
+    console.error('[cart POST] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -123,7 +118,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest();
+    const userId = await getUserId();
 
     if (!userId) {
       return NextResponse.json(
@@ -134,7 +129,7 @@ export async function PUT(request: NextRequest) {
 
     const { product_id, quantity } = await request.json();
 
-    if (!product_id) {
+    if (!product_id || !Number.isInteger(Number(product_id)) || Number(product_id) <= 0) {
       return NextResponse.json(
         { success: false, error: 'Valid product ID is required' },
         { status: 400 }
@@ -150,41 +145,35 @@ export async function PUT(request: NextRequest) {
 
     if (quantity <= 0) {
       await removeCartItem(userId, product_id);
+      return NextResponse.json({ success: true, message: 'Item removed from cart' });
+    }
 
+    await updateCartItemQuantity(userId, product_id, quantity);
+    const cartItem = await getCartItemWithProduct(userId, product_id);
+
+    if (!cartItem) {
       return NextResponse.json(
-        { success: true, message: 'Item removed from cart' },
-        { status: 200 }
-      );
-    } else {
-      await updateCartItemQuantity(userId, product_id, quantity);
-      const cartItem = await getCartItemWithProduct(userId, product_id);
-
-      if (!cartItem) {
-        return NextResponse.json(
-          { success: false, error: 'Failed to update cart item' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            id: cartItem.id,
-            product_id: cartItem.product_id,
-            name: cartItem.name || 'Unknown Product',
-            price: cartItem.price || 0,
-            quantity: cartItem.quantity,
-            image_url: cartItem.image_url || null,
-          },
-        },
-        { status: 200 }
+        { success: false, error: 'Failed to update cart item' },
+        { status: 500 }
       );
     }
-  } catch (error: any) {
-    console.error('Error updating cart:', error);
+
+    const rawItem2 = cartItem as unknown as Record<string, unknown>;
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: cartItem.id,
+        product_id: cartItem.product_id,
+        name: (rawItem2.name as string) || 'Unknown Product',
+        price: cartItem.price || 0,
+        quantity: cartItem.quantity,
+        image_url: (rawItem2.image_url as string) || null,
+      },
+    });
+  } catch (err: unknown) {
+    console.error('[cart PUT] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -192,20 +181,17 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    const userId = await getUserIdFromRequest();
+    const userId = await getUserId();
 
     if (userId) {
       await clearCart(userId);
     }
 
+    return NextResponse.json({ success: true, message: 'Cart cleared' });
+  } catch (err: unknown) {
+    console.error('[cart DELETE] Error:', err);
     return NextResponse.json(
-      { success: true, message: 'Cart cleared' },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error('Error clearing cart:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

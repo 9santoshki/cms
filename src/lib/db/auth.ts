@@ -232,7 +232,7 @@ export const updateUserProfile = async (
   updates: { name?: string; avatar?: string }
 ): Promise<UserProfile | null> => {
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   let paramCount = 1;
 
   if (updates.name !== undefined) {
@@ -273,9 +273,9 @@ const generateSecureToken = (): string => {
 const getRequestMetadata = async () => {
   try {
     const headersList = await headers();
-    const userAgent = (await headersList).get('user-agent') || undefined;
-    const forwardedFor = (await headersList).get('x-forwarded-for');
-    const realIp = (await headersList).get('x-real-ip');
+    const userAgent = headersList.get('user-agent') || undefined;
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const realIp = headersList.get('x-real-ip');
     const ipAddress = forwardedFor?.split(',')[0] || realIp || undefined;
 
     return { userAgent, ipAddress };

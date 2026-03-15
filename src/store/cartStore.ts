@@ -15,29 +15,20 @@ interface CartState {
   getTotalPrice: () => number;
 }
 
-// Helper to check if user is authenticated
 async function isUserAuthenticated(): Promise<boolean> {
   try {
     const response = await fetch('/api/auth/session');
     const data = await response.json();
-    console.log('[CartStore] Auth check response:', data);
     return data.user !== null && data.user !== undefined;
-  } catch (error) {
-    console.error('[CartStore] Auth check failed:', error);
+  } catch {
     return false;
   }
 }
 
-// Sync cart item with server
 async function syncCartItemWithServer(productId: number, quantity: number) {
   try {
     const isAuth = await isUserAuthenticated();
-    if (!isAuth) {
-      console.log('[CartStore] Not authenticated, skipping sync');
-      return;
-    }
-
-    console.log(`[CartStore] Syncing to server: product ${productId}, quantity ${quantity}`);
+    if (!isAuth) return;
 
     const response = await fetch(`/api/cart`, {
       method: 'PUT',
@@ -45,14 +36,12 @@ async function syncCartItemWithServer(productId: number, quantity: number) {
       body: JSON.stringify({ product_id: productId, quantity }),
     });
 
-    const result = await response.json();
-    console.log('[CartStore] Server sync response:', result);
-
     if (!response.ok) {
+      const result = await response.json();
       console.error('[CartStore] Server sync failed:', result);
     }
-  } catch (error) {
-    console.error('[CartStore] Failed to sync cart with server:', error);
+  } catch (err: unknown) {
+    console.error('[CartStore] Failed to sync cart with server:', err);
   }
 }
 
@@ -63,17 +52,16 @@ export const useCartStore = create<CartState>()(
       isLoading: false,
 
       addItem: async (item) => {
-        // Add to local state first for immediate UI update
         set((state) => {
           const existingItemIndex = state.items.findIndex(
-            cartItem => cartItem.product_id === item.product_id
+            (cartItem) => cartItem.product_id === item.product_id
           );
 
           if (existingItemIndex >= 0) {
             const updatedItems = [...state.items];
             updatedItems[existingItemIndex] = {
               ...updatedItems[existingItemIndex],
-              quantity: updatedItems[existingItemIndex].quantity + item.quantity
+              quantity: updatedItems[existingItemIndex].quantity + item.quantity,
             };
             return { items: updatedItems };
           } else {
@@ -81,7 +69,6 @@ export const useCartStore = create<CartState>()(
           }
         });
 
-        // Sync with server
         try {
           const isAuth = await isUserAuthenticated();
 
@@ -95,95 +82,74 @@ export const useCartStore = create<CartState>()(
               }),
             });
 
-            const result = await response.json();
-
             if (!response.ok) {
+              const result = await response.json();
               console.error('Failed to save cart item to server:', result);
             }
           }
-        } catch (error) {
-          console.error('Failed to sync cart with server:', error);
+        } catch (err: unknown) {
+          console.error('Failed to sync cart with server:', err);
         }
       },
 
       updateItem: async (productId, quantity) => {
-        console.log(`[CartStore] updateItem called: product ${productId}, quantity ${quantity}`);
-
-        // Update local state first
         set((state) => {
           if (quantity <= 0) {
-            return { items: state.items.filter(item => item.product_id !== productId) };
+            return { items: state.items.filter((item) => item.product_id !== productId) };
           }
 
-          const updatedItems = state.items.map(item =>
+          const updatedItems = state.items.map((item) =>
             item.product_id === productId ? { ...item, quantity } : item
           );
 
           return { items: updatedItems };
         });
 
-        // Sync with server
         await syncCartItemWithServer(productId, quantity);
-        console.log(`[CartStore] updateItem completed for product ${productId}`);
       },
 
       removeItem: async (productId) => {
-        console.log(`[CartStore] removeItem called: product ${productId}`);
-
-        // Remove from local state first
         set((state) => ({
-          items: state.items.filter(item => item.product_id !== productId)
+          items: state.items.filter((item) => item.product_id !== productId),
         }));
 
-        // Sync with server
         await syncCartItemWithServer(productId, 0);
-        console.log(`[CartStore] removeItem completed for product ${productId}`);
       },
 
       clearCart: async () => {
         set({ items: [] });
 
-        // Clear server cart
         try {
           const isAuth = await isUserAuthenticated();
           if (isAuth) {
             await fetch('/api/cart', { method: 'DELETE' });
           }
-        } catch (error) {
-          console.error('Failed to clear server cart:', error);
+        } catch (err: unknown) {
+          console.error('Failed to clear server cart:', err);
         }
       },
 
-      // Load cart from server (called on login)
       loadServerCart: async () => {
         try {
           set({ isLoading: true });
 
           const response = await fetch('/api/cart', {
             cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache',
-            },
+            headers: { 'Cache-Control': 'no-cache' },
           });
           const data = await response.json();
 
-          console.log('[CartStore] Loaded from server:', data);
-
           if (data.success && data.data) {
-            // Server is source of truth - replace local cart entirely
-            set({ items: data.data, isLoading: false });
-            console.log('[CartStore] Set cart items:', data.data.length);
+            set({ items: data.data as CartItem[], isLoading: false });
           } else {
             set({ items: [], isLoading: false });
-            console.log('[CartStore] No cart data from server');
           }
-        } catch (error) {
-          console.error('[CartStore] Failed to load server cart:', error);
+        } catch (err: unknown) {
+          console.error('[CartStore] Failed to load server cart:', err);
           set({ isLoading: false });
         }
       },
 
-      // Force sync current cart to server
       syncWithServer: async () => {
         try {
           const isAuth = await isUserAuthenticated();
@@ -191,7 +157,6 @@ export const useCartStore = create<CartState>()(
 
           const items = get().items;
 
-          // Sync each item to server
           for (const item of items) {
             await fetch('/api/cart', {
               method: 'POST',
@@ -202,31 +167,22 @@ export const useCartStore = create<CartState>()(
               }),
             });
           }
-        } catch (error) {
-          console.error('Failed to sync cart with server:', error);
+        } catch (err: unknown) {
+          console.error('Failed to sync cart with server:', err);
         }
       },
 
       getTotalItems: () => {
-        const state = get();
-        return state.items.reduce((total, item) => total + item.quantity, 0);
+        return get().items.reduce((total, item) => total + item.quantity, 0);
       },
 
       getTotalPrice: () => {
-        const state = get();
-        return state.items.reduce((total, item) => total + (item.price as number * item.quantity), 0);
-      }
+        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+      },
     })),
     {
       name: 'cart-storage',
       partialize: (state) => ({ items: state.items }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          console.log('[CartStore] Hydrated from localStorage:', state.items.length, 'items');
-        } else {
-          console.log('[CartStore] No data to hydrate');
-        }
-      },
     }
   )
 );

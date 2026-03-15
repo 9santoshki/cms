@@ -1,23 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-import { getSessionFromCookie } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
-
-// Verify user session and get user ID
-async function getUserIdFromRequest(request: NextRequest) {
-  try {
-    const session = await getSessionFromCookie();
-    return session?.userId || null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify user authentication
-    const userId = await getUserIdFromRequest(request);
+    const session = await getSessionFromCookieWithDB();
+    const userId = session?.userId || null;
 
     if (!userId) {
       return NextResponse.json(
@@ -112,10 +101,10 @@ export async function POST(request: NextRequest) {
         total_amount: totalAmount,
       }
     });
-  } catch (error: any) {
-    console.error('Error creating checkout session:', error);
+  } catch (err: unknown) {
+    console.error('[checkout/create] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

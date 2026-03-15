@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { getProductsWithImages, createProduct } from '@/lib/db/products';
 
 export async function GET(request: NextRequest) {
@@ -24,66 +25,45 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          products: result.products,
-          pagination: result.pagination,
-        },
+    return NextResponse.json({
+      success: true,
+      data: {
+        products: result.products,
+        pagination: result.pagination,
       },
-      {
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
-    );
-  } catch (error) {
-    console.error('Error in products GET API:', error);
+    });
+  } catch (err: unknown) {
+    console.error('[products GET] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return NextResponse.json(
+        { success: false, error: 'Admin or moderator access required' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { name, description, price, sale_price, image_url, category, stock_quantity } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Name, description, and price are required',
-        },
-        {
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Credentials': 'true',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-            'Access-Control-Allow-Headers':
-              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-          },
-        }
+        { success: false, error: 'Name, description, and price are required' },
+        { status: 400 }
       );
     }
 
@@ -111,50 +91,13 @@ export async function POST(request: NextRequest) {
           message: 'Product created. Upload images using /api/products/images/upload',
         },
       },
-      {
-        status: 201,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { status: 201 }
     );
-  } catch (error: any) {
-    console.error('Error creating product:', error);
+  } catch (err: unknown) {
+    console.error('[products POST] Error:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Internal server error',
-      },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-          'Access-Control-Allow-Headers':
-            'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-        },
-      }
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
     );
   }
-}
-
-// Handle preflight requests
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json(
-    {},
-    {
-      headers: {
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-        'Access-Control-Allow-Headers':
-          'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-      },
-    }
-  );
 }

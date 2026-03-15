@@ -112,7 +112,7 @@ All database operations go through dedicated modules:
 **Key Database Tables:**
 - `users` - User accounts with roles (customer, moderator, admin)
 - `sessions` - JWT session tracking with `last_activity` timestamp
-- `products` - Product catalog with `price`, `original_price`, `sale_price`, and `image_url` (legacy Cloudflare R2 URL)
+- `products` - Product catalog with `price`, `sale_price`, and `image_url` (legacy Cloudflare R2 URL)
 - `product_images` - Product image gallery with Cloudflare R2 image IDs, URLs, and display order
 - `orders` - Order records with payment details
 - `order_items` - Order line items
@@ -863,6 +863,49 @@ npm run init-db
 - Protected API routes call `validateSession()` or `getSessionFromCookieWithDB()` first
 
 ## Recent Changes & Bug Fixes
+
+### March 2026 - Full Codebase Refactoring (Security, Types, Architecture)
+
+#### Security Fixes ⚠️ CRITICAL
+- **Deleted SQL-injection route:** `src/app/api/moderator/update/` — built SQL with dynamic table name from user input (`UPDATE ${tableName}`), had fake auth that never actually verified JWT, created its own `new Pool()` connection leak
+- **Deleted debug routes exposing env vars:** `src/app/api/debug/check-env/`, `debug/checkout-env/`, `debug/env-check/`, `debug/oauth-config/` — unauthenticated callers could read all environment variables
+- **Deleted test utility routes:** `src/app/api/auth/cleanup-cookies/`, `src/app/api/auth/test-cookie/`
+- **Added auth to product mutations:** `PUT /api/products/[id]` and `DELETE /api/products/[id]` previously had no session check — anyone on the internet could update or delete products
+- **Added auth to Razorpay order creation:** `POST /api/razorpay/create-order` previously had no auth — anyone could create payment orders
+
+#### Database Layer Fixes
+- **Fixed critical transaction bug in `productImages.ts`:** `setPrimaryImage()` and `addProductImage()` were using `query('BEGIN')` / `query('COMMIT')` / `query('ROLLBACK')` — each call could land on a different pool connection, making transactions meaningless. Rewrote to use `getClient()` with a single dedicated connection per transaction
+- **Removed `process.exit(-1)` from pool error handler** (`connection.ts`) — was killing the entire Next.js server on any idle client error; now logs and lets the pool self-heal
+- **Fixed double-await bug in `auth.ts`:** `(await headersList).get(...)` where `headersList` was already awaited on the prior line
+- **Migrated all routes from `getSessionFromCookie()` to `getSessionFromCookieWithDB()`** — DB-backed validation ensures role changes take effect immediately without logout/login
+
+#### API Standardization
+- **Deleted legacy duplicate route:** `src/app/api/order/[id]/` — superseded by `/api/orders/[id]/`
+- **Moved CORS to `next.config.js`** — removed 20+ inline CORS header blocks from individual routes; now applied globally to all `/api/*` routes
+- **Standardized all error handling:** `catch (error: any)` → `catch (err: unknown)` across all route files; raw DB error messages never exposed to clients
+
+#### Type System Overhaul
+- **Deleted legacy `src/types.ts`** — was shadowing `src/types/index.ts` (TypeScript resolves `.ts` files before directory index files), causing all `@/types` imports to use old loose types
+- **Hardened `src/types/index.ts`:** Added `UserRole` and `OrderStatus` union types; `CartItem.price` is now always `number` (not `string`); `CartItem.product_id` is required; added `OrderCustomer` interface with all 6 address fields; `Order.customer` uses `OrderCustomer`
+- **Rewrote context files with proper typing:** `AuthContext.tsx`, `ProductContext.tsx`, `UIContext.tsx` — replaced `createContext<any>`, `type: string; payload?: any` action shapes with typed discriminated unions; all context values wrapped in `useMemo`
+- **Fixed `CombinedAppContext.ts`:** `loading` now correctly exposes `UILoadingState` object (`.user`, `.products`, `.orders`, etc.); added separate `authLoading: boolean` for auth-specific checks
+- **Rewrote `cartStore.ts`:** Removed 15+ debug `console.log` calls; fixed operator-precedence bug in total price calculation
+- **Rewrote `api.ts`:** `headers: any` → `Record<string, string>`; removed duplicate `Authorization` header
+
+#### New Utility Files
+- `src/lib/api-response.ts` — unified response factory for all routes (`ok`, `created`, `badRequest`, `unauthorized`, `forbidden`, `notFound`, `serverError`, `fromError`)
+- `src/lib/validation.ts` — shared input validators (`validatePositiveInt`, `validateReviewRating`, `validateOrderStatus`, etc.)
+- `src/lib/error-utils.ts` — `toErrorMessage(err: unknown)` for safe error narrowing
+- `src/lib/cors.ts` — single CORS definition
+- `src/types/api.ts` — `ApiResponse<T>`, `PaginatedResponse<T>` type exports
+- `src/lib/__tests__/` — unit tests for api-response, validation, and error-utils helpers
+
+#### Component Fixes
+- `cartUtils.ts` — simplified by removing dead string-price branches (price is now always `number`)
+- `OrderHistory.tsx` — uses `order.customer.city/zipCode` instead of legacy `order.shipping_address` JSON string
+- `dashboard/reviews/page.tsx` — review IDs corrected from `string` to `number` (matches DB INTEGER)
+- `AdminDashboard.tsx` — uses `order.total_amount` instead of old `order.total`
+- `AddToCartButton.tsx`, `ProductDetail.tsx`, `useAddToCart.ts` — removed dead `result.action` callback pattern
 
 ### February 2026 - Order Management & Pricing Enhancements
 

@@ -3,6 +3,7 @@ import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
 import { getOrderItems } from '@/lib/db/orders';
 import { sendShipmentEmail, sendDeliveryEmail } from '@/lib/email';
+import { validateOrderStatus } from '@/lib/validation';
 
 /**
  * GET /api/orders/[id] - Get single order details
@@ -65,10 +66,10 @@ export async function GET(
         items,
       },
     });
-  } catch (error: any) {
-    console.error('Error fetching order:', error);
+  } catch (err: unknown) {
+    console.error('[orders/[id] GET] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch order' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -111,11 +112,10 @@ export async function PUT(
       );
     }
 
-    // Validate status
-    const validStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
+    const statusErr = validateOrderStatus(status);
+    if (statusErr) {
       return NextResponse.json(
-        { success: false, error: `Invalid status. Valid values: ${validStatuses.join(', ')}` },
+        { success: false, error: statusErr.message },
         { status: 400 }
       );
     }
@@ -198,10 +198,10 @@ export async function PUT(
       data: updateResult.rows[0],
       message: `Order status updated to ${status}${statusChanged && (status === 'shipped' || status === 'completed') ? '. Email sent to customer.' : ''}`,
     });
-  } catch (error: any) {
-    console.error('Error updating order:', error);
+  } catch (err: unknown) {
+    console.error('[orders/[id] PUT] Error:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update order' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookie, getUserProfile } from '@/lib/db/auth';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
   getReviews,
   getProductReviews,
@@ -7,31 +7,7 @@ import {
   createReview,
   hasUserReviewedProduct,
 } from '@/lib/db/reviews';
-
-async function getUserFromRequest() {
-  try {
-    const session = await getSessionFromCookie();
-    if (!session?.userId) return null;
-
-    const profile = await getUserProfile(session.userId);
-    return profile ? { userId: session.userId, role: profile.role, name: profile.name } : null;
-  } catch (error) {
-    console.error('Error getting user session:', error);
-    return null;
-  }
-}
-
-const corsHeaders = {
-  'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-  'Access-Control-Allow-Headers':
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-};
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
-}
+import { validatePositiveInt, validateReviewRating, validateString } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,30 +21,24 @@ export async function GET(request: NextRequest) {
 
       if (includeRating) {
         const rating = await getProductRating(productId);
-        return NextResponse.json(
-          {
-            success: true,
-            data: {
-              reviews,
-              rating: rating.average_rating,
-              reviewCount: rating.review_count,
-            },
+        return NextResponse.json({
+          success: true,
+          data: {
+            reviews,
+            rating: rating.average_rating,
+            reviewCount: rating.review_count,
           },
-          { headers: corsHeaders }
-        );
+        });
       }
 
-      return NextResponse.json(
-        { success: true, data: reviews },
-        { headers: corsHeaders }
-      );
+      return NextResponse.json({ success: true, data: reviews });
     }
 
-    const user = await getUserFromRequest();
-    if (!user || (user.role !== 'admin' && user.role !== 'moderator')) {
+    const session = await getSessionFromCookieWithDB();
+    if (!session || (session.role !== 'admin' && session.role !== 'moderator')) {
       return NextResponse.json(
         { success: false, error: 'Admin or moderator access required' },
-        { status: 403, headers: corsHeaders }
+        { status: 403 }
       );
     }
 
@@ -81,68 +51,65 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: result.reviews,
-        total: result.total,
-        page,
-        limit,
-      },
-      { headers: corsHeaders }
-    );
-  } catch (error) {
-    console.error('Error fetching reviews:', error);
+    return NextResponse.json({
+      success: true,
+      data: result.reviews,
+      total: result.total,
+      page,
+      limit,
+    });
+  } catch (err: unknown) {
+    console.error('[reviews GET] Error:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest();
-
-    if (!user) {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Authentication required to submit a review' },
-        { status: 401, headers: corsHeaders }
+        { status: 401 }
       );
     }
 
-    const { product_id, rating, comment } = await request.json();
+    const body = await request.json();
+    const { product_id, rating, comment } = body;
 
     // Validate required fields
-    if (!product_id || !rating || !comment) {
-      return NextResponse.json(
-        { success: false, error: 'Product ID, rating, and comment are required' },
-        { status: 400, headers: corsHeaders }
-      );
+    const productIdErr = validatePositiveInt(product_id, 'product_id');
+    if (productIdErr) {
+      return NextResponse.json({ success: false, error: productIdErr.message }, { status: 400 });
     }
 
-    // Validate rating range
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { success: false, error: 'Rating must be between 1 and 5' },
-        { status: 400, headers: corsHeaders }
-      );
+    const ratingErr = validateReviewRating(rating);
+    if (ratingErr) {
+      return NextResponse.json({ success: false, error: ratingErr.message }, { status: 400 });
+    }
+
+    const commentErr = validateString(comment, 'comment', 2000);
+    if (commentErr) {
+      return NextResponse.json({ success: false, error: commentErr.message }, { status: 400 });
     }
 
     // Check if user has already reviewed this product
-    const hasReviewed = await hasUserReviewedProduct(user.userId, product_id);
+    const hasReviewed = await hasUserReviewedProduct(session.userId, String(product_id));
     if (hasReviewed) {
       return NextResponse.json(
         { success: false, error: 'You have already reviewed this product' },
-        { status: 400, headers: corsHeaders }
+        { status: 400 }
       );
     }
 
     const review = await createReview({
-      user_id: user.userId,
-      product_id,
-      rating,
-      comment,
+      user_id: session.userId,
+      product_id: String(product_id),
+      rating: Number(rating),
+      comment: String(comment),
     });
 
     return NextResponse.json(
@@ -151,13 +118,13 @@ export async function POST(request: NextRequest) {
         data: review,
         message: 'Review submitted successfully. It will be visible after moderation.',
       },
-      { status: 201, headers: corsHeaders }
+      { status: 201 }
     );
-  } catch (error) {
-    console.error('Error creating review:', error);
+  } catch (err: unknown) {
+    console.error('[reviews POST] Error:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 }
