@@ -156,9 +156,11 @@ const UserDetailsPage = () => {
                 padding: '6px 12px',
                 background: userDetails.role === 'admin' ? 'rgba(139, 92, 246, 0.1)' :
                            userDetails.role === 'moderator' ? 'rgba(59, 130, 246, 0.1)' :
+                           userDetails.role === 'supplier' ? 'rgba(245, 158, 11, 0.1)' :
                            'rgba(34, 197, 94, 0.1)',
                 color: userDetails.role === 'admin' ? '#8b5cf6' :
                        userDetails.role === 'moderator' ? '#3b82f6' :
+                       userDetails.role === 'supplier' ? '#f59e0b' :
                        '#22c55e',
                 borderRadius: '6px',
                 fontSize: '12px',
