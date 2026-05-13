@@ -93,7 +93,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
           });
 
           localStorage.removeItem('pendingCartAction');
-        } catch (error) {
+        } catch {
         }
       }
     }

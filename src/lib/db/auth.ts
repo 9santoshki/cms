@@ -154,9 +154,9 @@ export const verifySessionToken = (token: string): SessionData | null => {
 
     const decoded = jwt.verify(token, JWT_SECRET) as SessionData;
     return decoded;
-  } catch (error) {
+  } catch (err: unknown) {
     if (token && token.length > 10) {
-      console.error('Invalid token:', error);
+      console.error('Invalid token:', err);
     }
     return null;
   }
@@ -279,7 +279,7 @@ const getRequestMetadata = async () => {
     const ipAddress = forwardedFor?.split(',')[0] || realIp || undefined;
 
     return { userAgent, ipAddress };
-  } catch (error) {
+  } catch {
     return { userAgent: undefined, ipAddress: undefined };
   }
 };

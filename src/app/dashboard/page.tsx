@@ -42,7 +42,7 @@ const DashboardPage = () => {
       if (data.success) {
         setStats(data.data);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

@@ -6,8 +6,8 @@ interface CartState {
   items: CartItem[];
   isLoading: boolean;
   addItem: (item: CartItem) => Promise<void>;
-  updateItem: (productId: number, quantity: number) => Promise<void>;
-  removeItem: (productId: number) => Promise<void>;
+  updateItem: (productId: number, quantity: number, variantId?: number | null) => Promise<void>;
+  removeItem: (productId: number, variantId?: number | null) => Promise<void>;
   clearCart: () => Promise<void>;
   syncWithServer: () => Promise<void>;
   loadServerCart: () => Promise<void>;
@@ -25,7 +25,7 @@ async function isUserAuthenticated(): Promise<boolean> {
   }
 }
 
-async function syncCartItemWithServer(productId: number, quantity: number) {
+async function syncCartItemWithServer(productId: number, quantity: number, variantId?: number | null) {
   try {
     const isAuth = await isUserAuthenticated();
     if (!isAuth) return;
@@ -33,7 +33,7 @@ async function syncCartItemWithServer(productId: number, quantity: number) {
     const response = await fetch(`/api/cart`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: productId, quantity }),
+      body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity }),
     });
 
     if (!response.ok) {
@@ -45,6 +45,14 @@ async function syncCartItemWithServer(productId: number, quantity: number) {
   }
 }
 
+// Helper to find item index by product_id and variant_id
+function findItemIndex(items: CartItem[], productId: number, variantId?: number | null): number {
+  return items.findIndex(
+    (item) => item.product_id === productId &&
+              (item.variant_id === variantId || (item.variant_id === undefined && variantId === null))
+  );
+}
+
 export const useCartStore = create<CartState>()(
   persist(
     subscribeWithSelector((set, get) => ({
@@ -53,8 +61,11 @@ export const useCartStore = create<CartState>()(
 
       addItem: async (item) => {
         set((state) => {
-          const existingItemIndex = state.items.findIndex(
-            (cartItem) => cartItem.product_id === item.product_id
+          // Find existing item by product_id AND variant_id
+          const existingItemIndex = findItemIndex(
+            state.items,
+            item.product_id,
+            item.variant_id
           );
 
           if (existingItemIndex >= 0) {
@@ -78,6 +89,7 @@ export const useCartStore = create<CartState>()(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 product_id: item.product_id,
+                variant_id: item.variant_id,
                 quantity: item.quantity,
               }),
             });
@@ -92,28 +104,39 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      updateItem: async (productId, quantity) => {
+      updateItem: async (productId, quantity, variantId = null) => {
         set((state) => {
           if (quantity <= 0) {
-            return { items: state.items.filter((item) => item.product_id !== productId) };
+            return {
+              items: state.items.filter(
+                (item) => !(item.product_id === productId &&
+                           (item.variant_id === variantId || (item.variant_id === undefined && variantId === null)))
+              ),
+            };
           }
 
           const updatedItems = state.items.map((item) =>
-            item.product_id === productId ? { ...item, quantity } : item
+            item.product_id === productId &&
+            (item.variant_id === variantId || (item.variant_id === undefined && variantId === null))
+              ? { ...item, quantity }
+              : item
           );
 
           return { items: updatedItems };
         });
 
-        await syncCartItemWithServer(productId, quantity);
+        await syncCartItemWithServer(productId, quantity, variantId);
       },
 
-      removeItem: async (productId) => {
+      removeItem: async (productId, variantId = null) => {
         set((state) => ({
-          items: state.items.filter((item) => item.product_id !== productId),
+          items: state.items.filter(
+            (item) => !(item.product_id === productId &&
+                       (item.variant_id === variantId || (item.variant_id === undefined && variantId === null)))
+          ),
         }));
 
-        await syncCartItemWithServer(productId, 0);
+        await syncCartItemWithServer(productId, 0, variantId);
       },
 
       clearCart: async () => {
@@ -163,6 +186,7 @@ export const useCartStore = create<CartState>()(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 product_id: item.product_id,
+                variant_id: item.variant_id,
                 quantity: item.quantity,
               }),
             });

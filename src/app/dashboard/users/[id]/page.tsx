@@ -56,8 +56,8 @@ const UserDetailsPage = () => {
           setAppointments(userAppointments);
         }
       }
-    } catch (error) {
-      console.error('Error fetching user details:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching user details:', err);
     } finally {
       setLoading(false);
     }

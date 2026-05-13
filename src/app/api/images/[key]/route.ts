@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchImageFromR2 } from '@/lib/cloudflare';
+import { isR2NoSuchKeyError } from '@/lib/error-utils';
 
 /**
  * Image proxy endpoint - serves images from private R2 bucket
@@ -41,11 +42,11 @@ export async function GET(
       headers,
       status: 200,
     });
-  } catch (error: any) {
-    console.error('Error serving image:', error);
+  } catch (err: unknown) {
+    console.error('Error serving image:', err);
 
-    // Check if it's a 404 (NoSuchKey) error
-    if (error?.name === 'NoSuchKey' || error?.Code === 'NoSuchKey') {
+    // Return 404 for R2 "object not found" errors
+    if (isR2NoSuchKeyError(err)) {
       return new NextResponse('Image not found', { status: 404 });
     }
 

@@ -1,6 +1,6 @@
 // Define TypeScript interfaces for our application
 
-export type UserRole = 'customer' | 'moderator' | 'admin';
+export type UserRole = 'customer' | 'moderator' | 'admin' | 'supplier';
 
 export type OrderStatus =
   | 'pending'
@@ -8,6 +8,63 @@ export type OrderStatus =
   | 'shipped'
   | 'completed'
   | 'cancelled';
+
+// ============================================================================
+// Variant Types (product variations: thickness, size, color)
+// ============================================================================
+
+/** Option type category (e.g., thickness, size, color) */
+export interface VariantOptionType {
+  id: number;
+  name: string;           // 'thickness', 'size', 'color'
+  display_name: string;   // 'Thickness', 'Size', 'Color'
+  description?: string;
+  display_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Specific option value for an option type (e.g., 'thin' for thickness) */
+export interface VariantOption {
+  id: number;
+  option_type_id: number;
+  value: string;          // 'thin', '12x18', 'black'
+  display_value: string;  // 'Thin (Standard Paper)', '12×18 inches', 'Black'
+  price_modifier?: number; // Additional cost for this option
+  display_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Product variant SKU with specific option combinations */
+export interface ProductVariant {
+  id: number;
+  product_id: number;
+  sku?: string;
+  price: number;
+  sale_price?: number;
+  stock_quantity: number;
+  is_active: boolean;
+  /** The options that define this variant (populated on fetch) */
+  options?: VariantOption[];
+  /** Human-readable variant description (e.g., 'Thick / 24×36 inches / Black') */
+  variant_name?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Link between variant and its selected options */
+export interface ProductVariantValue {
+  id: number;
+  variant_id: number;
+  option_id: number;
+}
+
+// ============================================================================
+// Core Types
+// ============================================================================
 
 export interface User {
   id: number;
@@ -18,6 +75,52 @@ export interface User {
   role: UserRole;
   created_at?: string;
   updated_at?: string;
+}
+
+// ============================================================================
+// Supplier Types (inventory management partners)
+// ============================================================================
+
+/** Supplier profile with business details */
+export interface Supplier {
+  id: number;
+  user_id: number;
+  company_name: string;
+  contact_person?: string;
+  phone?: string;
+  address?: string;
+  gst_id?: string;
+  is_active: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  /** User details joined from users table */
+  user?: User;
+}
+
+/** Assignment of variant to supplier for inventory management */
+export interface SupplierVariant {
+  id: number;
+  supplier_id: number;
+  variant_id: number;
+  assigned_at: string;
+  assigned_by?: number;
+  notes?: string;
+  /** Variant details joined from product_variants */
+  variant?: ProductVariant;
+}
+
+/** Audit log entry for inventory changes */
+export interface InventoryLog {
+  id: number;
+  variant_id: number;
+  previous_quantity: number;
+  new_quantity: number;
+  change_quantity: number;
+  changed_by?: number;
+  change_type: 'supplier_update' | 'admin_update' | 'order' | 'return';
+  notes?: string;
+  created_at: string;
 }
 
 export interface Product {
@@ -64,6 +167,8 @@ export interface CartItem {
   id?: number;
   user_id?: number;
   product_id: number;
+  /** Selected variant ID (if product has variants) */
+  variant_id?: number;
   quantity: number;
   name?: string;
   description?: string;
@@ -72,6 +177,8 @@ export interface CartItem {
   price: number;
   /** Original pre-discount price for display purposes */
   originalPrice?: number;
+  /** Human-readable variant description (e.g., 'Thick / 24×36 / Black') */
+  variant_name?: string;
 }
 
 export interface OrderCustomer {

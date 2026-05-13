@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
 import { sendShipmentEmail, sendDeliveryEmail, sendRefundEmail } from '@/lib/email';
+import { toErrorMessage } from '@/lib/error-utils';
 
 export async function POST(
   request: NextRequest,
@@ -94,10 +95,10 @@ export async function POST(
         result,
       },
     });
-  } catch (error: any) {
-    console.error('Error sending order notification email:', error);
+  } catch (err: unknown) {
+    console.error('Error sending order notification email:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to send email' },
+      { success: false, error: toErrorMessage(err) || 'Failed to send email' },
       { status: 500 }
     );
   }

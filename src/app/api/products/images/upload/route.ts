@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { uploadImageToCloudflare, getCloudflareImageUrl } from '@/lib/cloudflare';
 import { addProductImage } from '@/lib/db/productImages';
 import { getProductById } from '@/lib/db/products';
+import { toErrorMessage } from '@/lib/error-utils';
 
 /**
  * Upload product images to Cloudflare
@@ -84,14 +85,14 @@ export async function POST(request: NextRequest) {
             error: 'Upload to Cloudflare failed',
           });
         }
-      } catch (error: any) {
-        console.error(`Error uploading ${file.name}:`, error);
-        const errorMessage = error?.message || error?.toString() || 'Upload failed';
+      } catch (err: unknown) {
+        console.error(`Error uploading ${file.name}:`, err);
+        const errorMessage = toErrorMessage(err);
         console.error(`Error message: ${errorMessage}`);
         uploadResults.push({
           success: false,
           filename: file.name,
-          error: errorMessage,
+          error: errorMessage || 'Upload failed',
         });
       }
     }
@@ -104,18 +105,12 @@ export async function POST(request: NextRequest) {
       message: `Uploaded ${successCount} image(s)${failCount > 0 ? `, ${failCount} failed` : ''}`,
       results: uploadResults,
     });
-  } catch (error: any) {
-    console.error('Error in image upload:', error);
-    const errorMessage = error?.message || error?.toString() || 'Internal server error';
-    console.error('Error details:', {
-      message: errorMessage,
-      stack: error?.stack,
-      name: error?.name,
-    });
+  } catch (err: unknown) {
+    console.error('Error in image upload:', err);
     return NextResponse.json(
       {
         success: false,
-        error: errorMessage,
+        error: toErrorMessage(err) || 'Internal server error',
       },
       { status: 500 }
     );

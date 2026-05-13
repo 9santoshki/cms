@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { deleteProductImage } from '@/lib/db/productImages';
 import { query } from '@/lib/db/connection';
 import { deleteImageFromCloudflare } from '@/lib/cloudflare';
+import { toErrorMessage } from '@/lib/error-utils';
 
 /**
  * Delete a product image
@@ -58,8 +59,8 @@ export async function DELETE(
     // Try to delete from Cloudflare (non-blocking, log errors but don't fail the request)
     try {
       await deleteImageFromCloudflare(cloudflareImageId);
-    } catch (cloudflareError: any) {
-      console.error('Error deleting from Cloudflare:', cloudflareError);
+    } catch (cloudflareErr: unknown) {
+      console.error('Error deleting from Cloudflare:', cloudflareErr);
       // Continue anyway since DB deletion succeeded
     }
 
@@ -67,12 +68,12 @@ export async function DELETE(
       success: true,
       message: 'Image deleted successfully',
     });
-  } catch (error: any) {
-    console.error('Error deleting image:', error);
+  } catch (err: unknown) {
+    console.error('Error deleting image:', err);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error',
+        error: toErrorMessage(err) || 'Internal server error',
       },
       { status: 500 }
     );

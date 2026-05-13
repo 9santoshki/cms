@@ -57,8 +57,8 @@ export async function PUT(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Error in update role API:', error);
+  } catch (err: unknown) {
+    console.error('Error in update role API:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -25,8 +25,8 @@ function getRazorpayInstance() {
           },
         } as any;
       }
-    } catch (error) {
-      console.error('Failed to initialize Razorpay:', error);
+    } catch (err: unknown) {
+      console.error('Failed to initialize Razorpay:', err);
       // Return dummy instance if initialization fails
       razorpayInstance = {
         orders: {

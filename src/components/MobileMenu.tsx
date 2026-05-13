@@ -31,8 +31,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     try {
       await signInWithGoogle();
       onClose();
-    } catch (error) {
-      console.error('Sign in failed:', error);
+    } catch (err: unknown) {
+      console.error('Sign in failed:', err);
     }
   };
 

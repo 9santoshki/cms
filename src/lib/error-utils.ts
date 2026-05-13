@@ -20,3 +20,13 @@ export function toErrorMessage(value: unknown): string {
   }
   return 'An unexpected error occurred';
 }
+
+/**
+ * Checks if an error is an R2/S3 "NoSuchKey" error (object not found).
+ * Used by the image proxy endpoint to return 404 instead of 500.
+ */
+export function isR2NoSuchKeyError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false;
+  const e = err as Record<string, unknown>;
+  return e?.name === 'NoSuchKey' || e?.Code === 'NoSuchKey';
+}

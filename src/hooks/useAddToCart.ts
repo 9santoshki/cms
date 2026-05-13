@@ -74,8 +74,8 @@ export const processPendingCartAction = async () => {
 
       return true;
     }
-  } catch (error) {
-    console.error('Error processing pending cart action:', error);
+  } catch (err: unknown) {
+    console.error('Error processing pending cart action:', err);
   }
 
   // Clean up on error

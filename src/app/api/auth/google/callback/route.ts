@@ -4,6 +4,7 @@ import {
   createSession,
   createSessionTokenWithDB
 } from '@/lib/db/auth';
+import { toErrorMessage } from '@/lib/error-utils';
 
 export async function GET(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
@@ -77,9 +78,9 @@ export async function GET(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error('Error in OAuth callback:', error);
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+  } catch (err: unknown) {
+    console.error('Error in OAuth callback:', err);
+    const errorMsg = toErrorMessage(err);
     const errorParam = encodeURIComponent(errorMsg.substring(0, 100));
     return NextResponse.redirect(new URL(`/?error=auth_failed&details=${errorParam}`, appUrl));
   }

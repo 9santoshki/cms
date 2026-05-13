@@ -54,9 +54,9 @@ export async function createOrder(
 
     await client.query('COMMIT');
     return order;
-  } catch (error) {
+  } catch (err: unknown) {
     await client.query('ROLLBACK');
-    throw error;
+    throw err;
   } finally {
     client.release();
   }
@@ -90,6 +90,38 @@ export async function getOrderItems(orderId: string): Promise<OrderItem[]> {
     [orderId]
   );
   return result.rows;
+}
+
+/**
+ * Batch fetch order items for multiple orders in a single query.
+ * Returns a map of order_id -> items array.
+ */
+export async function getOrderItemsBatch(orderIds: string[]): Promise<Map<string, OrderItem[]>> {
+  if (orderIds.length === 0) return new Map();
+
+  const result = await query(
+    `SELECT
+      oi.*,
+      p.name,
+      COALESCE(
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1),
+        p.image_url
+      ) as image_url
+     FROM order_items oi
+     JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = ANY($1)`,
+    [orderIds]
+  );
+
+  const itemsMap = new Map<string, OrderItem[]>();
+  for (const row of result.rows) {
+    const orderId = row.order_id;
+    if (!itemsMap.has(orderId)) {
+      itemsMap.set(orderId, []);
+    }
+    itemsMap.get(orderId)!.push(row);
+  }
+  return itemsMap;
 }
 
 export async function updateOrderStatus(

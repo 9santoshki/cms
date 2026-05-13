@@ -69,8 +69,8 @@ const DashboardSettingsPage = () => {
         }
       };
       setSettings(mockSettings);
-    } catch (error) {
-      console.error('Error loading settings:', error);
+    } catch (err: unknown) {
+      console.error('Error loading settings:', err);
     } finally {
       setLoading(false);
     }
@@ -94,8 +94,8 @@ const DashboardSettingsPage = () => {
       setSuccessMessage('Settings saved successfully!');
 
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (error) {
-      console.error('Error saving settings:', error);
+    } catch (err: unknown) {
+      console.error('Error saving settings:', err);
     } finally {
       setSaving(false);
     }

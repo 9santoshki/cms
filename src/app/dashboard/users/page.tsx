@@ -40,8 +40,8 @@ const DashboardUsersPage = () => {
         console.error('Failed to fetch users:', result.error);
         setUsers([]);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching users:', err);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -65,8 +65,8 @@ const DashboardUsersPage = () => {
       } else {
         alert(`Failed to update role: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Error updating user role:', error);
+    } catch (err: unknown) {
+      console.error('Error updating user role:', err);
       alert('An error occurred while updating the role');
     }
   };

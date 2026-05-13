@@ -37,12 +37,12 @@ export const signOut = async () => {
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error signing out:', error);
+  } catch (err: unknown) {
+    console.error('Error signing out:', err);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cms-session-token');
     }
-    throw error;
+    throw err;
   }
 };
 
@@ -71,8 +71,8 @@ export const getCurrentSession = async (): Promise<{ user: User | null }> => {
 
     const data = await response.json();
     return { user: data.user || null };
-  } catch (error) {
-    console.error('Error getting session:', error);
+  } catch (err: unknown) {
+    console.error('Error getting session:', err);
     return { user: null };
   }
 };

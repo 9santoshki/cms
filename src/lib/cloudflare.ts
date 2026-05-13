@@ -5,6 +5,7 @@
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { toErrorMessage } from '@/lib/error-utils';
 
 interface CloudflareUploadResponse {
   success: boolean;
@@ -121,17 +122,17 @@ export async function uploadImageToCloudflare(
         key,
       },
     };
-  } catch (error: any) {
-    console.error('Error uploading to R2:', error);
+  } catch (err: unknown) {
+    console.error('Error uploading to R2:', err);
+    const e = err as Record<string, unknown>;
     console.error('R2 Error details:', {
-      message: error?.message,
-      code: error?.Code || error?.code,
-      name: error?.name,
-      stack: error?.stack,
+      message: toErrorMessage(err),
+      code: e?.Code ?? e?.code,
+      name: e?.name,
     });
 
     // Provide more helpful error message
-    const errorMessage = error?.message || error?.Code || error?.toString() || 'Failed to upload to Cloudflare R2';
+    const errorMessage = toErrorMessage(err) || 'Failed to upload to Cloudflare R2';
     throw new Error(`Cloudflare R2 upload failed: ${errorMessage}`);
   }
 }
@@ -160,8 +161,8 @@ export async function deleteImageFromCloudflare(
 
     await client.send(command);
     return true;
-  } catch (error) {
-    console.error('Error deleting from R2:', error);
+  } catch (err: unknown) {
+    console.error('Error deleting from R2:', err);
     return false;
   }
 }
@@ -216,9 +217,9 @@ export async function fetchImageFromR2(imageKey: string): Promise<{
       contentType: response.ContentType || 'image/jpeg',
       contentLength: response.ContentLength,
     };
-  } catch (error) {
-    console.error('Error fetching image from R2:', error);
-    throw error;
+  } catch (err: unknown) {
+    console.error('Error fetching image from R2:', err);
+    throw err;
   }
 }
 
@@ -244,7 +245,7 @@ export async function imageExists(imageKey: string): Promise<boolean> {
 
     await client.send(command);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
