@@ -461,7 +461,7 @@ const SuppliersPage = () => {
                       value={formData.user_id}
                       onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
                       required
-                      disabled={editingSupplier}
+                      disabled={!!editingSupplier}
                       style={{
                         width: '100%',
                         padding: '12px',
