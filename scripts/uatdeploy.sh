@@ -66,8 +66,11 @@ echo ""
 echo "✅ Pushed to GitHub"
 echo ""
 
-# Step 4: Create deployment tarball
+# Step 4: Create deployment tarball (exclude dev/cache)
 echo "📦 Creating deployment package..."
+# Remove dev cache before packaging (not needed for production)
+rm -rf .next/dev .next/cache 2>/dev/null || true
+
 tar -czf /tmp/cms-deploy.tar.gz \
     .next \
     public \
