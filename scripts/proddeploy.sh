@@ -136,7 +136,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 set -a
 source <(grep -E "^NEXT_PUBLIC_" \$APP_DIR/.env.production)
 set +a
-NODE_ENV=production npm run build
+NODE_ENV=production NODE_OPTIONS="--max-old-space-size=1024" npm run build
 echo "✅ Build complete"
 
 echo ""
