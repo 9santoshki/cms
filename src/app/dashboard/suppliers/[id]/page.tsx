@@ -23,12 +23,13 @@ interface Variant {
   id: number;
   product_id: number;
   sku: string | null;
-  price: number;
-  sale_price: number | null;
+  price: number | string;
+  sale_price: number | string | null;
   stock_quantity: number;
   is_active: boolean;
   product_name: string;
-  options: Array<{
+  variant_name?: string;
+  options?: Array<{
     option_type: string;
     value: string;
     display_value: string;
@@ -167,7 +168,10 @@ const SupplierDetailPage = () => {
   };
 
   const getVariantDisplayName = (variant: Variant) => {
-    const options = variant.options?.map(o => o.display_value).join(', ') || 'Default';
+    const options =
+      variant.options && variant.options.length > 0
+        ? variant.options.map(o => o.display_value).join(', ')
+        : variant.variant_name || 'Default';
     return `${variant.product_name || 'Unknown Product'} - ${options}`;
   };
 
@@ -379,7 +383,7 @@ const SupplierDetailPage = () => {
                       )}
                       <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#666' }}>
                         <span>
-                          <i className="fas fa-rupee-sign"></i> {assigned.variant?.price?.toFixed(2)}
+                          <i className="fas fa-rupee-sign"></i> {assigned.variant?.price != null ? Number(assigned.variant.price).toFixed(2) : '—'}
                         </span>
                         <span>
                           <i className="fas fa-cubes"></i> Stock: {assigned.variant?.stock_quantity || 0}
