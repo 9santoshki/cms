@@ -65,6 +65,7 @@ tar -czf /tmp/cms-deploy-prod.tar.gz \
     package.json \
     package-lock.json \
     next.config.js \
+    tsconfig.json \
     babel.config.js
 echo "✅ Package created ($(du -h /tmp/cms-deploy-prod.tar.gz | cut -f1))"
 echo ""
@@ -89,12 +90,14 @@ export PGPASSWORD
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 1: Extract source code"
+echo "  STEP 1: Extract source code (clean)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 cd \$APP_DIR
-tar -xzf /tmp/cms-deploy-prod.tar.gz
+# Remove stale src/ and .next/ before extracting to avoid leftover files
+rm -rf src .next
+tar -xzf /tmp/cms-deploy-prod.tar.gz 2>/dev/null || tar -xzf /tmp/cms-deploy-prod.tar.gz --warning=none
 rm /tmp/cms-deploy-prod.tar.gz
-echo "✅ Source extracted"
+echo "✅ Source extracted (clean)"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
