@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
   getProductVariants,
+  getAllVariants,
   getProductVariantById,
   createProductVariant,
   updateProductVariant,
@@ -22,8 +23,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('product_id');
 
+    // No product_id → return all variants across all products (for supplier assignment)
     if (!productId) {
-      return badRequest('product_id is required');
+      const variants = await getAllVariants();
+      return ok(variants);
     }
 
     const variants = await getProductVariants(parseInt(productId, 10));

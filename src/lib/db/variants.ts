@@ -236,6 +236,52 @@ export async function getProductVariants(productId: number): Promise<ProductVari
   return variants;
 }
 
+/** Get all active variants across all products, with product name and options */
+export async function getAllVariants(): Promise<ProductVariant[]> {
+  const variantsResult = await query(
+    `SELECT v.*, p.name as product_name,
+            COALESCE(
+              (SELECT STRING_AGG(o.display_value, ' / ' ORDER BY t.display_order)
+               FROM product_variant_values vv
+               JOIN variant_options o ON vv.option_id = o.id
+               JOIN variant_option_types t ON o.option_type_id = t.id
+               WHERE vv.variant_id = v.id),
+              ''
+            ) as variant_name
+     FROM product_variants v
+     JOIN products p ON v.product_id = p.id
+     WHERE v.is_active = TRUE
+     ORDER BY p.name, v.id`
+  );
+
+  const variants = variantsResult.rows as ProductVariant[];
+  if (variants.length === 0) return variants;
+
+  const variantIds = variants.map(v => v.id);
+  const optionsResult = await query(
+    `SELECT vv.variant_id, o.*, t.name as type_name, t.display_name as type_display_name
+     FROM product_variant_values vv
+     JOIN variant_options o ON vv.option_id = o.id
+     JOIN variant_option_types t ON o.option_type_id = t.id
+     WHERE vv.variant_id = ANY($1)
+     ORDER BY t.display_order`,
+    [variantIds]
+  );
+
+  const optionsByVariantId: Record<number, VariantOption[]> = {};
+  for (const row of optionsResult.rows) {
+    const variantId = row.variant_id as number;
+    if (!optionsByVariantId[variantId]) optionsByVariantId[variantId] = [];
+    optionsByVariantId[variantId].push(row as VariantOption);
+  }
+
+  for (const variant of variants) {
+    variant.options = optionsByVariantId[variant.id] || [];
+  }
+
+  return variants;
+}
+
 /** Get variant by ID with option details */
 export async function getProductVariantById(variantId: number): Promise<ProductVariant | null> {
   const result = await query(
