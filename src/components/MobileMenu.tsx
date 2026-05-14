@@ -139,6 +139,22 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           Dashboard
         </div>
       )}
+      {(user && user.role === 'supplier') && (
+        <div
+          className="mobile-menu-item"
+          style={{
+            padding: '15px 40px',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            color: '#333'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
+          onClick={() => { onNavigate('/supplier'); onClose(); }}
+        >
+          My Dashboard
+        </div>
+      )}
       <div
         className="mobile-menu-item"
         style={{
@@ -233,6 +249,23 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             >
               <i className="fas fa-tachometer-alt" style={{ marginRight: '10px' }}></i>
               Dashboard
+            </div>
+          )}
+          {user.role === 'supplier' && (
+            <div
+              className="mobile-menu-item"
+              style={{
+                padding: '15px 40px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                color: '#333'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
+              onClick={() => { onNavigate('/supplier'); onClose(); }}
+            >
+              <i className="fas fa-truck" style={{ marginRight: '10px' }}></i>
+              Supplier Dashboard
             </div>
           )}
         </div>

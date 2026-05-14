@@ -59,6 +59,15 @@ const NavLinks: React.FC<NavLinksProps> = ({ activePage = '', onNavigate }) => {
           Dashboard
         </HeaderLink>
       )}
+      {(user && user.role === 'supplier') && (
+        <HeaderLink
+          href="#"
+          $active={activePage === 'supplier'}
+          onClick={(e) => { e.preventDefault(); onNavigate('/supplier'); }}
+        >
+          My Dashboard
+        </HeaderLink>
+      )}
       <HeaderLink
         href="#"
         $active={activePage === 'about'}
