@@ -106,10 +106,9 @@ CREATE INDEX IF NOT EXISTS idx_product_variant_values_option_id ON product_varia
 -- Add variant_id to cart table
 ALTER TABLE cart ADD COLUMN IF NOT EXISTS variant_id INTEGER REFERENCES product_variants(id) ON DELETE CASCADE;
 
--- Update cart unique constraint to include variant_id
--- First drop the old constraint if exists
+-- Update cart unique constraint to include variant_id (idempotent)
 ALTER TABLE cart DROP CONSTRAINT IF EXISTS cart_user_id_product_id_key;
--- Add new unique constraint
+ALTER TABLE cart DROP CONSTRAINT IF EXISTS cart_user_id_product_id_variant_id_key;
 ALTER TABLE cart ADD CONSTRAINT cart_user_id_product_id_variant_id_key UNIQUE(user_id, product_id, variant_id);
 
 -- Add variant_id to order_items table
