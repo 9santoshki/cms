@@ -97,10 +97,10 @@ tar -xzf /tmp/cms-deploy.tar.gz
 rm /tmp/cms-deploy.tar.gz
 
 echo "⚙️  Configuring environment..."
-# Copy .env.uat to .env.production so Next.js loads the correct environment
+# Link .env.uat as .env.local so Next.js loads it directly (.env.local overrides .env.production)
 if [ -f .env.uat ]; then
-    cp .env.uat .env.production
-    echo "✅ Environment configured (.env.uat → .env.production)"
+    ln -sf .env.uat .env.local
+    echo "✅ Environment configured (.env.local → .env.uat)"
 else
     echo "⚠️  Warning: .env.uat not found"
 fi
