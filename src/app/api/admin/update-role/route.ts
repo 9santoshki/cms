@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const validRoles = ['customer', 'moderator', 'admin'];
+    const validRoles = ['customer', 'moderator', 'admin', 'supplier'];
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
         { success: false, error: `newRole must be one of: ${validRoles.join(', ')}` },
