@@ -47,8 +47,8 @@ export async function GET(
       success: true,
       data: product,
     });
-  } catch (error) {
-    console.error('Error fetching product:', error);
+  } catch (err: unknown) {
+    console.error('Error fetching product:', err);
     return NextResponse.json(
       {
         success: false,
@@ -135,8 +135,8 @@ export async function PUT(
       success: true,
       data: updatedProduct,
     });
-  } catch (error) {
-    console.error('Error updating product:', error);
+  } catch (err: unknown) {
+    console.error('Error updating product:', err);
     return NextResponse.json(
       {
         success: false,
@@ -179,8 +179,8 @@ export async function DELETE(
       success: true,
       message: 'Product deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting product:', error);
+  } catch (err: unknown) {
+    console.error('Error deleting product:', err);
     return NextResponse.json(
       {
         success: false,

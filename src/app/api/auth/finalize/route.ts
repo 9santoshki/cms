@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error finalizing auth:', error);
+  } catch (err: unknown) {
+    console.error('Error finalizing auth:', err);
     return NextResponse.json({ error: 'Failed to finalize authentication' }, { status: 500 });
   }
 }

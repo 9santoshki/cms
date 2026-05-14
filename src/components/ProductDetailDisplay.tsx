@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCartStore } from '@/store/cartStore';
 import { useRouter } from 'next/navigation';
-import { Product, Review } from '@/types';
+import { Product, Review, ProductVariant } from '@/types';
+import VariantSelector from '@/components/VariantSelector';
 import {
   ProductDetailContainer,
   ProductDetailContent,
@@ -568,6 +569,9 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Variant state
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState(0);
@@ -680,10 +684,22 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     }
   };
 
-  // Get display price (sale_price or price) - parse to ensure numeric comparison
-  const displayPrice = parsePrice(product.sale_price) || parsePrice(product.price);
-  const originalPrice = parsePrice(product.price);
-  const hasDiscount = originalPrice > 0 && originalPrice > displayPrice;
+  // Get display price - use variant price if selected, otherwise product price
+  const baseDisplayPrice = parsePrice(product.sale_price) || parsePrice(product.price);
+  const baseOriginalPrice = parsePrice(product.price);
+  const baseHasDiscount = baseOriginalPrice > 0 && baseOriginalPrice > baseDisplayPrice;
+  const baseDiscountPercentage = baseHasDiscount ? getDiscountPercentage(baseOriginalPrice, baseDisplayPrice) : 0;
+
+  // Override with variant price if variant is selected
+  const displayPrice = selectedVariant
+    ? (selectedVariant.sale_price || selectedVariant.price)
+    : baseDisplayPrice;
+  const originalPrice = selectedVariant
+    ? (selectedVariant.sale_price ? selectedVariant.price : baseOriginalPrice)
+    : baseOriginalPrice;
+  const hasDiscount = selectedVariant
+    ? (selectedVariant.sale_price !== undefined && selectedVariant.sale_price < selectedVariant.price)
+    : baseHasDiscount;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
   const handleAddToCart = async () => {
@@ -699,19 +715,27 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
       return;
     }
 
+    // Use variant price if variant is selected
+    const priceToAdd = selectedVariant
+      ? (selectedVariant.sale_price || selectedVariant.price)
+      : displayPrice;
+
     try {
-      // Add to cart using the display price (sale price if available)
+      // Add to cart with variant info if available
       await addItem({
         id: Date.now(),
         product_id: product.id,
+        variant_id: selectedVariant?.id,
+        variant_name: selectedVariant?.variant_name,
         quantity: quantity,
         name: product.name,
-        price: displayPrice,
+        price: priceToAdd,
         description: product.description || '',
         image_url: product.image_url || '',
       });
-    } catch (err: any) {
-      setError(err.message || 'Failed to add item to cart');
+    } catch (err: unknown) {
+      const e = err as Error;
+      setError(e.message || 'Failed to add item to cart');
     }
   };
 
@@ -814,6 +838,12 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <ProductDetailDescription>
             {product.description}
           </ProductDetailDescription>
+
+          {/* Variant Selector */}
+          <VariantSelector
+            productId={product.id}
+            onVariantChange={(variant) => setSelectedVariant(variant)}
+          />
 
           {/* Quantity Selector */}
           <QuantitySelector>

@@ -21,9 +21,9 @@ export const query = async (text: string, params?: unknown[]) => {
   try {
     const res = await pool.query(text, params);
     return res;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
+  } catch (err: unknown) {
+    console.error('Database query error:', err);
+    throw err;
   }
 };
 

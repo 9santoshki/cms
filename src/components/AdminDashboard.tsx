@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
+import { toErrorMessage } from '@/lib/error-utils';
 import Header from './Header';
 
 // Import admin styles
@@ -321,8 +322,8 @@ const ProductManagement = () => {
 
         productData.image_urls = imageUrls;
         productData.image_url = imageUrls[0];
-      } catch (error) {
-        console.error('Error processing image files:', error);
+      } catch (err: unknown) {
+        console.error('Error processing image files:', err);
         alert('Error processing image files. Please try again.');
         return;
       }
@@ -356,9 +357,9 @@ const ProductManagement = () => {
       alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!');
 
       fetchProducts();
-    } catch (error) {
-      console.error('Error saving product:', error);
-      alert(`Error saving product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (err: unknown) {
+      console.error('Error saving product:', err);
+      alert(`Error saving product: ${toErrorMessage(err)}`);
     }
   };
 

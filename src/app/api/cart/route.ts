@@ -9,6 +9,7 @@ import {
   getCartItemWithProduct,
 } from '@/lib/db/cart';
 import { getCloudflareImageUrl } from '@/lib/cloudflare';
+import { unauthorized, badRequest, serverError } from '@/lib/api-response';
 
 async function getUserId() {
   try {
@@ -35,6 +36,8 @@ export async function GET() {
         return {
           id: item.id,
           product_id: item.product_id,
+          variant_id: item.variant_id || null,
+          variant_name: (raw.variant_name as string) || null,
           quantity: item.quantity,
           name: (raw.name as string) || 'Unknown Product',
           description: (raw.description as string) || '',
@@ -51,10 +54,7 @@ export async function GET() {
     }
   } catch (err: unknown) {
     console.error('[cart GET] Error:', err);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return serverError('Failed to fetch cart');
   }
 }
 
@@ -63,36 +63,30 @@ export async function POST(request: NextRequest) {
     const userId = await getUserId();
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+      return unauthorized('Authentication required');
     }
 
-    const { product_id, quantity = 1 } = await request.json();
+    const { product_id, variant_id, quantity = 1 } = await request.json();
 
     if (!product_id || !Number.isInteger(Number(product_id)) || Number(product_id) <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Valid product ID is required' },
-        { status: 400 }
-      );
+      return badRequest('Valid product ID is required');
     }
 
     if (typeof quantity !== 'number' || isNaN(quantity) || quantity <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Valid positive quantity is required' },
-        { status: 400 }
-      );
+      return badRequest('Valid positive quantity is required');
     }
 
-    await addCartItem(userId, product_id, quantity);
-    const cartItem = await getCartItemWithProduct(userId, product_id);
+    // variant_id can be null for products without variants, or a valid integer for variant products
+    const validVariantId = variant_id ? parseInt(variant_id, 10) : null;
+    if (variant_id && (validVariantId === null || validVariantId <= 0 || !Number.isInteger(validVariantId))) {
+      return badRequest('Valid variant ID is required');
+    }
+
+    await addCartItem(userId, product_id, quantity, validVariantId);
+    const cartItem = await getCartItemWithProduct(userId, product_id, validVariantId);
 
     if (!cartItem) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to add item to cart' },
-        { status: 500 }
-      );
+      return serverError('Failed to add item to cart');
     }
 
     const rawItem = cartItem as unknown as Record<string, unknown>;
@@ -101,6 +95,8 @@ export async function POST(request: NextRequest) {
       data: {
         id: cartItem.id,
         product_id: cartItem.product_id,
+        variant_id: cartItem.variant_id || null,
+        variant_name: (rawItem.variant_name as string) || null,
         name: (rawItem.name as string) || 'Unknown Product',
         price: cartItem.price || 0,
         quantity: cartItem.quantity,
@@ -109,10 +105,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: unknown) {
     console.error('[cart POST] Error:', err);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return serverError('Failed to add to cart');
   }
 }
 
@@ -121,41 +114,31 @@ export async function PUT(request: NextRequest) {
     const userId = await getUserId();
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+      return unauthorized('Authentication required');
     }
 
-    const { product_id, quantity } = await request.json();
+    const { product_id, variant_id, quantity } = await request.json();
 
     if (!product_id || !Number.isInteger(Number(product_id)) || Number(product_id) <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Valid product ID is required' },
-        { status: 400 }
-      );
+      return badRequest('Valid product ID is required');
     }
 
     if (typeof quantity !== 'number' || isNaN(quantity)) {
-      return NextResponse.json(
-        { success: false, error: 'Valid quantity is required' },
-        { status: 400 }
-      );
+      return badRequest('Valid quantity is required');
     }
 
+    const validVariantId = variant_id ? parseInt(variant_id, 10) : null;
+
     if (quantity <= 0) {
-      await removeCartItem(userId, product_id);
+      await removeCartItem(userId, product_id, validVariantId);
       return NextResponse.json({ success: true, message: 'Item removed from cart' });
     }
 
-    await updateCartItemQuantity(userId, product_id, quantity);
-    const cartItem = await getCartItemWithProduct(userId, product_id);
+    await updateCartItemQuantity(userId, product_id, quantity, validVariantId);
+    const cartItem = await getCartItemWithProduct(userId, product_id, validVariantId);
 
     if (!cartItem) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to update cart item' },
-        { status: 500 }
-      );
+      return serverError('Failed to update cart item');
     }
 
     const rawItem2 = cartItem as unknown as Record<string, unknown>;
@@ -164,6 +147,8 @@ export async function PUT(request: NextRequest) {
       data: {
         id: cartItem.id,
         product_id: cartItem.product_id,
+        variant_id: cartItem.variant_id || null,
+        variant_name: (rawItem2.variant_name as string) || null,
         name: (rawItem2.name as string) || 'Unknown Product',
         price: cartItem.price || 0,
         quantity: cartItem.quantity,
@@ -172,10 +157,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (err: unknown) {
     console.error('[cart PUT] Error:', err);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return serverError('Failed to update cart');
   }
 }
 
@@ -190,9 +172,6 @@ export async function DELETE() {
     return NextResponse.json({ success: true, message: 'Cart cleared' });
   } catch (err: unknown) {
     console.error('[cart DELETE] Error:', err);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return serverError('Failed to clear cart');
   }
 }

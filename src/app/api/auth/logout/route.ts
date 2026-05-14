@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error('Error during logout:', error);
+  } catch (err: unknown) {
+    console.error('Error during logout:', err);
 
     const response = NextResponse.json(
       { success: true, message: 'Logged out (with errors)' },

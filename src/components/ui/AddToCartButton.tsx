@@ -53,8 +53,8 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
 
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
+    } catch (err: unknown) {
+      console.error('Error adding to cart:', err);
       setIsLoading(false);
     }
   };

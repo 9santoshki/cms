@@ -114,5 +114,5 @@ Product endpoints (`GET /api/products`, `GET /api/products/[id]`) return:
 - **Database Layer:** `src/lib/db/products.ts`
 - **API Endpoints:** `src/app/api/products/route.ts`, `src/app/api/products/[id]/route.ts`
 - **Admin Form:** `src/app/dashboard/products/[id]/page.tsx`
-- **TypeScript Types:** `src/types/index.ts`, `src/types.ts`
+- **TypeScript Types:** `src/types/index.ts`
 - **Schema:** `scripts/initDatabase.sql`

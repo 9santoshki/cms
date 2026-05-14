@@ -72,8 +72,8 @@ const AccountPage = () => {
       setIsEditing(false);
 
       setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (err: unknown) {
+      console.error('Error updating profile:', err);
       setMessage({ type: 'error', text: 'Failed to update profile.' });
     } finally {
       setSaving(false);

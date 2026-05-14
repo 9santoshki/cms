@@ -36,8 +36,8 @@ const DashboardOrdersPage = () => {
       } else {
         setOrders([]);
       }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching orders:', err);
       setOrders([]);
     } finally {
       setLoading(false);

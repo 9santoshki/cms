@@ -36,8 +36,8 @@ const DashboardAppointmentsPage = () => {
       } else {
         setAppointments([]);
       }
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching appointments:', err);
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -59,8 +59,8 @@ const DashboardAppointmentsPage = () => {
           )
         );
       }
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
+    } catch (err: unknown) {
+      console.error('Error updating appointment status:', err);
     }
   };
 

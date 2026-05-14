@@ -66,9 +66,9 @@ export async function addProductImage(
 
     await client.query('COMMIT');
     return result.rows[0] as ProductImage;
-  } catch (error) {
+  } catch (err: unknown) {
     await client.query('ROLLBACK');
-    throw error;
+    throw err;
   } finally {
     client.release();
   }
@@ -114,9 +114,9 @@ export async function setPrimaryImage(productId: string, imageId: string): Promi
 
     await client.query('COMMIT');
     return result.rowCount ? result.rowCount > 0 : false;
-  } catch (error) {
+  } catch (err: unknown) {
     await client.query('ROLLBACK');
-    throw error;
+    throw err;
   } finally {
     client.release();
   }

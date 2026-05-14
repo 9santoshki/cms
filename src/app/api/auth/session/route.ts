@@ -95,8 +95,8 @@ export async function GET(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
     return response;
-  } catch (error) {
-    console.error('❌ Error getting session:', error);
+  } catch (err: unknown) {
+    console.error('❌ Error getting session:', err);
     return NextResponse.json({ user: null }, { status: 200 });
   }
 }

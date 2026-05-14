@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB, updateUserRole } from '@/lib/db/auth';
+import { query } from '@/lib/db/connection';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const validRoles = ['customer', 'moderator', 'admin'];
+    const validRoles = ['customer', 'moderator', 'admin', 'supplier'];
     if (!validRoles.includes(newRole)) {
       return NextResponse.json(
         { success: false, error: `newRole must be one of: ${validRoles.join(', ')}` },
@@ -43,6 +44,25 @@ export async function PUT(request: NextRequest) {
 
     // Update the user role
     await updateUserRole(userId, newRole);
+
+    // When assigning supplier role, auto-create a suppliers table entry if one doesn't exist
+    if (newRole === 'supplier') {
+      const existing = await query(
+        'SELECT id FROM suppliers WHERE user_id = $1',
+        [userId]
+      );
+      if (existing.rows.length === 0) {
+        const userResult = await query(
+          'SELECT name FROM users WHERE id = $1',
+          [userId]
+        );
+        const userName = userResult.rows[0]?.name || 'Unnamed Supplier';
+        await query(
+          'INSERT INTO suppliers (user_id, company_name) VALUES ($1, $2)',
+          [userId, userName]
+        );
+      }
+    }
 
     return NextResponse.json(
       {
@@ -57,8 +77,8 @@ export async function PUT(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Error in update role API:', error);
+  } catch (err: unknown) {
+    console.error('Error in update role API:', err);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

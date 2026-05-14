@@ -21,8 +21,8 @@ const AuthForm = () => {
 
       const redirect = searchParams.get('redirect') || '/';
       router.push(redirect);
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch (err: unknown) {
+      console.error('Sign in error:', err);
       setLoading(false);
     }
   };

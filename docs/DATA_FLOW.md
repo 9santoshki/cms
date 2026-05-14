@@ -42,4 +42,4 @@
 • Cloudflare R2: Image storage and retrieval
 • Razorpay: Payment processing
 • PostgreSQL: Main data persistence
-• Stripe components: May be needed for payments (verify current implementation)
+• Resend: Email delivery service

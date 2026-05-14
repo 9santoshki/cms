@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { toErrorMessage } from '@/lib/error-utils';
 
 interface ProductImage {
   id: string;
@@ -72,9 +73,9 @@ export default function ProductImageManager({
         console.error('Upload failed:', data);
         setUploadProgress(`Error: ${errorMsg}`);
       }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      const errorMsg = error?.message || error?.toString() || 'An unexpected error occurred';
+    } catch (err: unknown) {
+      console.error('Upload error:', err);
+      const errorMsg = toErrorMessage(err) || 'An unexpected error occurred';
       setUploadProgress(`Error: ${errorMsg}`);
     } finally {
       setUploading(false);
@@ -100,9 +101,9 @@ export default function ProductImageManager({
       } else {
         alert(`Error: ${data.error}`);
       }
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      alert(`Error: ${error.message}`);
+    } catch (err: unknown) {
+      console.error('Delete error:', err);
+      alert(`Error: ${toErrorMessage(err)}`);
     }
   };
 
@@ -129,9 +130,9 @@ export default function ProductImageManager({
       } else {
         alert(`Error: ${data.error}`);
       }
-    } catch (error: any) {
-      console.error('Set primary error:', error);
-      alert(`Error: ${error.message}`);
+    } catch (err: unknown) {
+      console.error('Set primary error:', err);
+      alert(`Error: ${toErrorMessage(err)}`);
     }
   };
 

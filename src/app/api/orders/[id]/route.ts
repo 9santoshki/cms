@@ -169,7 +169,7 @@ export async function PUT(
               trackingUrl: trackingUrl,
               estimatedDelivery: 'Within 5-7 business days',
             });
-            console.log(`✓ Shipment email sent to ${currentOrder.customer_email}`);
+            console.info(`Shipment email sent to ${currentOrder.customer_email} for order ${currentOrder.id}`);
             break;
 
           case 'completed':
@@ -179,7 +179,7 @@ export async function PUT(
               customerName: currentOrder.customer_name,
               deliveryDate: new Date().toISOString(),
             });
-            console.log(`✓ Delivery email sent to ${currentOrder.customer_email}`);
+            console.info(`Delivery email sent to ${currentOrder.customer_email} for order ${currentOrder.id}`);
             break;
 
           // Add more status-based emails as needed

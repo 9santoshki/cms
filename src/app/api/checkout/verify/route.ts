@@ -5,6 +5,7 @@ import { query } from '@/lib/db/connection';
 import { clearCart } from '@/lib/db/cart';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { getOrderItems } from '@/lib/db/orders';
+import { toErrorMessage } from '@/lib/error-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,8 +68,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-    } catch (error) {
-      console.error('Error verifying payment with Razorpay:', error);
+    } catch (err: unknown) {
+      console.error('Error verifying payment with Razorpay:', err);
       return NextResponse.json(
         { success: false, error: 'Failed to verify payment' },
         { status: 500 }
@@ -169,10 +170,10 @@ export async function POST(request: NextRequest) {
         message: 'Payment verified and order updated successfully'
       }
     });
-  } catch (error: any) {
-    console.error('Error in payment verification:', error);
+  } catch (err: unknown) {
+    console.error('Error in payment verification:', err);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: toErrorMessage(err) || 'Internal server error' },
       { status: 500 }
     );
   }

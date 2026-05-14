@@ -31,8 +31,8 @@ export default function AuthFinalizePage() {
           console.error('Login failed:', data);
           setTimeout(() => window.location.href = '/', 2000);
         }
-      } catch (error) {
-        console.error('Error in finalize:', error);
+      } catch (err: unknown) {
+        console.error('Error in finalize:', err);
         setTimeout(() => window.location.href = '/', 2000);
       }
     };

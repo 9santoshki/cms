@@ -40,8 +40,8 @@ const DashboardUsersPage = () => {
         console.error('Failed to fetch users:', result.error);
         setUsers([]);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch (err: unknown) {
+      console.error('Error fetching users:', err);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -65,8 +65,8 @@ const DashboardUsersPage = () => {
       } else {
         alert(`Failed to update role: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Error updating user role:', error);
+    } catch (err: unknown) {
+      console.error('Error updating user role:', err);
       alert('An error occurred while updating the role');
     }
   };
@@ -222,6 +222,7 @@ const DashboardUsersPage = () => {
               <option value="customer">Customer</option>
               <option value="moderator">Moderator</option>
               <option value="admin">Admin</option>
+              <option value="supplier">Supplier</option>
             </select>
           </div>
 
@@ -357,10 +358,12 @@ const DashboardUsersPage = () => {
                     padding: '6px 12px',
                     background: userItem.role === 'admin' ? 'rgba(139, 92, 246, 0.1)' :
                                userItem.role === 'moderator' ? 'rgba(59, 130, 246, 0.1)' :
+                               userItem.role === 'supplier' ? 'rgba(245, 158, 11, 0.1)' :
                                userItem.role === 'customer' ? 'rgba(34, 197, 94, 0.1)' :
                                'rgba(156, 163, 175, 0.1)',
                     color: userItem.role === 'admin' ? '#8b5cf6' :
                            userItem.role === 'moderator' ? '#3b82f6' :
+                           userItem.role === 'supplier' ? '#f59e0b' :
                            userItem.role === 'customer' ? '#22c55e' :
                            '#6b7280',
                     borderRadius: '6px',
@@ -405,6 +408,7 @@ const DashboardUsersPage = () => {
                   <option value="customer">Customer</option>
                   <option value="moderator">Moderator</option>
                   <option value="admin">Admin</option>
+                  <option value="supplier">Supplier</option>
                 </select>
                 <button
                   onClick={() => router.push(`/dashboard/users/${userItem.id}`)}

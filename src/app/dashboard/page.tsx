@@ -8,7 +8,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const DashboardPage = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -18,6 +18,8 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for initial session check to complete
+
     if (!user) {
       router.push('/auth?redirect=/dashboard');
       return;
@@ -30,7 +32,7 @@ const DashboardPage = () => {
 
     // Fetch dashboard stats
     fetchStats();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const fetchStats = async () => {
     try {
@@ -42,7 +44,7 @@ const DashboardPage = () => {
       if (data.success) {
         setStats(data.data);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -87,6 +89,8 @@ const DashboardPage = () => {
     { icon: 'fas fa-box', label: 'Products', href: '/dashboard/products', show: isAdmin },
     { icon: 'fas fa-shopping-bag', label: 'Orders', href: '/dashboard/orders', show: true },
     { icon: 'fas fa-calendar-check', label: 'Appointments', href: '/dashboard/appointments', show: true },
+    { icon: 'fas fa-star', label: 'Reviews', href: '/dashboard/reviews', show: true },
+    { icon: 'fas fa-truck', label: 'Suppliers', href: '/dashboard/suppliers', show: isAdmin },
     { icon: 'fas fa-users', label: 'Users', href: '/dashboard/users', show: isAdmin },
     { icon: 'fas fa-cog', label: 'Settings', href: '/dashboard/settings', show: isAdmin },
   ].filter(item => item.show !== false);

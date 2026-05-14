@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         is_current: s.id === session.sessionId
       }))
     });
-  } catch (error) {
-    console.error('Error fetching sessions:', error);
+  } catch (err: unknown) {
+    console.error('Error fetching sessions:', err);
     return NextResponse.json(
       { error: 'Failed to fetch sessions' },
       { status: 500 }
@@ -87,8 +87,8 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Session deleted successfully'
     });
-  } catch (error) {
-    console.error('Error deleting session:', error);
+  } catch (err: unknown) {
+    console.error('Error deleting session:', err);
     return NextResponse.json(
       { error: 'Failed to delete session' },
       { status: 500 }
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
       deleted_count: deletedCount,
       message: `Cleaned up ${deletedCount} expired sessions`
     });
-  } catch (error) {
-    console.error('Error cleaning up sessions:', error);
+  } catch (err: unknown) {
+    console.error('Error cleaning up sessions:', err);
     return NextResponse.json(
       { error: 'Failed to cleanup sessions' },
       { status: 500 }

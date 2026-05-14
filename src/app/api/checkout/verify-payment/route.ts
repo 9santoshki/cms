@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-    } catch (error) {
-      console.error('Error verifying payment with Razorpay:', error);
+    } catch (err: unknown) {
+      console.error('Error verifying payment with Razorpay:', err);
       return NextResponse.json(
         { success: false, error: 'Failed to verify payment with Razorpay' },
         { status: 500 }

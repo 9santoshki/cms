@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getOrdersByUserId, getOrderItems } from '@/lib/db/orders';
+import { getOrdersByUserId, getOrderItemsBatch } from '@/lib/db/orders';
 import { query } from '@/lib/db/connection';
+import { unauthorized, serverError } from '@/lib/api-response';
 
 export async function GET() {
   try {
     // Validate session and get user
     const session = await getSessionFromCookieWithDB();
     if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized'
-        },
-        { status: 401 }
-      );
+      return unauthorized();
     }
 
     let orders;
@@ -34,30 +29,22 @@ export async function GET() {
       orders = await getOrdersByUserId(session.userId);
     }
 
-    // Fetch items for each order
-    const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
-        const items = await getOrderItems(order.id);
-        return {
-          ...order,
-          items
-        };
-      })
-    );
+    // Batch fetch items for all orders (single query, not N+1)
+    const orderIds = orders.map((o) => o.id.toString());
+    const itemsMap = await getOrderItemsBatch(orderIds);
+
+    const ordersWithItems = orders.map((order) => ({
+      ...order,
+      items: itemsMap.get(order.id.toString()) || [],
+    }));
 
     return NextResponse.json({
       success: true,
       data: ordersWithItems
     });
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error'
-      },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    console.error('Error fetching orders:', err);
+    return serverError('Failed to fetch orders');
   }
 }
 
@@ -70,14 +57,8 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Error creating order:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error'
-      },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    console.error('Error creating order:', err);
+    return serverError('Failed to create order');
   }
 }

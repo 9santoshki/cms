@@ -37,7 +37,7 @@ export interface AuthContextValue extends AuthState {
 const initialState: AuthState = {
   user: null,
   token: null,
-  loading: false,
+  loading: true, // true until initial session check completes
   error: null,
 };
 
@@ -120,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         // Non-critical — session check failed
+      } finally {
+        setLoading(false); // Mark initial auth check as complete
       }
     };
 

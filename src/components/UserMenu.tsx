@@ -93,7 +93,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
           });
 
           localStorage.removeItem('pendingCartAction');
-        } catch (error) {
+        } catch {
         }
       }
     }
@@ -347,6 +347,40 @@ const renderUserAccountIcon = () => {
                   >
                     <i className="fas fa-tachometer-alt" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
                     <span>Admin Dashboard</span>
+                  </button>
+                </>
+              )}
+
+              {user.role === "supplier" && (
+                <>
+                  <div style={{ height: '1px', background: '#f0f0f0', margin: '8px 20px' }}></div>
+                  <button
+                    onClick={() => { onNavigate("/supplier"); setIsDropdownOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 20px',
+                      fontSize: '14px',
+                      color: '#333',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                      e.currentTarget.style.color = '#c19a6b';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#333';
+                    }}
+                  >
+                    <i className="fas fa-truck" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
+                    <span>Supplier Dashboard</span>
                   </button>
                 </>
               )}

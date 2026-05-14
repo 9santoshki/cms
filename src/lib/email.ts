@@ -87,9 +87,9 @@ export async function sendEmail(to: string, subject: string, html: string) {
     } else {
       throw new Error(`Unknown email provider: ${EMAIL_PROVIDER}`);
     }
-  } catch (error) {
-    console.error('Error sending email:', error);
-    throw error;
+  } catch (err: unknown) {
+    console.error('Error sending email:', err);
+    throw err;
   }
 }
 
