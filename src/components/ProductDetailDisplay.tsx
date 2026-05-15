@@ -571,6 +571,8 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
   // Variant state
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  // Label when options are selected but no DB-backed variant matches (e.g. "Thin / 12×18 / Black")
+  const [selectionLabel, setSelectionLabel] = useState<string>('');
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -721,12 +723,14 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
       : displayPrice;
 
     try {
-      // Add to cart with variant info if available
+      // Add to cart with variant info if available.
+      // When no DB variant exists, use the selectionLabel so the cart still records the
+      // user's chosen options (e.g. "Thin / 12×18 / Black").
       await addItem({
         id: Date.now(),
         product_id: product.id,
         variant_id: selectedVariant?.id,
-        variant_name: selectedVariant?.variant_name,
+        variant_name: selectedVariant?.variant_name || selectionLabel || undefined,
         quantity: quantity,
         name: product.name,
         price: priceToAdd,
@@ -842,7 +846,10 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           {/* Variant Selector */}
           <VariantSelector
             productId={product.id}
-            onVariantChange={(variant) => setSelectedVariant(variant)}
+            onVariantChange={(variant, label) => {
+              setSelectedVariant(variant);
+              setSelectionLabel(label || '');
+            }}
           />
 
           {/* Quantity Selector */}

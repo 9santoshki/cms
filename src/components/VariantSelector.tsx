@@ -6,7 +6,11 @@ import type { VariantOptionType, VariantOption, ProductVariant } from '@/types';
 
 interface VariantSelectorProps {
   productId: number;
-  onVariantChange: (variant: ProductVariant | null) => void;
+  /** Called when the variant selection changes.
+   *  `variant` is the matched DB variant (or null if none exist for this product).
+   *  `selectionLabel` is the human-readable combination string, e.g. "Thin / 12×18 / Black".
+   */
+  onVariantChange: (variant: ProductVariant | null, selectionLabel?: string) => void;
 }
 
 // Styled components for variant selection
@@ -106,8 +110,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
           setOptionsByType(data.data.optionsByType || {});
           setVariants(data.data.variants || []);
 
-          // Initialize selected options with first option for each type
-          if (data.data.hasVariants && data.data.optionTypes) {
+          // Always initialise selections with the first option for each type
+          if (data.data.optionTypes && data.data.optionTypes.length > 0) {
             const initialSelections: Record<string, number> = {};
             for (const type of data.data.optionTypes) {
               const options = data.data.optionsByType?.[type.name] || [];
@@ -128,29 +132,39 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
     fetchVariants();
   }, [productId]);
 
-  // Find matching variant based on selected options
+  // Find matching DB variant based on selected options (only relevant when hasVariants)
   const selectedVariant = useMemo(() => {
     if (!hasVariants || variants.length === 0) return null;
 
-    // Get all selected option IDs
     const selectedOptionIds = Object.values(selectedOptions);
 
-    // Find variant that matches all selected options
     return variants.find(variant => {
       if (!variant.options) return false;
       const variantOptionIds = variant.options.map(o => o.id);
-      // Check if variant has exactly the selected options
       return selectedOptionIds.every(id => variantOptionIds.includes(id)) &&
              variantOptionIds.every(id => selectedOptionIds.includes(id));
-    });
+    }) ?? null;
   }, [hasVariants, variants, selectedOptions]);
 
-  // Notify parent when variant changes
+  // Build a human-readable label from current selections, e.g. "Thin / 12×18 / Black"
+  const selectionLabel = useMemo(() => {
+    if (optionTypes.length === 0) return '';
+    return optionTypes
+      .map(type => {
+        const optionId = selectedOptions[type.name];
+        const option = optionsByType[type.name]?.find(o => o.id === optionId);
+        return option?.display_value ?? '';
+      })
+      .filter(Boolean)
+      .join(' / ');
+  }, [optionTypes, optionsByType, selectedOptions]);
+
+  // Notify parent whenever the selection changes
   // Note: onVariantChange intentionally not in deps - it's a notification callback
   useEffect(() => {
-    onVariantChange(selectedVariant || null);
+    onVariantChange(selectedVariant, selectionLabel || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVariant]);
+  }, [selectedVariant, selectionLabel]);
 
   // Handle option selection
   const handleOptionSelect = (typeName: string, optionId: number) => {
@@ -160,13 +174,14 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
     }));
   };
 
-  // Check if an option combination results in an available variant
+  // Check if an option combination results in an available variant.
+  // When no DB variants exist, every option is treated as available.
   const isOptionAvailable = (typeName: string, optionId: number): boolean => {
-    // Create a test selection with this option
+    if (!hasVariants || variants.length === 0) return true;
+
     const testSelection = { ...selectedOptions, [typeName]: optionId };
     const testOptionIds = Object.values(testSelection);
 
-    // Check if any variant matches this combination
     return variants.some(variant => {
       if (!variant.options) return false;
       const variantOptionIds = variant.options.map(o => o.id);
@@ -176,11 +191,12 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
   };
 
   if (loading) {
-    return <LoadingState>Loading variants...</LoadingState>;
+    return <LoadingState>Loading options...</LoadingState>;
   }
 
-  if (!hasVariants) {
-    return null; // No variants for this product
+  // Nothing to show if the DB has no option types at all
+  if (optionTypes.length === 0) {
+    return null;
   }
 
   return (
@@ -216,12 +232,12 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
         </VariantSection>
       ))}
 
-      {/* Show selected variant info */}
+      {/* Show selected variant info when DB variant is matched */}
       {selectedVariant && (
         <SelectedVariantInfo>
           <div>
             <div style={{ fontSize: '0.875rem', color: '#166534', marginBottom: '0.25rem' }}>
-              Selected: {selectedVariant.variant_name}
+              Selected: {selectedVariant.variant_name || selectionLabel}
             </div>
             <VariantStock>
               {selectedVariant.stock_quantity > 0
@@ -245,8 +261,17 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
         </SelectedVariantInfo>
       )}
 
-      {/* Show warning if no matching variant */}
-      {!selectedVariant && Object.keys(selectedOptions).length === optionTypes.length && (
+      {/* When no DB variants exist but user has made selections, show a confirmation */}
+      {!hasVariants && selectionLabel && (
+        <SelectedVariantInfo>
+          <div style={{ fontSize: '0.875rem', color: '#166534' }}>
+            ✓ Selected: {selectionLabel}
+          </div>
+        </SelectedVariantInfo>
+      )}
+
+      {/* Warn only when DB variants exist but no combination matches */}
+      {hasVariants && !selectedVariant && Object.keys(selectedOptions).length === optionTypes.length && (
         <OutOfStockWarning>
           This combination is not available. Please select different options.
         </OutOfStockWarning>
