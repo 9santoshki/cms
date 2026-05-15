@@ -110,9 +110,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  STEP 1: Extract deployment package"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 cd $APP_DIR
+# Wipe old .next first so no stale/orphaned chunks remain from previous builds
+rm -rf .next
 tar -xzf /tmp/cms-deploy-prod.tar.gz
 rm /tmp/cms-deploy-prod.tar.gz
-echo "✅ Extracted"
+echo "✅ Extracted (clean)"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

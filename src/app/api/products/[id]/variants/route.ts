@@ -23,31 +23,20 @@ export async function GET(
       return notFound('Invalid product ID');
     }
 
-    // Check if product has variants
-    const hasVariants = await productHasVariants(productId);
-
-    if (!hasVariants) {
-      // Product has no variants - return empty response
-      return ok({
-        hasVariants: false,
-        variants: [],
-        optionTypes: [],
-        optionsByType: {}
-      });
-    }
-
-    // Get variants and options
-    const variants = await getProductVariants(productId);
+    // Always fetch option types and options so the UI can show selectors
     const optionTypes = await getVariantOptionTypes();
 
-    // Build options grouped by type
     const optionsByType: Record<string, unknown[]> = {};
     for (const type of optionTypes) {
       optionsByType[type.name] = await getVariantOptionsByType(type.id);
     }
 
+    // Check if this specific product has DB-backed variants (for price/stock matching)
+    const hasVariants = await productHasVariants(productId);
+    const variants = hasVariants ? await getProductVariants(productId) : [];
+
     return ok({
-      hasVariants: true,
+      hasVariants,
       variants,
       optionTypes,
       optionsByType
