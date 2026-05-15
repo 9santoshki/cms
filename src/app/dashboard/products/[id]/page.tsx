@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProductImageManager from '@/components/ProductImageManager';
+import ProductVariantManager from '@/components/ProductVariantManager';
 
 interface ProductImage {
   id: string;
@@ -677,6 +678,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           background: 'white',
           borderRadius: '12px',
           padding: '24px',
+          marginBottom: '24px',
           boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
@@ -685,6 +687,19 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             images={product.images}
             onImagesChange={loadProduct}
           />
+        </div>
+      )}
+
+      {/* Product Variants */}
+      {product && (
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <ProductVariantManager productId={product.id} />
         </div>
       )}
     </DashboardLayout>
