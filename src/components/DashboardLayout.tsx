@@ -259,11 +259,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
               }}>
                 Navigation
               </div>
-              {menuItems.map((item, index) => {
+              {menuItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
-                    key={index}
+                    key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     style={{
