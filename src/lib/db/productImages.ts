@@ -23,6 +23,28 @@ export async function getProductImages(productId: string): Promise<ProductImage[
 }
 
 /**
+ * Batch fetch images for multiple products in a single query.
+ * Returns a map of product_id -> images array.
+ */
+export async function getProductImagesBatch(productIds: string[]): Promise<Map<string, ProductImage[]>> {
+  if (productIds.length === 0) return new Map();
+
+  const result = await query(
+    'SELECT * FROM product_images WHERE product_id = ANY($1) ORDER BY display_order ASC, created_at ASC',
+    [productIds]
+  );
+
+  const imagesByProductId = new Map<string, ProductImage[]>();
+  for (const row of result.rows) {
+    const productId = row.product_id;
+    let arr = imagesByProductId.get(productId);
+    if (!arr) { arr = []; imagesByProductId.set(productId, arr); }
+    arr.push(row);
+  }
+  return imagesByProductId;
+}
+
+/**
  * Add an image to a product.
  * Wraps the "unset primary + insert" steps in a single client transaction
  * so both operations always run on the same connection.
@@ -83,14 +105,6 @@ export async function deleteProductImage(imageId: string): Promise<boolean> {
 }
 
 /**
- * Delete all images for a product
- */
-export async function deleteAllProductImages(productId: string): Promise<boolean> {
-  const result = await query('DELETE FROM product_images WHERE product_id = $1', [productId]);
-  return result.rowCount ? result.rowCount > 0 : false;
-}
-
-/**
  * Set an image as primary.
  * Uses a single dedicated client so both UPDATE statements run in
  * the same transaction on the same connection.
@@ -122,27 +136,3 @@ export async function setPrimaryImage(productId: string, imageId: string): Promi
   }
 }
 
-/**
- * Update image display order
- */
-export async function updateImageOrder(
-  imageId: string,
-  newOrder: number
-): Promise<boolean> {
-  const result = await query(
-    'UPDATE product_images SET display_order = $1 WHERE id = $2',
-    [newOrder, imageId]
-  );
-  return result.rowCount ? result.rowCount > 0 : false;
-}
-
-/**
- * Get primary image for a product
- */
-export async function getPrimaryImage(productId: string): Promise<ProductImage | null> {
-  const result = await query(
-    'SELECT * FROM product_images WHERE product_id = $1 AND is_primary = true',
-    [productId]
-  );
-  return result.rows[0] as ProductImage || null;
-}

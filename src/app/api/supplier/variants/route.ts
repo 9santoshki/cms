@@ -7,6 +7,7 @@ import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
   getSupplierByUserId,
   getSupplierVariants,
+  isVariantAssignedToSupplier,
   updateVariantStockWithLog,
   getSupplierInventoryLogs
 } from '@/lib/db/suppliers';
@@ -88,9 +89,16 @@ export async function PUT(request: NextRequest) {
       return badRequest('new_quantity must be a positive integer or zero');
     }
 
-    // Update stock with audit log
+    // Verify this supplier is actually assigned to the variant they want to update
+    const assigned = await isVariantAssignedToSupplier(supplier.id, variant_id);
+    if (!assigned) {
+      return forbidden('You are not authorized to update inventory for this variant');
+    }
+
+    // Update this supplier's stock; total on variant = SUM across all assigned suppliers
     const result = await updateVariantStockWithLog(
       variant_id,
+      supplier.id,
       new_quantity,
       parseInt(session.userId, 10),
       'supplier_update',

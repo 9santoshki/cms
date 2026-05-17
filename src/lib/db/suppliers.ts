@@ -209,6 +209,43 @@ export async function removeVariantAssignment(supplierId: number, variantId: num
   return result.rowCount !== null && result.rowCount > 0;
 }
 
+/** Check whether a variant is assigned to a specific supplier */
+export async function isVariantAssignedToSupplier(supplierId: number, variantId: number): Promise<boolean> {
+  const result = await query(
+    `SELECT EXISTS(SELECT 1 FROM supplier_variants WHERE supplier_id = $1 AND variant_id = $2)`,
+    [supplierId, variantId]
+  );
+  return result.rows[0].exists as boolean;
+}
+
+/**
+ * Get all supplier assignments for every variant in a product, keyed by variant_id.
+ * A variant may have multiple suppliers, so the value is an array.
+ * Used by the admin product edit page to display per-row supplier info without N+1 queries.
+ */
+export async function getVariantSuppliersByProductId(
+  productId: number
+): Promise<Record<number, Array<{ supplier_id: number; company_name: string; stock_quantity: number }>>> {
+  const result = await query(
+    `SELECT sv.variant_id, sv.supplier_id, s.company_name, sv.stock_quantity
+     FROM supplier_variants sv
+     JOIN suppliers s ON sv.supplier_id = s.id
+     JOIN product_variants pv ON sv.variant_id = pv.id
+     WHERE pv.product_id = $1
+     ORDER BY s.company_name`,
+    [productId]
+  );
+  const map: Record<number, Array<{ supplier_id: number; company_name: string; stock_quantity: number }>> = {};
+  for (const row of result.rows as Array<{ variant_id: number; supplier_id: number; company_name: string; stock_quantity: number }>) {
+    (map[row.variant_id] ??= []).push({
+      supplier_id: row.supplier_id,
+      company_name: row.company_name,
+      stock_quantity: row.stock_quantity,
+    });
+  }
+  return map;
+}
+
 /** Get all suppliers assigned to a specific variant */
 export async function getVariantSuppliers(variantId: number): Promise<Supplier[]> {
   const result = await query(
@@ -227,9 +264,14 @@ export async function getVariantSuppliers(variantId: number): Promise<Supplier[]
 // Inventory Management
 // ============================================================================
 
-/** Update variant stock quantity with audit log */
+/**
+ * Update a supplier's own stock quantity for a variant, then recompute the variant's
+ * total stock_quantity as the SUM across all suppliers.
+ * Audit log records the supplier-level change (previous vs new for this supplier).
+ */
 export async function updateVariantStockWithLog(
   variantId: number,
+  supplierId: number,
   newQuantity: number,
   changedBy: number,
   changeType: InventoryLog['change_type'],
@@ -240,27 +282,45 @@ export async function updateVariantStockWithLog(
   try {
     await client.query('BEGIN');
 
-    // Get current quantity
-    const currentResult = await client.query(
-      `SELECT stock_quantity FROM product_variants WHERE id = $1`,
+    // Verify variant exists
+    const variantExists = await client.query(
+      `SELECT id FROM product_variants WHERE id = $1`,
       [variantId]
     );
-
-    if (currentResult.rows.length === 0) {
+    if (variantExists.rows.length === 0) {
       await client.query('ROLLBACK');
       return null;
     }
 
-    const previousQuantity = currentResult.rows[0].stock_quantity as number;
+    // Get this supplier's current quantity for the variant
+    const currentResult = await client.query(
+      `SELECT stock_quantity FROM supplier_variants WHERE supplier_id = $1 AND variant_id = $2`,
+      [supplierId, variantId]
+    );
+    const previousQuantity = currentResult.rows.length > 0
+      ? (currentResult.rows[0].stock_quantity as number)
+      : 0;
     const changeQuantity = newQuantity - previousQuantity;
 
-    // Update variant stock
-    const variantResult = await client.query(
-      `UPDATE product_variants SET stock_quantity = $1 WHERE id = $2 RETURNING *`,
-      [newQuantity, variantId]
+    // Update this supplier's quantity on the assignment row
+    await client.query(
+      `UPDATE supplier_variants SET stock_quantity = $1 WHERE supplier_id = $2 AND variant_id = $3`,
+      [newQuantity, supplierId, variantId]
     );
 
-    // Create audit log entry
+    // Recompute variant total = SUM of all supplier quantities for this variant
+    const sumResult = await client.query(
+      `SELECT COALESCE(SUM(stock_quantity), 0) AS total FROM supplier_variants WHERE variant_id = $1`,
+      [variantId]
+    );
+    const totalStock = sumResult.rows[0].total as number;
+
+    const variantResult = await client.query(
+      `UPDATE product_variants SET stock_quantity = $1 WHERE id = $2 RETURNING *`,
+      [totalStock, variantId]
+    );
+
+    // Create audit log entry (tracks the supplier-level change)
     const logResult = await client.query(
       `INSERT INTO inventory_logs (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)

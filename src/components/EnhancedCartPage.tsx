@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
@@ -34,20 +34,26 @@ import {
 const EnhancedCartPage = () => {
   const router = useRouter();
   const cartItems = useCartStore(state => state.items);
+  const isLoading = useCartStore(state => state.isLoading);
+  const loadServerCart = useCartStore(state => state.loadServerCart);
   const updateCartItem = useCartStore(state => state.updateItem);
   const removeFromCart = useCartStore(state => state.removeItem);
+
+  // Sync with server on every cart page visit so stale/deleted products are pruned
+  useEffect(() => {
+    loadServerCart();
+  }, [loadServerCart]);
 
   const navigate = (path: string) => {
     router.push(path);
   };
 
-  const updateQuantity = (productId: number, newQuantity: number) => {
+  const updateQuantity = (productId: number, newQuantity: number, variantId?: number | null) => {
     if (newQuantity < 1) {
-      // If quantity is less than 1, remove the item
-      removeFromCart(productId);
+      removeFromCart(productId, variantId ?? null);
       return;
     }
-    updateCartItem(productId, newQuantity);
+    updateCartItem(productId, newQuantity, variantId ?? null);
   };
 
   const subtotal = calculateCartTotal(cartItems);
@@ -63,6 +69,23 @@ const EnhancedCartPage = () => {
   const continueShopping = () => {
     navigate('/shop');
   };
+
+  if (isLoading) {
+    return (
+      <CartContainer>
+        <Header activePage="cart" />
+        <CartHeaderSection>
+          <h1>Shopping Cart</h1>
+        </CartHeaderSection>
+        <EmptyCartSection>
+          <EmptyCartContent>
+            <p style={{ color: '#6b7280' }}>Loading your cart…</p>
+          </EmptyCartContent>
+        </EmptyCartSection>
+        <Footer />
+      </CartContainer>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -105,11 +128,10 @@ const EnhancedCartPage = () => {
 
           <CartItemsList>
             {cartItems.map((item, index) => {
-              // Create a unique key to avoid duplicate key errors
-              // Use product_id first (most reliable), then id, then index as fallback
-              const uniqueKey = item.product_id ? `prod-${item.product_id}` :
-                               item.id ? `item-${item.id}-${index}` :
-                               `idx-${index}`;
+              // Use the cart row id as the unique key; fall back to index only if absent
+              const uniqueKey = item.id != null
+                ? `cart-${item.id}`
+                : `idx-${index}`;
 
               const productId = item.product_id || item.id;
 
@@ -140,14 +162,14 @@ const EnhancedCartPage = () => {
                   <ItemQuantity>
                     <button
                       className="quantity-btn"
-                      onClick={() => updateQuantity(productId, item.quantity - 1)}
+                      onClick={() => updateQuantity(productId, item.quantity - 1, item.variant_id)}
                     >
                       <i className="fas fa-minus"></i>
                     </button>
                     <span className="quantity">{item.quantity}</span>
                     <button
                       className="quantity-btn"
-                      onClick={() => updateQuantity(productId, item.quantity + 1)}
+                      onClick={() => updateQuantity(productId, item.quantity + 1, item.variant_id)}
                     >
                       <i className="fas fa-plus"></i>
                     </button>
@@ -162,7 +184,7 @@ const EnhancedCartPage = () => {
                   <ItemActions>
                     <button
                       className="remove-btn"
-                      onClick={() => removeFromCart(productId)}
+                      onClick={() => removeFromCart(productId, item.variant_id ?? null)}
                     >
                       <i className="fas fa-trash-alt"></i>
                     </button>
@@ -179,9 +201,7 @@ const EnhancedCartPage = () => {
 
             <SummaryItemsList>
               {cartItems.map((item, index) => {
-                const uniqueKey = item.product_id ? `sum-${item.product_id}` :
-                                 item.id ? `sum-${item.id}-${index}` :
-                                 `sum-idx-${index}`;
+                const uniqueKey = item.id != null ? `sum-${item.id}` : `sum-idx-${index}`;
 
                 // Check if image_url is valid (not a placeholder URL)
                 const hasValidImage = item.image_url &&

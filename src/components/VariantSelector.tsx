@@ -11,6 +11,10 @@ interface VariantSelectorProps {
    *  `selectionLabel` is the human-readable combination string, e.g. "Thin / 12×18 / Black".
    */
   onVariantChange: (variant: ProductVariant | null, selectionLabel?: string) => void;
+  /** Called once when variant data loads with whether any variant has stock > 0.
+   *  Derives from supplier-managed stock_quantity, not the product-level field.
+   */
+  onStockChange?: (anyInStock: boolean) => void;
 }
 
 // Styled components for variant selection
@@ -87,7 +91,7 @@ const LoadingState = styled.div`
   text-align: center;
 `;
 
-const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantChange }) => {
+const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantChange, onStockChange }) => {
   const [loading, setLoading] = useState(true);
   const [hasVariants, setHasVariants] = useState(false);
   const [optionTypes, setOptionTypes] = useState<VariantOptionType[]>([]);
@@ -105,10 +109,14 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
         const data = await response.json();
 
         if (data.success) {
+          const variantList: ProductVariant[] = data.data.variants || [];
           setHasVariants(data.data.hasVariants);
           setOptionTypes(data.data.optionTypes || []);
           setOptionsByType(data.data.optionsByType || {});
-          setVariants(data.data.variants || []);
+          setVariants(variantList);
+
+          // Notify parent of overall stock availability (supplier-managed)
+          onStockChange?.(variantList.some(v => v.stock_quantity > 0));
 
           // Always initialise selections with the first option for each type
           if (data.data.optionTypes && data.data.optionTypes.length > 0) {
@@ -240,9 +248,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
               Selected: {selectedVariant.variant_name || selectionLabel}
             </div>
             <VariantStock>
-              {selectedVariant.stock_quantity > 0
-                ? `✓ ${selectedVariant.stock_quantity} available`
-                : '⚠ Out of stock'}
+              {selectedVariant.stock_quantity > 0 ? '✓ In Stock' : '⚠ Out of Stock'}
             </VariantStock>
           </div>
           <VariantPrice>

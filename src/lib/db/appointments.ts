@@ -1,4 +1,5 @@
 import { query } from './connection';
+import { buildUpdateQueryById } from './query-builder';
 
 export interface Appointment {
   id: string;
@@ -73,43 +74,19 @@ export async function updateAppointment(
   id: string,
   updates: Partial<Appointment>
 ): Promise<Appointment | null> {
-  const fields: string[] = [];
-  const values: any[] = [];
-  let paramCount = 1;
+  // Exclude immutable identity fields from updates
+  const { id: _id, user_id: _userId, ...safeUpdates } = updates;
 
-  Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined && key !== 'id' && key !== 'user_id') {
-      fields.push(`${key} = $${paramCount++}`);
-      values.push(value);
-    }
-  });
-
-  if (fields.length === 0) {
+  const result = buildUpdateQueryById('appointments', id, safeUpdates);
+  if (!result) {
     return getAppointmentById(id);
   }
 
-  values.push(id);
-
-  const result = await query(
-    `UPDATE appointments SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${paramCount} RETURNING *`,
-    values
-  );
-
-  return result.rows[0] || null;
+  const queryResult = await query(result.query, result.values);
+  return queryResult.rows[0] || null;
 }
 
 export async function deleteAppointment(id: string): Promise<boolean> {
   const result = await query('DELETE FROM appointments WHERE id = $1', [id]);
   return result.rowCount ? result.rowCount > 0 : false;
-}
-
-export async function updateAppointmentStatus(
-  id: string,
-  status: Appointment['status']
-): Promise<Appointment | null> {
-  const result = await query(
-    `UPDATE appointments SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-    [status, id]
-  );
-  return result.rows[0] || null;
 }

@@ -20,6 +20,29 @@ async function getUserId() {
   }
 }
 
+/**
+ * Format a cart item for API response.
+ */
+function formatCartItem(item: Record<string, unknown>) {
+  const imageUrl = item.primary_image_id
+    ? getCloudflareImageUrl(item.primary_image_id as string)
+    : (item.image_url as string) || null;
+
+  return {
+    id: item.id,
+    product_id: item.product_id,
+    variant_id: item.variant_id || null,
+    variant_name: (item.variant_name as string) || null,
+    quantity: item.quantity,
+    name: (item.name as string) || 'Unknown Product',
+    description: (item.description as string) || '',
+    price: item.price || 0,
+    image_url: imageUrl,
+    originalPrice: null,
+    discount: 0,
+  };
+}
+
 export async function GET() {
   try {
     const userId = await getUserId();
@@ -29,23 +52,7 @@ export async function GET() {
 
       const formattedCartItems = cartItems.map((item) => {
         const raw = item as unknown as Record<string, unknown>;
-        const imageUrl = raw.primary_image_id
-          ? getCloudflareImageUrl(raw.primary_image_id as string)
-          : (raw.image_url as string) || null;
-
-        return {
-          id: item.id,
-          product_id: item.product_id,
-          variant_id: item.variant_id || null,
-          variant_name: (raw.variant_name as string) || null,
-          quantity: item.quantity,
-          name: (raw.name as string) || 'Unknown Product',
-          description: (raw.description as string) || '',
-          price: item.price || 0,
-          image_url: imageUrl,
-          originalPrice: null,
-          discount: 0,
-        };
+        return formatCartItem(raw);
       });
 
       return NextResponse.json({ success: true, data: formattedCartItems });
@@ -92,16 +99,7 @@ export async function POST(request: NextRequest) {
     const rawItem = cartItem as unknown as Record<string, unknown>;
     return NextResponse.json({
       success: true,
-      data: {
-        id: cartItem.id,
-        product_id: cartItem.product_id,
-        variant_id: cartItem.variant_id || null,
-        variant_name: (rawItem.variant_name as string) || null,
-        name: (rawItem.name as string) || 'Unknown Product',
-        price: cartItem.price || 0,
-        quantity: cartItem.quantity,
-        image_url: (rawItem.image_url as string) || null,
-      },
+      data: formatCartItem(rawItem),
     });
   } catch (err: unknown) {
     console.error('[cart POST] Error:', err);
@@ -134,26 +132,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Item removed from cart' });
     }
 
-    await updateCartItemQuantity(userId, product_id, quantity, validVariantId);
+    // Try to update; if the item isn't in the DB yet (local/server state drift), insert it
+    const updated = await updateCartItemQuantity(userId, product_id, quantity, validVariantId);
+    if (!updated) {
+      await addCartItem(userId, product_id, quantity, validVariantId);
+    }
+
     const cartItem = await getCartItemWithProduct(userId, product_id, validVariantId);
 
     if (!cartItem) {
       return serverError('Failed to update cart item');
     }
 
-    const rawItem2 = cartItem as unknown as Record<string, unknown>;
+    const rawItem = cartItem as unknown as Record<string, unknown>;
     return NextResponse.json({
       success: true,
-      data: {
-        id: cartItem.id,
-        product_id: cartItem.product_id,
-        variant_id: cartItem.variant_id || null,
-        variant_name: (rawItem2.variant_name as string) || null,
-        name: (rawItem2.name as string) || 'Unknown Product',
-        price: cartItem.price || 0,
-        quantity: cartItem.quantity,
-        image_url: (rawItem2.image_url as string) || null,
-      },
+      data: formatCartItem(rawItem),
     });
   } catch (err: unknown) {
     console.error('[cart PUT] Error:', err);

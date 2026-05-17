@@ -7,7 +7,8 @@ import {
   getSupplierVariants,
   assignVariantToSupplier,
   removeVariantAssignment,
-  getVariantSuppliers
+  getVariantSuppliers,
+  getVariantSuppliersByProductId
 } from '@/lib/db/suppliers';
 import { ok, created, badRequest, unauthorized, forbidden, notFound, serverError } from '@/lib/api-response';
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get('supplier_id');
     const variantId = searchParams.get('variant_id');
+    const productId = searchParams.get('product_id');
 
     if (supplierId) {
       const assignments = await getSupplierVariants(parseInt(supplierId, 10));
@@ -40,7 +42,12 @@ export async function GET(request: NextRequest) {
       return ok(suppliers);
     }
 
-    return badRequest('supplier_id or variant_id is required');
+    if (productId) {
+      const map = await getVariantSuppliersByProductId(parseInt(productId, 10));
+      return ok(map);
+    }
+
+    return badRequest('supplier_id, variant_id, or product_id is required');
   } catch (err: unknown) {
     console.error('Error fetching assignments:', err);
     return serverError('Failed to fetch assignments');

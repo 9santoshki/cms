@@ -43,7 +43,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     price: '',
     sale_price: '',
     category: '',
-    stock_quantity: '',
   });
 
   useEffect(() => {
@@ -88,7 +87,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: data.data.price.toString(),
           sale_price: data.data.sale_price?.toString() || '',
           category: data.data.category || '',
-          stock_quantity: data.data.stock_quantity?.toString() || '0',
         });
       } else {
         setError(data.error || 'Failed to load product');
@@ -134,7 +132,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: parseFloat(formData.price),
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           category: formData.category,
-          stock_quantity: parseInt(formData.stock_quantity) || 0,
         }),
       });
 
@@ -560,39 +557,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            {/* Stock and Category */}
-            <div className="product-form-grid" style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '20px'
-            }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#666',
-                  marginBottom: '8px'
-                }}>
-                  Stock Quantity
-                </label>
-                <input
-                  type="number"
-                  name="stock_quantity"
-                  value={formData.stock_quantity}
-                  onChange={handleInputChange}
-                  min="0"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    border: '1px solid #e8d5c4',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
+            {/* Category */}
+            <div>
               <div>
                 <label style={{
                   display: 'block',

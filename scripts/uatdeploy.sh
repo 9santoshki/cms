@@ -1,15 +1,18 @@
 #!/bin/bash
-# Production deployment script
-# Build locally, push to git, deploy binary
+# UAT deployment script
+# Build locally, push to git, run DB migrations, deploy binary
 
 set -e
 
 DROPLET_IP="68.183.53.217"
 APP_DIR="/home/cms/app"
+DB_NAME="cms_db"
+DB_USER="cms_user"
+DB_PASSWORD="cS70IwDpQOBQuDX7D39VVYtjbUVci8rT5LSZujQuxbo="
 
-echo "🚀 Deploying to production..."
+echo "🚀 Deploying to UAT..."
 echo ""
-echo "Workflow: Build locally → Git push → Deploy binary"
+echo "Workflow: Build locally → Git push → Deploy binary → DB migrations"
 echo ""
 
 # Step 1: Check for uncommitted changes
@@ -74,11 +77,12 @@ rm -rf .next/dev .next/cache 2>/dev/null || true
 tar -czf /tmp/cms-deploy.tar.gz \
     .next \
     public \
+    scripts \
     package.json \
     package-lock.json \
     next.config.js \
     babel.config.js \
-    .env.uat 2>/dev/null || tar -czf /tmp/cms-deploy.tar.gz .next public package.json package-lock.json next.config.js babel.config.js
+    .env.uat
 
 echo "✅ Package created ($(du -h /tmp/cms-deploy.tar.gz | cut -f1))"
 echo ""
@@ -87,36 +91,69 @@ echo ""
 echo "🚀 Deploying to server..."
 scp /tmp/cms-deploy.tar.gz root@$DROPLET_IP:/tmp/
 
-ssh root@$DROPLET_IP << 'ENDSSH'
+ssh root@$DROPLET_IP bash << ENDSSH
 set -e
+PGPASSWORD="$DB_PASSWORD"
+export PGPASSWORD
 
-cd /home/cms/app
-
-echo "📦 Extracting deployment package..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 1: Extract deployment package"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cd $APP_DIR
 tar -xzf /tmp/cms-deploy.tar.gz
 rm /tmp/cms-deploy.tar.gz
+echo "✅ Extracted"
 
-echo "⚙️  Configuring environment..."
-# Link .env.uat as .env.local so Next.js loads it directly (.env.local overrides .env.production)
-if [ -f .env.uat ]; then
-    ln -sf .env.uat .env.local
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 2: Run DB migrations (idempotent)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+run_migration() {
+    local file="\$1"
+    local label="\$2"
+    if [ -f "\$file" ]; then
+        echo "  Running: \$label..."
+        psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f "\$file" -v ON_ERROR_STOP=1
+        echo "  ✅ \$label done"
+    else
+        echo "  ⚠️  Not found: \$file"
+    fi
+}
+run_migration "$APP_DIR/scripts/migrations/add_product_variants.sql" "add_product_variants"
+run_migration "$APP_DIR/scripts/migrations/add_suppliers.sql"         "add_suppliers"
+run_migration "$APP_DIR/scripts/migrations/add_supplier_stock.sql"    "add_supplier_stock"
+echo "✅ Migrations complete"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 3: Configure environment"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ -f $APP_DIR/.env.uat ]; then
+    ln -sf $APP_DIR/.env.uat $APP_DIR/.env.local
     echo "✅ Environment configured (.env.local → .env.uat)"
 else
     echo "⚠️  Warning: .env.uat not found"
 fi
 
-echo "📦 Installing production dependencies..."
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 4: Install production dependencies"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cd $APP_DIR
 npm install --production --prefer-offline
+echo "✅ Dependencies installed"
 
-echo "🔄 Restarting application..."
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 5: Restart application"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if pm2 list | grep -q "cms-app"; then
     pm2 restart cms-app
-    echo "✅ Application restarted"
+    echo "✅ cms-app restarted"
 else
-    echo "🚀 Starting application for first time..."
-    pm2 start npm --name cms-app -- start
+    PORT=3000 pm2 start npm --name cms-app -- start
     pm2 save
-    echo "✅ Application started"
+    echo "✅ cms-app started (port 3000)"
 fi
 
 echo ""
@@ -130,11 +167,10 @@ pm2 logs cms-app --lines 10 --nostream
 echo ""
 echo "✅ Deployment complete!"
 echo "🌐 Site: https://uat.colourmyspace.com"
-
 ENDSSH
 
-# Cleanup
-rm /tmp/cms-deploy.tar.gz
+# Cleanup local tarball
+rm -f /tmp/cms-deploy.tar.gz
 
 echo ""
 echo "✅ Deployment complete!"

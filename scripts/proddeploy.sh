@@ -133,6 +133,7 @@ run_migration() {
 }
 run_migration "$APP_DIR/scripts/migrations/add_product_variants.sql" "add_product_variants"
 run_migration "$APP_DIR/scripts/migrations/add_suppliers.sql"         "add_suppliers"
+run_migration "$APP_DIR/scripts/migrations/add_supplier_stock.sql"    "add_supplier_stock"
 echo "✅ Migrations complete"
 
 echo ""

@@ -573,6 +573,9 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   // Label when options are selected but no DB-backed variant matches (e.g. "Thin / 12×18 / Black")
   const [selectionLabel, setSelectionLabel] = useState<string>('');
+  // Overall stock availability from supplier-managed variant inventory.
+  // null = variants not yet loaded (fall back to product.stock_quantity).
+  const [anyVariantInStock, setAnyVariantInStock] = useState<boolean | null>(null);
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -772,7 +775,18 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               style={{ width: '100%', height: '500px' } as React.CSSProperties}
             />
             <ShippingBadge>✓ Free Shipping</ShippingBadge>
-            <StockBadge>In Stock</StockBadge>
+            {(() => {
+              // Use supplier-managed variant stock when available;
+              // fall back to product.stock_quantity for non-variant products.
+              const outOfStock = anyVariantInStock !== null
+                ? !anyVariantInStock
+                : (product.stock_quantity !== undefined && product.stock_quantity <= 0);
+              return (
+                <StockBadge style={outOfStock ? { backgroundColor: 'rgba(254,242,242,0.95)', color: '#dc2626' } : undefined}>
+                  {outOfStock ? 'Out of Stock' : 'In Stock'}
+                </StockBadge>
+              );
+            })()}
             {hasDiscount && (
               <DiscountBadge>{discountPercentage}% OFF</DiscountBadge>
             )}
@@ -850,6 +864,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               setSelectedVariant(variant);
               setSelectionLabel(label || '');
             }}
+            onStockChange={setAnyVariantInStock}
           />
 
           {/* Quantity Selector */}

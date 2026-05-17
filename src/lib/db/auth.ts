@@ -6,6 +6,7 @@
  * - Session validation with real-time role fetching from database
  */
 import { query } from './connection';
+import { buildUpdateQueryById } from './query-builder';
 import { cookies, headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -128,19 +129,6 @@ export const getUserByEmail = async (email: string): Promise<UserProfile | null>
   return result.rows[0];
 };
 
-// Create session token
-export const createSessionToken = (user: UserProfile): string => {
-  const sessionData: SessionData = {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    avatar: user.avatar,
-    role: user.role,
-  };
-
-  return jwt.sign(sessionData, JWT_SECRET, { expiresIn: '7d' });
-};
-
 /**
  * Verifies JWT session token
  * - Validates token format and signature
@@ -160,36 +148,6 @@ export const verifySessionToken = (token: string): SessionData | null => {
     }
     return null;
   }
-};
-
-// Set session cookie
-export const setSessionCookie = async (token: string) => {
-  const cookieStore = await cookies();
-
-  // Get domain from APP_URL for proper cookie domain setting
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const domain = appUrl ? new URL(appUrl).hostname : undefined;
-
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development', // true for uat and production
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-    ...(domain && { domain }),
-  });
-};
-
-// Get session from cookie
-export const getSessionFromCookie = async (): Promise<SessionData | null> => {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-
-  if (!sessionCookie) {
-    return null;
-  }
-
-  return verifySessionToken(sessionCookie.value);
 };
 
 // Clear session cookie
@@ -231,32 +189,12 @@ export const updateUserProfile = async (
   userId: string,
   updates: { name?: string; avatar?: string }
 ): Promise<UserProfile | null> => {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  let paramCount = 1;
-
-  if (updates.name !== undefined) {
-    fields.push(`name = $${paramCount++}`);
-    values.push(updates.name);
-  }
-
-  if (updates.avatar !== undefined) {
-    fields.push(`avatar = $${paramCount++}`);
-    values.push(updates.avatar);
-  }
-
-  if (fields.length === 0) {
+  const result = buildUpdateQueryById('users', userId, updates);
+  if (!result) {
     return getUserProfile(userId);
   }
 
-  fields.push(`updated_at = NOW()`);
-  values.push(userId);
-
-  await query(
-    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramCount}`,
-    values
-  );
-
+  await query(result.query, result.values);
   return getUserProfile(userId);
 };
 
@@ -311,43 +249,11 @@ export const createSession = async (
   };
 };
 
-// Get session from database by token
-export const getSessionFromDB = async (sessionToken: string): Promise<DBSession | null> => {
-  const result = await query(
-    `SELECT * FROM sessions
-     WHERE session_token = $1
-     AND expires_at > NOW()`,
-    [sessionToken]
-  );
-
-  if (result.rows.length === 0) {
-    return null;
-  }
-
-  return result.rows[0];
-};
-
 // Update session activity timestamp
 export const updateSessionActivity = async (sessionId: string): Promise<void> => {
   await query(
     'UPDATE sessions SET last_activity = NOW() WHERE id = $1',
     [sessionId]
-  );
-};
-
-// Delete a specific session
-export const deleteSession = async (sessionToken: string): Promise<void> => {
-  await query(
-    'DELETE FROM sessions WHERE session_token = $1',
-    [sessionToken]
-  );
-};
-
-// Delete all sessions for a user
-export const deleteUserSessions = async (userId: string): Promise<void> => {
-  await query(
-    'DELETE FROM sessions WHERE user_id = $1',
-    [userId]
   );
 };
 

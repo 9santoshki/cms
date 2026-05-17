@@ -1,6 +1,7 @@
 import { query } from './connection';
-import { getProductImages } from './productImages';
+import { getProductImages, getProductImagesBatch } from './productImages';
 import { getCloudflareImageUrl } from '../cloudflare';
+import { buildUpdateQueryById } from './query-builder';
 
 export interface Product {
   id: string;
@@ -16,15 +17,38 @@ export interface Product {
   updated_at?: string;
 }
 
+export interface ProductImageWithUrl {
+  id: string;
+  url: string;
+  cloudflare_image_id: string;
+  is_primary: boolean;
+  display_order: number;
+}
+
 export interface ProductWithImages extends Product {
-  images: Array<{
-    id: string;
-    url: string;
-    cloudflare_image_id: string;
-    is_primary: boolean;
-    display_order: number;
-  }>;
+  images: ProductImageWithUrl[];
   primary_image?: string;
+}
+
+/**
+ * Helper to transform database image rows into images with Cloudflare URLs.
+ */
+function buildImagesWithUrls(images: Array<{ id: string; cloudflare_image_id: string; is_primary: boolean; display_order: number }>): ProductImageWithUrl[] {
+  return images.map((img) => ({
+    id: img.id,
+    url: getCloudflareImageUrl(img.cloudflare_image_id),
+    cloudflare_image_id: img.cloudflare_image_id,
+    is_primary: img.is_primary,
+    display_order: img.display_order,
+  }));
+}
+
+/**
+ * Helper to find primary image URL from images array.
+ */
+function findPrimaryImageUrl(images: ProductImageWithUrl[], fallbackUrl?: string): string | undefined {
+  const primaryImage = images.find((img) => img.is_primary);
+  return primaryImage?.url || fallbackUrl;
 }
 
 export async function getProducts(filters: {
@@ -78,11 +102,11 @@ export async function getProducts(filters: {
   `;
   params.push(limit, offset);
 
-  const productsResult = await query(productsQuery, params);
-
-  // Get total count
   const countQuery = `SELECT COUNT(*) as count FROM products ${whereClause}`;
-  const countResult = await query(countQuery, params.slice(0, paramCount - 1));
+  const [productsResult, countResult] = await Promise.all([
+    query(productsQuery, params),
+    query(countQuery, params.slice(0, paramCount - 1)),
+  ]);
   const total = parseInt(countResult.rows[0].count);
 
   return {
@@ -139,29 +163,13 @@ export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<Product | null> {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  let paramCount = 1;
-
-  Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined) {
-      fields.push(`${key} = $${paramCount++}`);
-      values.push(value);
-    }
-  });
-
-  if (fields.length === 0) {
+  const result = buildUpdateQueryById('products', id, updates);
+  if (!result) {
     return getProductById(id);
   }
 
-  values.push(id);
-
-  const result = await query(
-    `UPDATE products SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${paramCount} RETURNING *`,
-    values
-  );
-
-  return result.rows[0] || null;
+  const queryResult = await query(result.query, result.values);
+  return queryResult.rows[0] || null;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
@@ -188,20 +196,12 @@ export async function getProductWithImages(id: string): Promise<ProductWithImage
   if (!product) return null;
 
   const images = await getProductImages(id);
-  const imagesWithUrls = images.map((img) => ({
-    id: img.id,
-    url: getCloudflareImageUrl(img.cloudflare_image_id),
-    cloudflare_image_id: img.cloudflare_image_id,
-    is_primary: img.is_primary,
-    display_order: img.display_order,
-  }));
-
-  const primaryImage = imagesWithUrls.find((img) => img.is_primary);
+  const imagesWithUrls = buildImagesWithUrls(images);
 
   return {
     ...product,
     images: imagesWithUrls,
-    primary_image: primaryImage?.url || product.image_url,
+    primary_image: findPrimaryImageUrl(imagesWithUrls, product.image_url),
   };
 }
 
@@ -213,20 +213,12 @@ export async function getProductBySlugWithImages(slug: string): Promise<ProductW
   if (!product) return null;
 
   const images = await getProductImages(product.id);
-  const imagesWithUrls = images.map((img) => ({
-    id: img.id,
-    url: getCloudflareImageUrl(img.cloudflare_image_id),
-    cloudflare_image_id: img.cloudflare_image_id,
-    is_primary: img.is_primary,
-    display_order: img.display_order,
-  }));
-
-  const primaryImage = imagesWithUrls.find((img) => img.is_primary);
+  const imagesWithUrls = buildImagesWithUrls(images);
 
   return {
     ...product,
     images: imagesWithUrls,
-    primary_image: primaryImage?.url || product.image_url,
+    primary_image: findPrimaryImageUrl(imagesWithUrls, product.image_url),
   };
 }
 
@@ -243,27 +235,27 @@ export async function getProductsWithImages(filters: {
 }) {
   const result = await getProducts(filters);
 
-  // Fetch images for all products
-  const productsWithImages = await Promise.all(
-    result.products.map(async (product) => {
-      const images = await getProductImages(product.id);
-      const imagesWithUrls = images.map((img) => ({
-        id: img.id,
-        url: getCloudflareImageUrl(img.cloudflare_image_id),
-        cloudflare_image_id: img.cloudflare_image_id,
-        is_primary: img.is_primary,
-        display_order: img.display_order,
-      }));
+  if (result.products.length === 0) {
+    return {
+      products: [],
+      pagination: result.pagination,
+    };
+  }
 
-      const primaryImage = imagesWithUrls.find((img) => img.is_primary);
+  // Batch fetch all images for all products in a single query (no N+1)
+  const productIds = result.products.map(p => p.id);
+  const imagesByProductId = await getProductImagesBatch(productIds);
 
-      return {
-        ...product,
-        images: imagesWithUrls,
-        primary_image: primaryImage?.url || product.image_url,
-      };
-    })
-  );
+  const productsWithImages = result.products.map((product) => {
+    const images = imagesByProductId.get(product.id) || [];
+    const imagesWithUrls = buildImagesWithUrls(images);
+
+    return {
+      ...product,
+      images: imagesWithUrls,
+      primary_image: findPrimaryImageUrl(imagesWithUrls, product.image_url),
+    };
+  });
 
   return {
     products: productsWithImages,

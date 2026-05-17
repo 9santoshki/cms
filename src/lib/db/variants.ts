@@ -3,6 +3,7 @@
  * Handles variant option types, options, and product-specific variants.
  */
 import { query, getClient } from './connection';
+import { buildUpdateQuery } from './query-builder';
 import type {
   VariantOptionType,
   VariantOption,
@@ -52,35 +53,11 @@ export async function updateVariantOptionType(
   id: number,
   updates: Partial<Pick<VariantOptionType, 'display_name' | 'description' | 'display_order' | 'is_active'>>
 ): Promise<VariantOptionType | null> {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const result = buildUpdateQuery('variant_option_types', updates, 'id = $1', [id]);
+  if (!result) return null;
 
-  if (updates.display_name !== undefined) {
-    fields.push(`display_name = $${paramIndex++}`);
-    values.push(updates.display_name);
-  }
-  if (updates.description !== undefined) {
-    fields.push(`description = $${paramIndex++}`);
-    values.push(updates.description);
-  }
-  if (updates.display_order !== undefined) {
-    fields.push(`display_order = $${paramIndex++}`);
-    values.push(updates.display_order);
-  }
-  if (updates.is_active !== undefined) {
-    fields.push(`is_active = $${paramIndex++}`);
-    values.push(updates.is_active);
-  }
-
-  if (fields.length === 0) return null;
-
-  values.push(id);
-  const result = await query(
-    `UPDATE variant_option_types SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-    values
-  );
-  return result.rows[0] || null;
+  const queryResult = await query(result.query, result.values);
+  return queryResult.rows[0] || null;
 }
 
 // ============================================================================
@@ -139,35 +116,11 @@ export async function updateVariantOption(
   id: number,
   updates: Partial<Pick<VariantOption, 'display_value' | 'price_modifier' | 'display_order' | 'is_active'>>
 ): Promise<VariantOption | null> {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const result = buildUpdateQuery('variant_options', updates, 'id = $1', [id]);
+  if (!result) return null;
 
-  if (updates.display_value !== undefined) {
-    fields.push(`display_value = $${paramIndex++}`);
-    values.push(updates.display_value);
-  }
-  if (updates.price_modifier !== undefined) {
-    fields.push(`price_modifier = $${paramIndex++}`);
-    values.push(updates.price_modifier);
-  }
-  if (updates.display_order !== undefined) {
-    fields.push(`display_order = $${paramIndex++}`);
-    values.push(updates.display_order);
-  }
-  if (updates.is_active !== undefined) {
-    fields.push(`is_active = $${paramIndex++}`);
-    values.push(updates.is_active);
-  }
-
-  if (fields.length === 0) return null;
-
-  values.push(id);
-  const result = await query(
-    `UPDATE variant_options SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-    values
-  );
-  return result.rows[0] || null;
+  const queryResult = await query(result.query, result.values);
+  return queryResult.rows[0] || null;
 }
 
 /** Delete option */
@@ -400,40 +353,12 @@ export async function updateProductVariant(
   variantId: number,
   updates: Partial<Pick<ProductVariant, 'sku' | 'price' | 'sale_price' | 'stock_quantity' | 'is_active'>>
 ): Promise<ProductVariant | null> {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const result = buildUpdateQuery('product_variants', updates, 'id = $1', [variantId]);
+  if (!result) return null;
 
-  if (updates.sku !== undefined) {
-    fields.push(`sku = $${paramIndex++}`);
-    values.push(updates.sku);
-  }
-  if (updates.price !== undefined) {
-    fields.push(`price = $${paramIndex++}`);
-    values.push(updates.price);
-  }
-  if (updates.sale_price !== undefined) {
-    fields.push(`sale_price = $${paramIndex++}`);
-    values.push(updates.sale_price);
-  }
-  if (updates.stock_quantity !== undefined) {
-    fields.push(`stock_quantity = $${paramIndex++}`);
-    values.push(updates.stock_quantity);
-  }
-  if (updates.is_active !== undefined) {
-    fields.push(`is_active = $${paramIndex++}`);
-    values.push(updates.is_active);
-  }
+  const queryResult = await query(result.query, result.values);
+  const variant = queryResult.rows[0] as ProductVariant | null;
 
-  if (fields.length === 0) return null;
-
-  values.push(variantId);
-  const result = await query(
-    `UPDATE product_variants SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-    values
-  );
-
-  const variant = result.rows[0] as ProductVariant | null;
   if (variant) {
     variant.options = await getVariantOptionsForVariant(variant.id);
     variant.variant_name = variant.options.map(o => o.display_value).join(' / ');

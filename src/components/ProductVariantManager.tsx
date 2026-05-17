@@ -32,6 +32,11 @@ interface ProductVariant {
   options?: VariantOption[];
 }
 
+interface SupplierSummary {
+  id: number;
+  company_name: string;
+}
+
 interface Props {
   productId: string;
 }
@@ -69,7 +74,6 @@ export default function ProductVariantManager({ productId }: Props) {
   const [addPrice, setAddPrice] = useState('');
   const [addSalePrice, setAddSalePrice] = useState('');
   const [addSku, setAddSku] = useState('');
-  const [addStock, setAddStock] = useState('0');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -78,9 +82,16 @@ export default function ProductVariantManager({ productId }: Props) {
   const [editSku, setEditSku] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editSalePrice, setEditSalePrice] = useState('');
-  const [editStock, setEditStock] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // Supplier assignment — a variant can have multiple suppliers
+  const [suppliers, setSuppliers] = useState<SupplierSummary[]>([]);
+  const [variantSupplierMap, setVariantSupplierMap] = useState<Record<number, Array<{ supplier_id: number; company_name: string; stock_quantity: number }>>>({});
+  const [assignSelections, setAssignSelections] = useState<Record<number, number>>({});
+  const [assigningId, setAssigningId] = useState<number | null>(null);
+  // key = `${variantId}-${supplierId}` to track individual chip removal
+  const [unassigningKey, setUnassigningKey] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -90,15 +101,19 @@ export default function ProductVariantManager({ productId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [varRes, typesRes, optsRes] = await Promise.all([
+      const [varRes, typesRes, optsRes, suppRes, assignRes] = await Promise.all([
         fetch(`/api/admin/product-variants?product_id=${productId}`),
         fetch('/api/admin/variant-option-types'),
         fetch('/api/admin/variant-options'),
+        fetch('/api/admin/suppliers'),
+        fetch(`/api/admin/supplier-variants?product_id=${productId}`),
       ]);
-      const [varData, typesData, optsData] = await Promise.all([
+      const [varData, typesData, optsData, suppData, assignData] = await Promise.all([
         varRes.json(),
         typesRes.json(),
         optsRes.json(),
+        suppRes.json(),
+        assignRes.json(),
       ]);
 
       if (varData.success) setVariants(varData.data);
@@ -112,7 +127,15 @@ export default function ProductVariantManager({ productId }: Props) {
         setAllOptions(
           (optsData.data as VariantOption[]).filter((o) => o.is_active)
         );
-    } catch (err: any) {
+      if (suppData.success)
+        setSuppliers(
+          (suppData.data as Array<{ id: number; company_name: string; is_active: boolean }>)
+            .filter((s) => s.is_active)
+            .map((s) => ({ id: s.id, company_name: s.company_name }))
+        );
+      if (assignData.success)
+        setVariantSupplierMap(assignData.data as Record<number, Array<{ supplier_id: number; company_name: string; stock_quantity: number }>>);
+    } catch {
       setError('Failed to load variant data');
     } finally {
       setLoading(false);
@@ -153,7 +176,7 @@ export default function ProductVariantManager({ productId }: Props) {
           price: parseFloat(addPrice),
           sale_price: addSalePrice ? parseFloat(addSalePrice) : null,
           sku: addSku || null,
-          stock_quantity: parseInt(addStock, 10) || 0,
+          stock_quantity: 0,
           option_ids: selectedOptionIds,
         }),
       });
@@ -165,7 +188,6 @@ export default function ProductVariantManager({ productId }: Props) {
         setAddPrice('');
         setAddSalePrice('');
         setAddSku('');
-        setAddStock('0');
         loadData();
       } else {
         setAddError(data.error || 'Failed to add variant');
@@ -183,7 +205,6 @@ export default function ProductVariantManager({ productId }: Props) {
     setEditSku(v.sku || '');
     setEditPrice(v.price.toString());
     setEditSalePrice(v.sale_price?.toString() || '');
-    setEditStock(v.stock_quantity.toString());
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -200,7 +221,6 @@ export default function ProductVariantManager({ productId }: Props) {
           sku: editSku || null,
           price: parseFloat(editPrice),
           sale_price: editSalePrice ? parseFloat(editSalePrice) : null,
-          stock_quantity: parseInt(editStock, 10) || 0,
         }),
       });
       const data = await res.json();
@@ -254,6 +274,66 @@ export default function ProductVariantManager({ productId }: Props) {
       setError('Network error. Please try again.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // ── Assign supplier to variant ────────────────────────────────
+  const handleAssignSupplier = async (variantId: number) => {
+    const supplierId = assignSelections[variantId];
+    if (!supplierId) return;
+    setAssigningId(variantId);
+    try {
+      const res = await fetch('/api/admin/supplier-variants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supplier_id: supplierId, variant_id: variantId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const supplier = suppliers.find((s) => s.id === supplierId);
+        setVariantSupplierMap((prev) => ({
+          ...prev,
+          [variantId]: [...(prev[variantId] ?? []), { supplier_id: supplierId, company_name: supplier?.company_name ?? '', stock_quantity: 0 }],
+        }));
+        setAssignSelections((prev) => { const next = { ...prev }; delete next[variantId]; return next; });
+        flash('Supplier assigned!');
+      } else {
+        setError(data.error || 'Failed to assign supplier');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
+  // ── Unassign a specific supplier from a variant ───────────────
+  const handleUnassignSupplier = async (variantId: number, supplierId: number) => {
+    if (!confirm('Remove this supplier? They will no longer be able to manage stock for this variant.')) return;
+    const key = `${variantId}-${supplierId}`;
+    setUnassigningKey(key);
+    try {
+      const res = await fetch(
+        `/api/admin/supplier-variants?supplier_id=${supplierId}&variant_id=${variantId}`,
+        { method: 'DELETE' }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setVariantSupplierMap((prev) => {
+          const filtered = (prev[variantId] ?? []).filter((s) => s.supplier_id !== supplierId);
+          const next = { ...prev };
+          if (filtered.length === 0) delete next[variantId];
+          else next[variantId] = filtered;
+          return next;
+        });
+        flash('Supplier removed.');
+      } else {
+        setError(data.error || 'Failed to remove supplier');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setUnassigningKey(null);
     }
   };
 
@@ -413,17 +493,12 @@ export default function ProductVariantManager({ productId }: Props) {
                 style={inputStyle}
               />
             </div>
-            <div>
-              <label style={labelStyle}>Stock Qty</label>
-              <input
-                type="number"
-                min="0"
-                value={addStock}
-                onChange={(e) => setAddStock(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
           </div>
+
+          <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <i className="fas fa-info-circle"></i>
+            Stock starts at 0. Assigned suppliers update inventory from their dashboard.
+          </p>
 
           {addError && (
             <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>
@@ -486,7 +561,7 @@ export default function ProductVariantManager({ productId }: Props) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
               <tr style={{ background: 'rgba(193, 154, 107, 0.06)', borderBottom: '2px solid #e8d5c4' }}>
-                {['Options', 'SKU', 'Price (₹)', 'Sale Price (₹)', 'Stock', 'Active', 'Actions'].map((h) => (
+                {['Options', 'SKU', 'Price (₹)', 'Sale Price (₹)', 'Stock (supplier)', 'Supplier', 'Active', 'Actions'].map((h) => (
                   <th key={h} style={{
                     padding: '10px 12px',
                     textAlign: 'left',
@@ -544,6 +619,109 @@ export default function ProductVariantManager({ productId }: Props) {
                     <td style={{ padding: '10px 12px' }}>
                       <StockBadge qty={v.stock_quantity} />
                     </td>
+                    {/* Supplier — multiple suppliers per variant supported */}
+                    <td style={{ padding: '10px 12px', minWidth: '180px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {/* Chips for each assigned supplier */}
+                        {(variantSupplierMap[v.id] ?? []).map((s) => {
+                          const key = `${v.id}-${s.supplier_id}`;
+                          return (
+                            <div key={s.supplier_id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{
+                                background: 'rgba(99,102,241,0.1)',
+                                color: '#4f46e5',
+                                borderRadius: '6px',
+                                padding: '2px 8px',
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                              }}>
+                                {s.company_name}
+                                <span style={{ marginLeft: '5px', color: s.stock_quantity === 0 ? '#ef4444' : '#22c55e', fontWeight: '700' }}>
+                                  ({s.stock_quantity})
+                                </span>
+                              </span>
+                              <button
+                                onClick={() => handleUnassignSupplier(v.id, s.supplier_id)}
+                                disabled={unassigningKey === key}
+                                title="Remove supplier"
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '4px',
+                                  background: 'rgba(239,68,68,0.07)',
+                                  color: '#ef4444',
+                                  cursor: unassigningKey === key ? 'wait' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '10px',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {unassigningKey === key ? <SpinnerIcon size={10} /> : <i className="fas fa-times" />}
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {/* Assign row — hidden if all suppliers already assigned */}
+                        {(() => {
+                          const assignedIds = new Set((variantSupplierMap[v.id] ?? []).map((s) => s.supplier_id));
+                          const available = suppliers.filter((s) => !assignedIds.has(s.id));
+                          if (available.length === 0) return null;
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <select
+                                value={assignSelections[v.id] || ''}
+                                onChange={(e) =>
+                                  setAssignSelections((prev) => ({
+                                    ...prev,
+                                    [v.id]: parseInt(e.target.value, 10),
+                                  }))
+                                }
+                                style={{
+                                  ...inputStyle,
+                                  padding: '4px 6px',
+                                  fontSize: '11px',
+                                  flex: 1,
+                                  minWidth: 0,
+                                }}
+                              >
+                                <option value="">Add supplier…</option>
+                                {available.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.company_name}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleAssignSupplier(v.id)}
+                                disabled={!assignSelections[v.id] || assigningId === v.id}
+                                title="Assign supplier"
+                                style={{
+                                  width: '26px',
+                                  height: '26px',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  background: (!assignSelections[v.id] || assigningId === v.id)
+                                    ? '#d1d5db'
+                                    : 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                                  color: 'white',
+                                  cursor: (!assignSelections[v.id] || assigningId === v.id) ? 'not-allowed' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '11px',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {assigningId === v.id ? <SpinnerIcon size={10} /> : <i className="fas fa-check" />}
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </td>
                     {/* Active toggle */}
                     <td style={{ padding: '10px 12px' }}>
                       <button
@@ -598,7 +776,7 @@ export default function ProductVariantManager({ productId }: Props) {
                   {/* Inline edit row */}
                   {editingId === v.id && (
                     <tr style={{ borderBottom: '1px solid #f0ebe5', background: 'rgba(193, 154, 107, 0.04)' }}>
-                      <td colSpan={7} style={{ padding: '12px 12px 16px' }}>
+                      <td colSpan={8} style={{ padding: '12px 12px 16px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                           <div>
                             <label style={labelStyle}>Price (₹) *</label>
@@ -611,10 +789,6 @@ export default function ProductVariantManager({ productId }: Props) {
                           <div>
                             <label style={labelStyle}>SKU</label>
                             <input type="text" value={editSku} onChange={(e) => setEditSku(e.target.value)} style={inputStyle} />
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Stock Qty</label>
-                            <input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} style={inputStyle} />
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>

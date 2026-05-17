@@ -37,8 +37,8 @@ async function syncCartItemWithServer(productId: number, quantity: number, varia
     });
 
     if (!response.ok) {
-      const result = await response.json();
-      console.error('[CartStore] Server sync failed:', result);
+      const result = await response.text().then(t => { try { return JSON.parse(t); } catch { return t; } });
+      console.error(`[CartStore] Server sync failed (${response.status}):`, result);
     }
   } catch (err: unknown) {
     console.error('[CartStore] Failed to sync cart with server:', err);
@@ -160,12 +160,22 @@ export const useCartStore = create<CartState>()(
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' },
           });
+
+          // 401 means unauthenticated — leave local guest cart items intact
+          if (response.status === 401) {
+            set({ isLoading: false });
+            return;
+          }
+
           const data = await response.json();
 
           if (data.success && data.data) {
+            // Server response only includes products that still exist in the DB
+            // (getCartItems uses INNER JOIN products), so stale/deleted items
+            // are automatically excluded here.
             set({ items: data.data as CartItem[], isLoading: false });
           } else {
-            set({ items: [], isLoading: false });
+            set({ isLoading: false });
           }
         } catch (err: unknown) {
           console.error('[CartStore] Failed to load server cart:', err);
@@ -180,17 +190,22 @@ export const useCartStore = create<CartState>()(
 
           const items = get().items;
 
-          for (const item of items) {
-            await fetch('/api/cart', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                product_id: item.product_id,
-                variant_id: item.variant_id,
-                quantity: item.quantity,
-              }),
-            });
-          }
+          await Promise.allSettled(
+            items.map(async (item) => {
+              const res = await fetch('/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  product_id: item.product_id,
+                  variant_id: item.variant_id,
+                  quantity: item.quantity,
+                }),
+              });
+              if (!res.ok) {
+                console.error('[CartStore] Sync failed for item', item.product_id, res.status);
+              }
+            })
+          );
         } catch (err: unknown) {
           console.error('Failed to sync cart with server:', err);
         }
