@@ -36,6 +36,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
     { icon: 'fas fa-users', label: 'Users', href: '/dashboard/users', show: isAdmin },
     { icon: 'fas fa-tags', label: 'Variant Dictionary', href: '/dashboard/variants', show: isAdmin },
     { icon: 'fas fa-cog', label: 'Settings', href: '/dashboard/settings', show: isAdmin },
+    { icon: 'fas fa-book-open', label: 'Admin Manual', href: '/dashboard/docs/admin-manual', show: isAdmin, dividerBefore: true },
+    { icon: 'fas fa-sitemap', label: 'Tech Architecture', href: '/dashboard/docs/tech-architecture', show: isAdmin },
   ].filter(item => item.show !== false);
 
   return (
@@ -262,45 +264,53 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px',
-                      marginBottom: '4px',
-                      borderRadius: '8px',
-                      textDecoration: 'none',
-                      color: isActive ? '#c19a6b' : '#666',
-                      background: isActive ? 'linear-gradient(135deg, rgba(193, 154, 107, 0.1), rgba(193, 154, 107, 0.05))' : 'transparent',
-                      fontWeight: isActive ? '600' : '500',
-                      fontSize: '14px',
-                      transition: 'all 0.2s ease',
-                      border: isActive ? '1px solid rgba(193, 154, 107, 0.2)' : '1px solid transparent'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'rgba(193, 154, 107, 0.05)';
-                        e.currentTarget.style.transform = 'translateX(4px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.transform = 'translateX(0)';
-                      }
-                    }}
-                  >
-                    <i className={item.icon} style={{
-                      width: '20px',
-                      textAlign: 'center',
-                      fontSize: '16px'
-                    }}></i>
-                    <span>{item.label}</span>
-                  </Link>
+                  <React.Fragment key={item.href}>
+                    {item.dividerBefore && (
+                      <div style={{
+                        height: '1px',
+                        background: '#f0ebe5',
+                        margin: '8px 12px',
+                      }} />
+                    )}
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px',
+                        marginBottom: '4px',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        color: isActive ? '#c19a6b' : '#666',
+                        background: isActive ? 'linear-gradient(135deg, rgba(193, 154, 107, 0.1), rgba(193, 154, 107, 0.05))' : 'transparent',
+                        fontWeight: isActive ? '600' : '500',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        border: isActive ? '1px solid rgba(193, 154, 107, 0.2)' : '1px solid transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = 'rgba(193, 154, 107, 0.05)';
+                          e.currentTarget.style.transform = 'translateX(4px)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                        }
+                      }}
+                    >
+                      <i className={item.icon} style={{
+                        width: '20px',
+                        textAlign: 'center',
+                        fontSize: '16px'
+                      }}></i>
+                      <span>{item.label}</span>
+                    </Link>
+                  </React.Fragment>
                 );
               })}
             </div>
