@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductsWithImages, createProduct } from '@/lib/db/products';
+import { getProductsWithImages, createProduct, generateUniqueSlug } from '@/lib/db/products';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +16,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
+    // Fast-path: skip DB session lookup for unauthenticated requests (most public traffic)
+    // Importing cookies here avoids a full DB round-trip for every anonymous page load
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('cms-session');
+    let isAdmin = false;
+    if (sessionCookie) {
+      const session = await getSessionFromCookieWithDB();
+      isAdmin = session?.role === 'admin' || session?.role === 'moderator';
+    }
+
     const result = await getProductsWithImages({
       search,
       category,
@@ -23,6 +34,8 @@ export async function GET(request: NextRequest) {
       maxPrice,
       page,
       limit,
+      // Public visitors only see published products
+      publishedOnly: !isAdmin,
     });
 
     return NextResponse.json({
@@ -58,7 +71,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, price, sale_price, image_url, category, stock_quantity } = body;
+    const { name, description, price, sale_price, image_url, category, stock_quantity, status } =
+      body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -67,8 +81,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate a unique slug for the product
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+    // Validate status if provided
+    const validStatuses = ['draft', 'published', 'archived'];
+    const productStatus: 'draft' | 'published' | 'archived' =
+      validStatuses.includes(status) ? status : 'draft';
+
+    // Generate a clean, unique, SEO-friendly slug
+    const slug = await generateUniqueSlug(name);
 
     const product = await createProduct({
       name,
@@ -79,6 +98,7 @@ export async function POST(request: NextRequest) {
       category,
       stock_quantity,
       slug,
+      status: productStatus,
     });
 
     return NextResponse.json(
@@ -88,7 +108,10 @@ export async function POST(request: NextRequest) {
           ...product,
           images: [],
           primary_image: product.image_url,
-          message: 'Product created. Upload images using /api/products/images/upload',
+          message:
+            productStatus === 'draft'
+              ? 'Product saved as draft. Publish it once images and variants are ready.'
+              : 'Product created. Upload images using /api/products/images/upload',
         },
       },
       { status: 201 }

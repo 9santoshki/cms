@@ -11,7 +11,11 @@ import { cookies, headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// SECURITY: JWT_SECRET must be set in environment - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required. Generate with: openssl rand -base64 64');
+}
 const SESSION_COOKIE_NAME = 'cms-session';
 const SESSION_DURATION_DAYS = 30; // 30 days for persistent login
 

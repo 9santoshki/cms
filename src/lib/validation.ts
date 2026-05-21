@@ -72,7 +72,8 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'returned';
 
 const ORDER_STATUSES: OrderStatus[] = [
   'pending',
@@ -80,6 +81,7 @@ const ORDER_STATUSES: OrderStatus[] = [
   'shipped',
   'completed',
   'cancelled',
+  'returned',
 ];
 
 export function validateOrderStatus(

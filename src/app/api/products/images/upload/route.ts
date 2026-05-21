@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { uploadImageToCloudflare, getCloudflareImageUrl } from '@/lib/cloudflare';
 import { addProductImage } from '@/lib/db/productImages';
 import { getProductById } from '@/lib/db/products';
@@ -7,9 +8,27 @@ import { toErrorMessage } from '@/lib/error-utils';
 /**
  * Upload product images to Cloudflare
  * POST /api/products/images/upload
+ *
+ * SECURITY: Requires admin or moderator authentication
  */
 export async function POST(request: NextRequest) {
   try {
+    // ── Authentication check ─────────────────────────────────────────────────
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return NextResponse.json(
+        { success: false, error: 'Admin or moderator access required' },
+        { status: 403 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const formData = await request.formData();
     const productId = formData.get('productId') as string;
     const isPrimary = formData.get('isPrimary') === 'true';

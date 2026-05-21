@@ -67,7 +67,10 @@ export async function GET(request: NextRequest) {
     const { dbSession } = await createSession(user, true);
     const sessionToken = createSessionTokenWithDB(user, dbSession.id);
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-    const response = NextResponse.redirect(new URL(`/?login=success&token=${encodeURIComponent(sessionToken)}`, appUrl));
+
+    // SECURITY: Do NOT include token in URL - it's already set in cookie below
+    // Token in URL would expose it to browser history, logs, and address bar
+    const response = NextResponse.redirect(new URL('/?login=success', appUrl));
 
     response.cookies.set('cms-session', sessionToken, {
       httpOnly: true,

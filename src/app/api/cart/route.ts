@@ -7,9 +7,12 @@ import {
   removeCartItem,
   clearCart,
   getCartItemWithProduct,
+  getCartItem,
 } from '@/lib/db/cart';
+import { checkVariantStock } from '@/lib/db/suppliers';
 import { getCloudflareImageUrl } from '@/lib/cloudflare';
 import { unauthorized, badRequest, serverError } from '@/lib/api-response';
+import { MAX_CART_QUANTITY, MAX_CART_TOTAL_ITEMS } from '@/lib/constants';
 
 async function getUserId() {
   try {
@@ -83,11 +86,55 @@ export async function POST(request: NextRequest) {
       return badRequest('Valid positive quantity is required');
     }
 
+    // SECURITY: Maximum quantity limit to prevent manipulation
+    if (quantity > MAX_CART_QUANTITY) {
+      return badRequest(`Maximum ${MAX_CART_QUANTITY} units allowed per item in cart`);
+    }
+
     // variant_id can be null for products without variants, or a valid integer for variant products
     const validVariantId = variant_id ? parseInt(variant_id, 10) : null;
     if (variant_id && (validVariantId === null || validVariantId <= 0 || !Number.isInteger(validVariantId))) {
       return badRequest('Valid variant ID is required');
     }
+
+    // Enforce total unique items limit
+    const currentItems = await getCartItems(userId);
+    const isNewItem = !currentItems.some(
+      (ci) => {
+        const item = ci as unknown as Record<string, unknown>;
+        return item.product_id == product_id &&
+          (item.variant_id ?? null) === (validVariantId ?? null);
+      }
+    );
+    if (isNewItem && currentItems.length >= MAX_CART_TOTAL_ITEMS) {
+      return badRequest(`Cart is full. Maximum ${MAX_CART_TOTAL_ITEMS} different items allowed.`);
+    }
+
+    // ── Soft stock check ─────────────────────────────────────────────────────
+    // We check (existing cart qty + newly requested qty) against available stock.
+    // This doesn't reserve stock — it just prevents obviously impossible additions.
+    if (validVariantId) {
+      const existingCartItem = await getCartItem(userId, product_id, validVariantId);
+      const currentCartQty = existingCartItem ? (existingCartItem.quantity as number) : 0;
+      const totalRequested = currentCartQty + quantity;
+
+      const stockCheck = await checkVariantStock(validVariantId, totalRequested);
+      if (!stockCheck.available) {
+        if (stockCheck.stock === 0) {
+          return badRequest('This item is currently out of stock');
+        }
+        const remaining = stockCheck.stock - currentCartQty;
+        if (remaining <= 0) {
+          return badRequest(
+            `You already have the maximum available quantity (${stockCheck.stock}) in your cart`
+          );
+        }
+        return badRequest(
+          `Only ${remaining} more unit${remaining === 1 ? '' : 's'} available (you have ${currentCartQty} in your cart)`
+        );
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     await addCartItem(userId, product_id, quantity, validVariantId);
     const cartItem = await getCartItemWithProduct(userId, product_id, validVariantId);
@@ -126,6 +173,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const validVariantId = variant_id ? parseInt(variant_id, 10) : null;
+
+    // SECURITY: Maximum quantity limit to prevent manipulation
+    if (quantity > MAX_CART_QUANTITY) {
+      return badRequest(`Maximum ${MAX_CART_QUANTITY} units allowed per item in cart`);
+    }
 
     if (quantity <= 0) {
       await removeCartItem(userId, product_id, validVariantId);

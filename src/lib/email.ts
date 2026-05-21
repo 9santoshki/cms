@@ -598,3 +598,308 @@ export async function sendRefundEmail(
 
   return await sendEmail(customerEmail, subject, html);
 }
+
+// ─── Supplier coordination emails ─────────────────────────────────────────────
+
+// ─── Internal utilities ───────────────────────────────────────────────────────
+
+/** Escape user-supplied strings before embedding them in HTML email templates. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Generate variant assignment notification email for a supplier.
+ * Sent when admin assigns a new product variant to the supplier.
+ */
+export function generateVariantAssignmentEmail(data: {
+  supplierName: string;
+  productName: string;
+  variantName: string;
+  sku?: string;
+  price: number;
+  assignedByName: string;
+}): string {
+  const { supplierName, productName, variantName, sku, price, assignedByName } = data;
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/supplier`;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Variant Assignment - Colour My Space</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f5f3f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f3f0;padding:40px 20px;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%);padding:40px;text-align:center;">
+                <div style="width:80px;height:80px;margin:0 auto 20px;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:40px;">📦</span>
+                </div>
+                <h1 style="margin:0;font-size:26px;color:#ffffff;font-weight:500;">New Product Assignment</h1>
+                <p style="margin:10px 0 0;color:rgba(255,255,255,0.8);font-size:16px;">Hi ${escapeHtml(supplierName)}, you've been assigned a new variant to supply</p>
+              </td>
+            </tr>
+
+            <!-- Details -->
+            <tr>
+              <td style="padding:40px;">
+                <h3 style="font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#c19a6b;margin:0 0 16px 0;">
+                  Variant Details
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0ebe5;border-radius:8px;overflow:hidden;">
+                  <tr style="background:#faf9f7;">
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%;">Product</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-weight:500;">${escapeHtml(productName)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Variant</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-top:1px solid #f0ebe5;">${escapeHtml(variantName) || 'Default'}</td>
+                  </tr>
+                  ${sku ? `
+                  <tr style="background:#faf9f7;">
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">SKU</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-family:monospace;border-top:1px solid #f0ebe5;">${escapeHtml(sku)}</td>
+                  </tr>` : ''}
+                  <tr ${sku ? '' : 'style="background:#faf9f7;"'}>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Price</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#c19a6b;font-weight:600;border-top:1px solid #f0ebe5;">₹${Number(price).toFixed(2)}</td>
+                  </tr>
+                  <tr ${sku ? 'style="background:#faf9f7;"' : ''}>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Assigned by</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-top:1px solid #f0ebe5;">${escapeHtml(assignedByName)}</td>
+                  </tr>
+                </table>
+
+                <div style="margin:24px 0;padding:16px;background:rgba(193,154,107,0.08);border-left:4px solid #c19a6b;border-radius:0 8px 8px 0;">
+                  <p style="margin:0;font-size:14px;color:#666;line-height:1.6;">
+                    <strong style="color:#1a1a1a;">Action required:</strong> Please log in to your supplier portal and update the stock quantity for this variant so customers can place orders.
+                  </p>
+                </div>
+
+                <div style="margin-top:30px;text-align:center;">
+                  <a href="${portalUrl}"
+                     style="display:inline-block;padding:16px 32px;background:linear-gradient(135deg,#c19a6b 0%,#a67c52 100%);color:#ffffff;text-decoration:none;border-radius:8px;font-weight:500;text-transform:uppercase;letter-spacing:1px;">
+                    Update Stock in Portal
+                  </a>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px 40px;background-color:#faf9f7;border-top:1px solid #f0ebe5;text-align:center;">
+                <p style="margin:0;color:#888;font-size:13px;line-height:1.6;">
+                  Colour My Space · Indiranagar, Bengaluru<br>
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="color:#c19a6b;text-decoration:none;">${process.env.NEXT_PUBLIC_APP_URL}</a>
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/** Send variant assignment notification to supplier */
+export async function sendVariantAssignmentEmail(
+  supplierEmail: string,
+  data: Parameters<typeof generateVariantAssignmentEmail>[0]
+) {
+  const subject = `New Product Assignment: ${data.productName} – Colour My Space`;
+  const html = generateVariantAssignmentEmail(data);
+  return await sendEmail(supplierEmail, subject, html);
+}
+
+/**
+ * Generate restock request email for a supplier.
+ * Sent when admin manually requests a supplier to restock a variant.
+ */
+export function generateRestockRequestEmail(data: {
+  supplierName: string;
+  productName: string;
+  variantName: string;
+  sku?: string;
+  currentStock: number;
+  requestedByName: string;
+  adminNote?: string;
+}): string {
+  const { supplierName, productName, variantName, sku, currentStock, requestedByName, adminNote } =
+    data;
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/supplier`;
+  const isZero = currentStock <= 0;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Restock Request - Colour My Space</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f5f3f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f3f0;padding:40px 20px;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,${isZero ? '#991b1b 0%,#b91c1c' : '#92400e 0%,#b45309'} 100%);padding:40px;text-align:center;">
+                <div style="width:80px;height:80px;margin:0 auto 20px;background:${isZero ? 'rgba(254,226,226,0.9)' : 'rgba(254,243,199,0.9)'};border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:40px;">${isZero ? '🚨' : '⚠️'}</span>
+                </div>
+                <h1 style="margin:0;font-size:26px;color:#ffffff;font-weight:500;">
+                  ${isZero ? 'Item Out of Stock' : 'Low Stock Alert'}
+                </h1>
+                <p style="margin:10px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">
+                  Hi ${escapeHtml(supplierName)}, your stock replenishment is needed
+                </p>
+              </td>
+            </tr>
+
+            <!-- Details -->
+            <tr>
+              <td style="padding:40px;">
+
+                <!-- Alert box -->
+                <div style="margin-bottom:24px;padding:16px;background:${isZero ? 'rgba(254,226,226,0.6)' : 'rgba(254,243,199,0.6)'};border-left:4px solid ${isZero ? '#ef4444' : '#f59e0b'};border-radius:0 8px 8px 0;">
+                  <p style="margin:0;font-size:14px;color:${isZero ? '#991b1b' : '#92400e'};line-height:1.6;font-weight:500;">
+                    ${isZero
+                      ? 'This item is <strong>out of stock</strong>. Customers cannot place orders until stock is updated.'
+                      : `This item has <strong>only ${currentStock} unit${currentStock === 1 ? '' : 's'} remaining</strong>. Please restock soon.`}
+                  </p>
+                </div>
+
+                <h3 style="font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#c19a6b;margin:0 0 16px 0;">
+                  Item Details
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0ebe5;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+                  <tr style="background:#faf9f7;">
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%;">Product</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-weight:500;">${escapeHtml(productName)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Variant</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-top:1px solid #f0ebe5;">${escapeHtml(variantName) || 'Default'}</td>
+                  </tr>
+                  ${sku ? `
+                  <tr style="background:#faf9f7;">
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">SKU</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-family:monospace;border-top:1px solid #f0ebe5;">${escapeHtml(sku)}</td>
+                  </tr>` : ''}
+                  <tr ${sku ? 'style="background:#faf9f7;"' : ''}>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Current Stock</td>
+                    <td style="padding:12px 16px;font-size:14px;font-weight:700;color:${isZero ? '#ef4444' : '#f59e0b'};border-top:1px solid #f0ebe5;">
+                      ${isZero ? '0 units (OUT OF STOCK)' : `${currentStock} units`}
+                    </td>
+                  </tr>
+                  <tr ${sku ? '' : 'style="background:#faf9f7;"'}>
+                    <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;border-top:1px solid #f0ebe5;">Requested by</td>
+                    <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-top:1px solid #f0ebe5;">${escapeHtml(requestedByName)}</td>
+                  </tr>
+                </table>
+
+                ${adminNote ? `
+                <div style="margin-bottom:24px;padding:16px;background:#f0f9ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#1e40af;text-transform:uppercase;letter-spacing:0.5px;">Note from Admin</p>
+                  <p style="margin:0;font-size:14px;color:#1e3a8a;line-height:1.6;">${escapeHtml(adminNote)}</p>
+                </div>` : ''}
+
+                <div style="margin-top:30px;text-align:center;">
+                  <a href="${portalUrl}"
+                     style="display:inline-block;padding:16px 32px;background:linear-gradient(135deg,#c19a6b 0%,#a67c52 100%);color:#ffffff;text-decoration:none;border-radius:8px;font-weight:500;text-transform:uppercase;letter-spacing:1px;">
+                    Update Stock Now
+                  </a>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px 40px;background-color:#faf9f7;border-top:1px solid #f0ebe5;text-align:center;">
+                <p style="margin:0;color:#888;font-size:13px;line-height:1.6;">
+                  Colour My Space · Indiranagar, Bengaluru<br>
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="color:#c19a6b;text-decoration:none;">${process.env.NEXT_PUBLIC_APP_URL}</a>
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/** Send restock request email to supplier */
+export async function sendRestockRequestEmail(
+  supplierEmail: string,
+  data: Parameters<typeof generateRestockRequestEmail>[0]
+) {
+  const urgency = data.currentStock <= 0 ? '🚨 URGENT: ' : '⚠️ ';
+  const subject = `${urgency}Restock Needed: ${data.productName} – Colour My Space`;
+  const html = generateRestockRequestEmail(data);
+  return await sendEmail(supplierEmail, subject, html);
+}
+
+/**
+ * Send a stock discrepancy alert to all admin email addresses.
+ * Called when stock deduction fails after a confirmed payment — the payment
+ * is already captured so the order must NOT be cancelled, but admins need to
+ * know to reconcile inventory manually.
+ */
+export async function sendStockDiscrepancyAlert(data: {
+  orderId: number;
+  variantId: number;
+  quantity: number;
+  error: string;
+}): Promise<void> {
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (adminEmails.length === 0) {
+    console.warn('[sendStockDiscrepancyAlert] ADMIN_EMAILS not configured — alert not sent');
+    return;
+  }
+
+  const subject = `⚠️ Stock Discrepancy: Order #${data.orderId} — Manual Action Required`;
+  const html = `
+    <!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;">
+      <h2 style="color:#991b1b;">⚠️ Stock Deduction Failed — Action Required</h2>
+      <p>A payment was successfully captured but the inventory could not be automatically updated.</p>
+      <table style="border-collapse:collapse;width:100%;max-width:500px;">
+        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">Order ID</td><td style="padding:8px;border:1px solid #e5e7eb;">#${data.orderId}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">Variant ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${data.variantId}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">Quantity</td><td style="padding:8px;border:1px solid #e5e7eb;">${data.quantity}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:600;">Error</td><td style="padding:8px;border:1px solid #e5e7eb;color:#991b1b;">${escapeHtml(data.error)}</td></tr>
+      </table>
+      <p style="margin-top:16px;"><strong>Action required:</strong> Log in to the admin dashboard and manually update the stock for variant #${data.variantId} to reflect the deduction of ${data.quantity} unit(s) sold in Order #${data.orderId}.</p>
+      <p style="color:#6b7280;font-size:13px;">Colour My Space · ${process.env.NEXT_PUBLIC_APP_URL}</p>
+    </body></html>
+  `;
+
+  for (const email of adminEmails) {
+    try {
+      await sendEmail(email, subject, html);
+    } catch (err) {
+      console.error(`[sendStockDiscrepancyAlert] Failed to send to ${email}:`, err);
+    }
+  }
+}

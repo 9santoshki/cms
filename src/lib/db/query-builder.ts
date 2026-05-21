@@ -3,6 +3,37 @@
  * Avoids repetition of the fields/values array pattern across db modules.
  */
 
+// SECURITY: Whitelist of allowed table names to prevent SQL injection
+const ALLOWED_TABLES = [
+  'users',
+  'products',
+  'product_images',
+  'product_variants',
+  'orders',
+  'order_items',
+  'cart',
+  'appointments',
+  'reviews',
+  'suppliers',
+  'supplier_variants',
+  'sessions',
+  'inventory_logs',
+  'variant_options',
+  'variant_option_types',
+  'product_variant_values',
+  'temp_auth_tokens',
+];
+
+/**
+ * Validate table name against whitelist.
+ * Throws error if table name is not in the allowed list.
+ */
+function validateTableName(table: string): void {
+  if (!ALLOWED_TABLES.includes(table)) {
+    throw new Error(`Invalid table name: "${table}". Table must be one of: ${ALLOWED_TABLES.join(', ')}`);
+  }
+}
+
 interface UpdateQueryResult {
   query: string;
   values: unknown[];
@@ -28,6 +59,9 @@ export function buildUpdateQuery(
   whereClause: string,
   whereValues: unknown[]
 ): UpdateQueryResult | null {
+  // SECURITY: Validate table name against whitelist
+  validateTableName(table);
+
   const fields: string[] = [];
   const values: unknown[] = [];
   let paramIndex = whereValues.length + 1;

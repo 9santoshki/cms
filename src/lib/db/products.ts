@@ -3,6 +3,50 @@ import { getProductImages, getProductImagesBatch } from './productImages';
 import { getCloudflareImageUrl } from '../cloudflare';
 import { buildUpdateQueryById } from './query-builder';
 
+// ─── Slug utility ─────────────────────────────────────────────────────────────
+
+/**
+ * Generate a URL-friendly, unique slug from a product name.
+ *
+ * 1. Normalise to lowercase, strip non-alphanumeric characters, collapse hyphens.
+ * 2. Query the DB to check for collisions.
+ * 3. Append an incrementing counter (-2, -3 …) until the slug is unique.
+ *
+ * @param name       - The product name to slugify.
+ * @param excludeId  - ID of the product being updated (so it can keep its own slug).
+ */
+export async function generateUniqueSlug(name: string, excludeId?: string): Promise<string> {
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'product';
+
+  // Single query: fetch all slugs that start with the base slug
+  const result = excludeId
+    ? await query(
+        `SELECT slug FROM products WHERE slug = $1 OR slug LIKE $2 AND id != $3`,
+        [base, `${base}-%`, excludeId]
+      )
+    : await query(
+        `SELECT slug FROM products WHERE slug = $1 OR slug LIKE $2`,
+        [base, `${base}-%`]
+      );
+
+  const existing = new Set<string>(result.rows.map((r: { slug: string }) => r.slug));
+  if (!existing.has(base)) return base;
+
+  for (let counter = 2; counter <= 200; counter++) {
+    const candidate = `${base}-${counter}`;
+    if (!existing.has(candidate)) return candidate;
+  }
+
+  // Safety valve — should never be reached
+  return `${base}-${Date.now()}`;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -13,6 +57,8 @@ export interface Product {
   category?: string;
   slug?: string;
   stock_quantity?: number;
+  /** Lifecycle state — customers only see 'published' products */
+  status?: 'draft' | 'published' | 'archived';
   created_at?: string;
   updated_at?: string;
 }
@@ -58,14 +104,21 @@ export async function getProducts(filters: {
   maxPrice?: number;
   page?: number;
   limit?: number;
+  /** When true, only return products with status = 'published' (default: false for admin) */
+  publishedOnly?: boolean;
 }) {
   const page = filters.page || 1;
   const limit = filters.limit || 12;
   const offset = (page - 1) * limit;
 
-  let whereConditions: string[] = [];
-  let params: unknown[] = [];
+  const whereConditions: string[] = [];
+  const params: unknown[] = [];
   let paramCount = 1;
+
+  // Public-facing calls only show published products
+  if (filters.publishedOnly) {
+    whereConditions.push(`status = 'published'`);
+  }
 
   if (filters.search) {
     whereConditions.push(`(name ILIKE $${paramCount} OR description ILIKE $${paramCount})`);
@@ -140,10 +193,11 @@ export async function createProduct(product: {
   category?: string;
   slug: string;
   stock_quantity?: number;
+  status?: 'draft' | 'published' | 'archived';
 }): Promise<Product> {
   const result = await query(
-    `INSERT INTO products (name, description, price, sale_price, image_url, category, slug, stock_quantity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO products (name, description, price, sale_price, image_url, category, slug, stock_quantity, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       product.name,
@@ -154,6 +208,7 @@ export async function createProduct(product: {
       product.category,
       product.slug,
       product.stock_quantity || 0,
+      product.status || 'draft',
     ]
   );
   return result.rows[0];
@@ -232,6 +287,7 @@ export async function getProductsWithImages(filters: {
   maxPrice?: number;
   page?: number;
   limit?: number;
+  publishedOnly?: boolean;
 }) {
   const result = await getProducts(filters);
 

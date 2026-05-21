@@ -8,9 +8,13 @@ import {
   assignVariantToSupplier,
   removeVariantAssignment,
   getVariantSuppliers,
-  getVariantSuppliersByProductId
+  getVariantSuppliersByProductId,
+  getSupplierById,
 } from '@/lib/db/suppliers';
 import { ok, created, badRequest, unauthorized, forbidden, notFound, serverError } from '@/lib/api-response';
+import { sendVariantAssignmentEmail } from '@/lib/email';
+import { getProductVariantById } from '@/lib/db/variants';
+import { getProductById } from '@/lib/db/products';
 
 /**
  * GET /api/admin/supplier-variants
@@ -20,28 +24,24 @@ import { ok, created, badRequest, unauthorized, forbidden, notFound, serverError
 export async function GET(request: NextRequest) {
   try {
     const session = await getSessionFromCookieWithDB();
-    if (!session) {
-      return unauthorized();
-    }
-    if (session.role !== 'admin') {
-      return forbidden('Only admins can view assignments');
+    if (!session) return unauthorized();
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return forbidden('Admin or moderator access required');
     }
 
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get('supplier_id');
-    const variantId = searchParams.get('variant_id');
-    const productId = searchParams.get('product_id');
+    const variantId  = searchParams.get('variant_id');
+    const productId  = searchParams.get('product_id');
 
     if (supplierId) {
       const assignments = await getSupplierVariants(parseInt(supplierId, 10));
       return ok(assignments);
     }
-
     if (variantId) {
       const suppliers = await getVariantSuppliers(parseInt(variantId, 10));
       return ok(suppliers);
     }
-
     if (productId) {
       const map = await getVariantSuppliersByProductId(parseInt(productId, 10));
       return ok(map);
@@ -56,16 +56,14 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/admin/supplier-variants
- * Assign variant to supplier
+ * Assign variant to supplier — then notify the supplier by email.
  */
 export async function POST(request: NextRequest) {
   try {
     const session = await getSessionFromCookieWithDB();
-    if (!session) {
-      return unauthorized();
-    }
-    if (session.role !== 'admin') {
-      return forbidden('Only admins can assign variants');
+    if (!session) return unauthorized();
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return forbidden('Admin or moderator access required to assign variants');
     }
 
     const body = await request.json();
@@ -82,6 +80,34 @@ export async function POST(request: NextRequest) {
       notes
     );
 
+    // ── Notify the supplier by email (best-effort, non-blocking) ─────────────
+    try {
+      const [supplier, variant] = await Promise.all([
+        getSupplierById(supplier_id),
+        getProductVariantById(variant_id),
+      ]);
+
+      const supplierEmail = supplier?.user?.email;
+      if (supplierEmail && variant) {
+        const product = await getProductById(String(variant.product_id));
+        await sendVariantAssignmentEmail(supplierEmail, {
+          supplierName:   supplier.company_name,
+          productName:    product?.name ?? 'Unknown Product',
+          variantName:    variant.variant_name ?? '',
+          sku:            variant.sku,
+          price:          Number(variant.price),
+          assignedByName: session.name ?? 'Admin',
+        });
+        console.info(
+          `[supplier-variants] Assignment email sent to ${supplierEmail} for variant ${variant_id}`
+        );
+      }
+    } catch (emailErr) {
+      // Email failure must never break the assignment itself
+      console.error('[supplier-variants] Assignment email failed:', emailErr);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     return created(assignment);
   } catch (err: unknown) {
     console.error('Error assigning variant:', err);
@@ -96,25 +122,27 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getSessionFromCookieWithDB();
-    if (!session) {
-      return unauthorized();
-    }
+    if (!session) return unauthorized();
+    // DELETE is admin-only (unlike GET/POST which allow moderators).
+    // Removing a supplier assignment is irreversible and affects supplier
+    // compensation records, so it requires explicit admin authority.
     if (session.role !== 'admin') {
-      return forbidden('Only admins can remove assignments');
+      return forbidden('Only admins can remove supplier assignments');
     }
 
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get('supplier_id');
-    const variantId = searchParams.get('variant_id');
+    const variantId  = searchParams.get('variant_id');
 
     if (!supplierId || !variantId) {
       return badRequest('supplier_id and variant_id are required');
     }
 
-    const removed = await removeVariantAssignment(parseInt(supplierId, 10), parseInt(variantId, 10));
-    if (!removed) {
-      return notFound('Assignment not found');
-    }
+    const removed = await removeVariantAssignment(
+      parseInt(supplierId, 10),
+      parseInt(variantId, 10)
+    );
+    if (!removed) return notFound('Assignment not found');
 
     return ok({ message: 'Assignment removed successfully' });
   } catch (err: unknown) {

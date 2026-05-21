@@ -7,7 +7,8 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'returned';
 
 // ============================================================================
 // Variant Types (product variations: thickness, size, color)
@@ -118,7 +119,9 @@ export interface InventoryLog {
   new_quantity: number;
   change_quantity: number;
   changed_by?: number;
-  change_type: 'supplier_update' | 'admin_update' | 'order' | 'return';
+  change_type: 'supplier_update' | 'admin_update' | 'order' | 'return' | 'alert';
+  /** Order that triggered this change (populated for change_type = 'order' | 'return') */
+  order_id?: number;
   notes?: string;
   created_at: string;
 }
@@ -135,6 +138,8 @@ export interface Product {
   category?: string;
   slug?: string;
   stock_quantity?: number;
+  /** Lifecycle state — only 'published' products are visible to customers */
+  status?: 'draft' | 'published' | 'archived';
   /** CSS class name used for background-image styling */
   imageClass?: string;
   /** Physical dimensions (e.g. "80cm x 70cm x 45cm") */

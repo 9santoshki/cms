@@ -4,7 +4,7 @@ export interface Order {
   id: string;
   user_id: string;
   total_amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'returned';
   payment_id?: string;
   payment_status?: string;
   shipping_address?: any;

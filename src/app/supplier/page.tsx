@@ -481,38 +481,102 @@ const SupplierDashboardPage = () => {
               </p>
             </SupplierInfoCard>
           ) : (
-            <VariantsTable>
-              <thead>
-                <tr>
-                  <TableHeader>Product</TableHeader>
-                  <TableHeader>Variant</TableHeader>
-                  <TableHeader>SKU</TableHeader>
-                  <TableHeader>Price</TableHeader>
-                  <TableHeader>Stock</TableHeader>
-                  <TableHeader>Action</TableHeader>
-                </tr>
-              </thead>
-              <tbody>
-                {variants.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.variant.product_name}</TableCell>
-                    <TableCell>{item.variant.variant_name}</TableCell>
-                    <TableCell>{item.variant.sku || '-'}</TableCell>
-                    <TableCell>₹{item.variant.price.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <StockBadge $stock={item.variant.stock_quantity}>
-                        {item.variant.stock_quantity} units
-                      </StockBadge>
-                    </TableCell>
-                    <TableCell>
-                      <UpdateButton onClick={() => handleUpdateClick(item)}>
-                        Update Stock
-                      </UpdateButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </tbody>
-            </VariantsTable>
+            <>
+              {/* ── Out-of-stock alert banner ── */}
+              {(() => {
+                const outCount = variants.filter(v => v.variant.stock_quantity <= 0).length;
+                if (outCount === 0) return null;
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 20px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid rgba(239,68,68,0.25)',
+                    borderRadius: '10px',
+                    marginBottom: '16px',
+                  }}>
+                    <span style={{ fontSize: '22px' }}>🚨</span>
+                    <div>
+                      <strong style={{ color: '#b91c1c', fontSize: '14px' }}>
+                        {outCount} item{outCount > 1 ? 's are' : ' is'} out of stock
+                      </strong>
+                      <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#7f1d1d' }}>
+                        Please update the stock quantities below so customers can place orders.
+                        Out-of-stock items are highlighted in red.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <VariantsTable>
+                <thead>
+                  <tr>
+                    <TableHeader>Product</TableHeader>
+                    <TableHeader>Variant</TableHeader>
+                    <TableHeader>SKU</TableHeader>
+                    <TableHeader>Price</TableHeader>
+                    <TableHeader>Stock</TableHeader>
+                    <TableHeader>Action</TableHeader>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Sort: out-of-stock first, then by product name */}
+                  {[...variants]
+                    .sort((a, b) => {
+                      if (a.variant.stock_quantity <= 0 && b.variant.stock_quantity > 0) return -1;
+                      if (a.variant.stock_quantity > 0 && b.variant.stock_quantity <= 0) return 1;
+                      return a.variant.product_name.localeCompare(b.variant.product_name);
+                    })
+                    .map((item) => {
+                      const isOut = item.variant.stock_quantity <= 0;
+                      return (
+                        <TableRow
+                          key={item.id}
+                          style={isOut ? { background: 'rgba(239,68,68,0.04)', borderLeft: '3px solid #ef4444' } : undefined}
+                        >
+                          <TableCell>
+                            {item.variant.product_name}
+                            {isOut && (
+                              <span style={{
+                                marginLeft: '8px',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                color: '#ef4444',
+                                background: 'rgba(239,68,68,0.1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                              }}>
+                                OUT OF STOCK
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>{item.variant.variant_name}</TableCell>
+                          <TableCell>{item.variant.sku || '-'}</TableCell>
+                          <TableCell>₹{item.variant.price.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <StockBadge $stock={item.variant.stock_quantity}>
+                              {item.variant.stock_quantity} units
+                            </StockBadge>
+                          </TableCell>
+                          <TableCell>
+                            <UpdateButton
+                              onClick={() => handleUpdateClick(item)}
+                              style={isOut ? { background: '#ef4444' } : undefined}
+                            >
+                              {isOut ? '⚡ Restock Now' : 'Update Stock'}
+                            </UpdateButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </tbody>
+              </VariantsTable>
+            </>
           )}
         </div>
       </DashboardContent>

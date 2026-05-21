@@ -13,6 +13,7 @@ const SECTIONS = [
   { id: 'structure',   icon: 'fas fa-folder-tree',    title: 'Directory Structure' },
   { id: 'database',    icon: 'fas fa-database',       title: 'Database Schema' },
   { id: 'auth',        icon: 'fas fa-shield-alt',     title: 'Authentication' },
+  { id: 'inventory',   icon: 'fas fa-warehouse',      title: 'Inventory System' },
   { id: 'images',      icon: 'fas fa-cloud',          title: 'Image Storage (R2)' },
   { id: 'payments',    icon: 'fas fa-credit-card',    title: 'Payment Flow' },
   { id: 'api',         icon: 'fas fa-code',           title: 'API Conventions' },
@@ -328,56 +329,68 @@ function SectionStructure() {
 │   │   │
 │   │   ├── api/                      # REST API routes (server-only)
 │   │   │   ├── auth/
-│   │   │   │   ├── google/route.ts   # Initiate Google OAuth
-│   │   │   │   ├── callback/route.ts # OAuth callback handler
-│   │   │   │   ├── logout/route.ts   # Clear session cookie
-│   │   │   │   └── me/route.ts       # Current user info
+│   │   │   │   ├── google/route.ts      # Initiate Google OAuth
+│   │   │   │   ├── callback/route.ts    # OAuth callback handler
+│   │   │   │   ├── logout/route.ts      # Clear session cookie
+│   │   │   │   └── session/route.ts     # Current user info
 │   │   │   ├── products/
-│   │   │   │   ├── route.ts          # GET (list) / POST (create)
-│   │   │   │   ├── [id]/route.ts     # GET / PATCH / DELETE by ID
+│   │   │   │   ├── route.ts             # GET list (draft-filtered) / POST create
+│   │   │   │   ├── [id]/route.ts        # GET / PUT / DELETE by ID
+│   │   │   │   ├── [id]/variants/route.ts  # Variants for a product
 │   │   │   │   └── images/
-│   │   │   │       └── upload/route.ts  # Upload image to R2
+│   │   │   │       ├── upload/route.ts  # Upload image to R2
+│   │   │   │       └── [imageId]/route.ts  # Delete image
 │   │   │   ├── orders/
-│   │   │   │   ├── route.ts          # List orders
-│   │   │   │   └── [id]/route.ts     # Order detail / status update
+│   │   │   │   ├── route.ts             # List orders
+│   │   │   │   └── [id]/route.ts        # Detail / status update
+│   │   │   ├── checkout/
+│   │   │   │   ├── create/route.ts      # Hard stock check + Razorpay order
+│   │   │   │   ├── verify/route.ts      # Verify signature + deduct stock
+│   │   │   │   └── verify-payment/route.ts  # Alt verify endpoint
 │   │   │   ├── admin/
-│   │   │   │   ├── users/route.ts        # List users
-│   │   │   │   ├── update-role/route.ts  # Change user role
-│   │   │   │   ├── suppliers/route.ts    # Supplier CRUD
+│   │   │   │   ├── users/route.ts           # List users
+│   │   │   │   ├── update-role/route.ts     # Change user role
+│   │   │   │   ├── suppliers/route.ts       # Supplier profile CRUD
+│   │   │   │   ├── supplier-variants/route.ts  # Assign variants to suppliers
+│   │   │   │   ├── inventory/
+│   │   │   │   │   ├── out-of-stock/route.ts   # Out-of-stock & low-stock data
+│   │   │   │   │   └── notify-supplier/route.ts # Send restock request email
 │   │   │   │   ├── product-variants/route.ts
 │   │   │   │   ├── variant-option-types/route.ts
 │   │   │   │   └── variant-options/route.ts
-│   │   │   ├── cart/route.ts         # Cart sync (DB-backed)
-│   │   │   ├── images/[key]/route.ts # R2 image proxy (private bucket)
-│   │   │   ├── dashboard/stats/route.ts  # Overview stats
-│   │   │   ├── payments/
-│   │   │   │   ├── create-order/route.ts  # Create Razorpay order
-│   │   │   │   └── verify/route.ts        # Verify payment signature
+│   │   │   ├── supplier/
+│   │   │   │   ├── variants/route.ts    # Supplier: view assigned variants
+│   │   │   │   └── logs/route.ts        # Supplier: view own inventory history
+│   │   │   ├── cart/route.ts            # Cart sync with soft stock check
+│   │   │   ├── images/[key]/route.ts    # R2 image proxy (private bucket)
+│   │   │   ├── dashboard/stats/route.ts # Overview stat counts
 │   │   │   ├── appointments/route.ts
 │   │   │   ├── reviews/route.ts
 │   │   │   └── settings/route.ts
 │   │   │
-│   │   ├── dashboard/                # Admin dashboard pages
-│   │   │   ├── layout.tsx            # Server-side auth guard
-│   │   │   ├── page.tsx              # Overview
-│   │   │   ├── products/page.tsx
-│   │   │   ├── products/[id]/page.tsx
+│   │   ├── dashboard/                # Admin/moderator dashboard pages
+│   │   │   ├── layout.tsx            # Auth guard (redirect if not admin/mod)
+│   │   │   ├── page.tsx              # Overview stats
+│   │   │   ├── products/page.tsx     # Product list (all incl. drafts)
+│   │   │   ├── products/[id]/page.tsx  # Product edit
 │   │   │   ├── orders/page.tsx
 │   │   │   ├── orders/[id]/page.tsx
 │   │   │   ├── appointments/page.tsx
 │   │   │   ├── reviews/page.tsx
-│   │   │   ├── suppliers/page.tsx
+│   │   │   ├── inventory/page.tsx    # Inventory Alerts (admin + moderator)
+│   │   │   ├── suppliers/page.tsx    # Supplier list (admin only)
 │   │   │   ├── suppliers/[id]/page.tsx
-│   │   │   ├── users/page.tsx
+│   │   │   ├── users/page.tsx        # User management (admin only)
 │   │   │   ├── users/[id]/page.tsx
-│   │   │   ├── variants/page.tsx
-│   │   │   ├── settings/page.tsx
+│   │   │   ├── variants/page.tsx     # Variant Dictionary (admin only)
+│   │   │   ├── settings/page.tsx     # Site settings (admin only)
 │   │   │   └── docs/
 │   │   │       ├── admin-manual/page.tsx      ← this guide
 │   │   │       └── tech-architecture/page.tsx ← this page
 │   │   │
-│   │   ├── auth/page.tsx             # Sign in / sign up page
-│   │   ├── shop/page.tsx             # Product catalogue
+│   │   ├── supplier/page.tsx         # Supplier portal (supplier role only)
+│   │   ├── auth/page.tsx             # Sign in page
+│   │   ├── shop/page.tsx             # Public product catalogue
 │   │   ├── products/[slug]/page.tsx  # Product detail
 │   │   ├── cart/page.tsx
 │   │   ├── checkout/page.tsx
@@ -387,56 +400,53 @@ function SectionStructure() {
 │   │   └── appointments/page.tsx
 │   │
 │   ├── components/                   # Shared React components
-│   │   ├── DashboardLayout.tsx       # Admin dashboard wrapper + sidebar
-│   │   ├── Header.tsx                # Storefront navigation
+│   │   ├── DashboardLayout.tsx       # Dashboard wrapper + sidebar
+│   │   ├── Header.tsx
 │   │   ├── Footer.tsx
 │   │   ├── ProductCard.tsx
-│   │   ├── Cart.tsx
-│   │   └── [others]
+│   │   └── Cart.tsx
 │   │
 │   ├── context/                      # React Contexts
-│   │   ├── AuthContext.tsx           # User session state
+│   │   ├── AuthContext.tsx           # User session + role state
 │   │   ├── CartContext.tsx           # Cart open/close UI state
-│   │   ├── ProductContext.tsx        # Product catalogue state
+│   │   ├── ProductContext.tsx        # Product catalogue cache
 │   │   └── UIContext.tsx
 │   │
 │   ├── store/
-│   │   └── cartStore.ts              # Zustand cart store
+│   │   └── cartStore.ts              # Zustand cart (localStorage)
 │   │
 │   ├── lib/
 │   │   ├── db/
-│   │   │   ├── connection.ts         # pg.Pool singleton
+│   │   │   ├── connection.ts         # pg.Pool singleton + getClient()
 │   │   │   ├── auth.ts               # Session/user DB functions
-│   │   │   ├── products.ts           # Product CRUD queries
+│   │   │   ├── products.ts           # Product CRUD (draft-aware)
+│   │   │   ├── suppliers.ts          # Supplier + inventory operations
+│   │   │   ├── variants.ts           # Product variant queries
 │   │   │   ├── orders.ts
-│   │   │   ├── cart.ts
-│   │   │   └── [others]
-│   │   ├── api.ts                    # Client-side API fetch helpers
+│   │   │   └── cart.ts
+│   │   ├── email.ts                  # Resend/SMTP email helpers
+│   │   ├── api.ts                    # Client-side fetch helpers
+│   │   ├── api-response.ts           # ok/badRequest/forbidden/… helpers
 │   │   ├── cloudflare.ts             # R2 upload / delete helpers
+│   │   ├── utils.ts                  # Shared utilities (timeAgo, etc.)
 │   │   └── razorpay.ts               # Razorpay SDK helpers
 │   │
 │   ├── types/
-│   │   ├── index.ts                  # Core domain types
-│   │   └── api.ts                    # API request/response types
+│   │   └── index.ts                  # Core domain types (UserRole, etc.)
 │   │
-│   └── middleware.ts                 # Route protection (Edge)
+│   └── middleware.ts                 # Edge route protection + RBAC
 │
 ├── scripts/
 │   ├── initDatabase.sql              # One-time schema creation
 │   ├── migrations/                   # Incremental schema changes
+│   │   └── add_inventory_improvements.sql
 │   ├── uatdeploy.sh
 │   ├── proddeploy.sh
 │   └── deploy-env.sh
 │
 ├── docs/                             # Markdown documentation
-│   ├── ARCHITECTURE.md
-│   ├── API.md
-│   ├── DATA_FLOW.md
-│   └── [others]
-│
 ├── public/                           # Static assets
 ├── .env.local                        # Local env (not committed)
-├── .env.uat                          # UAT env (not committed)
 ├── next.config.js
 ├── tsconfig.json
 └── package.json`}</Code>
@@ -499,8 +509,8 @@ function SectionDatabase() {
             ['sale_price', 'DECIMAL(10,2) NULL', 'Discounted price; NULL = not on sale'],
             ['category', 'TEXT NULL', 'Free-form category label'],
             ['slug', 'TEXT UNIQUE', 'URL-safe identifier auto-generated from name'],
-            ['stock_quantity', 'INTEGER DEFAULT 0', 'Units in stock (if no variants)'],
-            ['supplier_id', 'INTEGER FK → suppliers NULL', ''],
+            ['stock_quantity', 'INTEGER DEFAULT 0', 'Units in stock (non-variant products only)'],
+            ['status', "VARCHAR(20) DEFAULT 'published'", "draft | published | archived — controls storefront visibility"],
             ['created_at / updated_at', 'TIMESTAMPTZ', ''],
           ],
         },
@@ -523,11 +533,12 @@ function SectionDatabase() {
             ['orders.id', 'SERIAL PK', ''],
             ['orders.user_id', 'INTEGER FK → users', ''],
             ['orders.total_amount', 'DECIMAL(10,2)', 'Final total including shipping+tax'],
-            ['orders.status', 'TEXT', 'pending | processing | shipped | completed | cancelled'],
+            ['orders.status', 'TEXT', 'pending | processing | shipped | completed | cancelled | returned'],
             ['orders.payment_id', 'TEXT', 'Razorpay payment_id for reference'],
             ['orders.shipping_address', 'JSONB', 'Full address snapshot at time of order'],
             ['order_items.product_id', 'INTEGER FK → products', ''],
             ['order_items.variant_id', 'INTEGER FK NULL', 'Null if no variant selected'],
+            ['order_items.variant_name', 'TEXT NULL', 'Human-readable variant label at order time'],
             ['order_items.quantity / price', 'INTEGER / DECIMAL', 'Snapshot at purchase time'],
           ],
         },
@@ -564,8 +575,52 @@ function SectionDatabase() {
             ['product_id', 'INTEGER FK → products', ''],
             ['sku', 'TEXT NULL', 'Optional custom SKU'],
             ['price / sale_price', 'DECIMAL(10,2)', 'Overrides base product price'],
-            ['stock_quantity', 'INTEGER DEFAULT 0', ''],
+            ['stock_quantity', 'INTEGER DEFAULT 0', 'Computed as SUM of all supplier_variants.stock_quantity'],
             ['is_active', 'BOOLEAN DEFAULT true', ''],
+          ],
+        },
+        {
+          table: 'suppliers',
+          desc: 'Supplier business profiles (linked to a user account)',
+          columns: [
+            ['id', 'SERIAL PK', ''],
+            ['user_id', 'INTEGER FK → users UNIQUE', 'The supplier\'s login account'],
+            ['company_name', 'TEXT', ''],
+            ['contact_person', 'TEXT NULL', ''],
+            ['phone', 'TEXT NULL', ''],
+            ['address', 'TEXT NULL', ''],
+            ['gst_id', 'TEXT NULL', ''],
+            ['is_active', 'BOOLEAN DEFAULT true', ''],
+            ['notes', 'TEXT NULL', 'Internal admin notes'],
+          ],
+        },
+        {
+          table: 'supplier_variants',
+          desc: 'Assignment of product variants to suppliers, with per-supplier stock',
+          columns: [
+            ['id', 'SERIAL PK', ''],
+            ['supplier_id', 'INTEGER FK → suppliers', ''],
+            ['variant_id', 'INTEGER FK → product_variants', ''],
+            ['stock_quantity', 'INTEGER DEFAULT 0', 'This supplier\'s available units for this variant'],
+            ['min_stock_threshold', 'INTEGER DEFAULT 0', 'Low-stock alert triggers below this level'],
+            ['assigned_by', 'INTEGER FK → users', 'Admin who created the assignment'],
+            ['assigned_at', 'TIMESTAMPTZ', ''],
+            ['notes', 'TEXT NULL', ''],
+          ],
+        },
+        {
+          table: 'inventory_logs',
+          desc: 'Immutable audit trail of all stock changes',
+          columns: [
+            ['id', 'SERIAL PK', ''],
+            ['variant_id', 'INTEGER FK → product_variants', ''],
+            ['previous_quantity', 'INTEGER', 'Stock before the change'],
+            ['new_quantity', 'INTEGER', 'Stock after the change'],
+            ['change_quantity', 'INTEGER', 'Delta (positive = restock, negative = deduction)'],
+            ['changed_by', 'INTEGER FK → users NULL', 'Null for system-generated entries'],
+            ['change_type', 'TEXT', 'supplier_update | admin_update | order | return'],
+            ['notes', 'TEXT NULL', 'E.g. "Deducted for Order #42" or restock email note'],
+            ['created_at', 'TIMESTAMPTZ', ''],
           ],
         },
       ].map(t => (
@@ -649,21 +704,143 @@ Sign-out:
   DELETE FROM sessions WHERE session_token = <jwt>
   Clear cookie cms-session (Max-Age=0)`}</Code>
 
-      <h3 style={h3Style}>Middleware (Edge)</h3>
+      <h3 style={h3Style}>Middleware (Edge) — Route Protection & RBAC</h3>
       <p style={pStyle}>
-        <code style={inlineCode}>src/middleware.ts</code> runs on the Edge before every request.
-        It checks for the <code style={inlineCode}>cms-session</code> cookie on protected routes
-        (<code style={inlineCode}>/account</code>, <code style={inlineCode}>/cart</code>,
-        <code style={inlineCode}>/checkout</code>, <code style={inlineCode}>/orders</code>)
-        and redirects unauthenticated users to <code style={inlineCode}>/auth</code>.
-        The dashboard has an additional server-component guard in
-        <code style={inlineCode}> src/app/dashboard/layout.tsx</code> that validates the admin/moderator role.
+        <code style={inlineCode}>src/middleware.ts</code> runs on the Cloudflare Edge before every
+        page request. It decodes (but does <em>not</em> verify) the JWT payload to read the role —
+        full signature verification still happens inside every API route via
+        <code style={inlineCode}> getSessionFromCookieWithDB()</code>.
       </p>
+
+      <Code>{`Middleware logic:
+
+1. No cookie + protected path → redirect to /?redirect=<path>
+   Protected: /account, /cart, /checkout, /orders, /dashboard, /supplier
+
+2. role = 'supplier' + path starts with /dashboard → redirect to /supplier
+   (Suppliers must never see the admin dashboard)
+
+3. role = 'customer' + /dashboard or /supplier → redirect to /
+   (Customers have no portal beyond the storefront)
+
+4. role = 'moderator' + admin-only path → redirect to /dashboard
+   Admin-only paths: /dashboard/suppliers, /dashboard/users, /dashboard/settings
+
+5. role = 'admin' → full access everywhere
+
+Note: Middleware decodes JWT with base64url only (no jsonwebtoken import —
+that library requires Node.js and cannot run in Edge Runtime).
+Actual trust comes from getSessionFromCookieWithDB() in API routes.`}</Code>
 
       <Tip type="info">
         The JWT cookie is <strong>httpOnly</strong> (not readable by JavaScript), <strong>Secure</strong>
         in production (HTTPS only), and <strong>SameSite=Lax</strong> to prevent CSRF on cross-site requests.
       </Tip>
+    </div>
+  );
+}
+
+function SectionInventory() {
+  return (
+    <div style={card}>
+      <h2 style={h2Style}>
+        <i className="fas fa-warehouse" style={{ color: '#c19a6b', fontSize: 20 }}></i>
+        Inventory System
+      </h2>
+      <p style={pStyle}>
+        Stock is tracked at the <strong>supplier-variant</strong> level. Each supplier holds their own
+        quantity for each variant they are assigned. The variant&apos;s canonical
+        <code style={inlineCode}> product_variants.stock_quantity</code> is always the SUM of all
+        assigned suppliers&apos; <code style={inlineCode}>supplier_variants.stock_quantity</code>.
+      </p>
+
+      <h3 style={h3Style}>Stock Lifecycle</h3>
+      <Code>{`Supplier updates their stock (supplier portal):
+  PUT /api/supplier/variants
+    → updateVariantStockWithLog(variantId, supplierId, newQty, ...)
+    → UPDATE supplier_variants SET stock_quantity = <newQty>
+    → UPDATE product_variants SET stock_quantity = SUM(all suppliers)
+    → INSERT INTO inventory_logs (change_type = 'supplier_update')
+
+Customer adds to cart (soft check):
+  POST /api/cart
+    → checkVariantStock(variantId, qty) — informational only
+    → Returns warning if cart qty > available, but does NOT block add
+    → No stock is reserved
+
+Customer proceeds to checkout (hard check):
+  POST /api/checkout/create
+    → Promise.all(items.map(checkVariantStock)) — all items in parallel
+    → If any variant out-of-stock or insufficient: return 409 Conflict
+       { outOfStock: [...], insufficientStock: [...] }
+    → Only if all items pass: create Razorpay order + save to DB
+
+Payment verified:
+  POST /api/checkout/verify  (or /api/checkout/verify-payment)
+    → HMAC signature check
+    → UPDATE orders SET status = 'completed', payment_id = ...
+    → For each variant item in the order:
+         deductStockForOrder(variantId, qty, orderId, userId)
+    → Stock errors are logged but NEVER fail the payment response
+       (money was already captured — log and alert admin instead)
+
+deductStockForOrder() — uses transactions + row locks:
+    BEGIN
+    SELECT ... FROM product_variants WHERE id = $1 FOR UPDATE
+    ← Raises error if available < requested
+    SELECT ... FROM supplier_variants WHERE variant_id = $1
+      AND stock_quantity > 0 ORDER BY stock_quantity DESC FOR UPDATE
+    ← Deducts from highest-stock supplier first (cascade)
+    UPDATE product_variants SET stock_quantity = <newTotal>
+    INSERT INTO inventory_logs (change_type = 'order')
+    INSERT INTO inventory_logs (change_type = 'admin_update')  ← if below threshold
+    COMMIT`}</Code>
+
+      <h3 style={h3Style}>Inventory Alert Monitoring</h3>
+      <Code>{`GET /api/admin/inventory/out-of-stock?threshold=<n>
+  → Promise.all([
+      getOutOfStockVariants(),      // stock_quantity <= 0
+      getLowStockVariants(threshold) // 0 < stock <= n (default 10)
+    ])
+  → Returns { outOfStock, lowStock, summary }
+  → summary.noSupplierCount = out-of-stock variants with no supplier
+
+Both functions use a shared fetchInventoryAlerts(filter, params) query
+with JSON_AGG to return supplier info in a single round-trip.
+The threshold is always parameterized ($1) — never interpolated.`}</Code>
+
+      <h3 style={h3Style}>Restock Request Email</h3>
+      <Code>{`POST /api/admin/inventory/notify-supplier
+  Body: { variant_id, supplier_id?, admin_note? }
+
+  → Promise.all([getProductVariantById, getVariantSuppliers])
+  → getProductById (sequential — needs variant.product_id)
+  → For each target supplier:
+      sendRestockRequestEmail(email, { ... })
+      INSERT INTO inventory_logs (change_type='admin_update', notes='Restock request sent...')
+  → Non-blocking: one supplier email failure does not stop others
+  → Returns { results: [...], message: "..." }`}</Code>
+
+      <h3 style={h3Style}>Key Files</h3>
+      <table style={tableStyle}>
+        <thead><tr><th style={thStyle}>File</th><th style={thStyle}>Responsibility</th></tr></thead>
+        <tbody>
+          {[
+            ['src/lib/db/suppliers.ts', 'getOutOfStockVariants, getLowStockVariants, deductStockForOrder, updateVariantStockWithLog, getVariantSuppliers'],
+            ['src/app/api/checkout/create/route.ts', 'Parallel hard stock check before Razorpay order creation'],
+            ['src/app/api/checkout/verify/route.ts', 'Payment verification + post-payment stock deduction'],
+            ['src/app/api/admin/inventory/out-of-stock/route.ts', 'Dashboard inventory alert data endpoint'],
+            ['src/app/api/admin/inventory/notify-supplier/route.ts', 'Trigger restock email to supplier(s)'],
+            ['src/app/api/supplier/variants/route.ts', 'Supplier: view & update own stock quantities'],
+            ['src/app/dashboard/inventory/page.tsx', 'Inventory Alerts dashboard page (3 tabs)'],
+          ].map(([f, d], i) => (
+            <tr key={f}>
+              <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11, background: i % 2 === 0 ? 'white' : '#faf7f4' }}>{f}</td>
+              <td style={{ ...tdStyle, fontSize: 12, background: i % 2 === 0 ? 'white' : '#faf7f4' }}>{d}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -753,38 +930,50 @@ function SectionPayments() {
 ──────────────────────────────────────────────────────────────
 
 1. Customer clicks "Place Order" on checkout page
-   → POST /api/payments/create-order
-      { amount, currency: 'INR', items: [...] }
-   → Server calls Razorpay API: razorpay.orders.create()
-   → Creates order record in DB with status: 'pending'
-   → Returns { razorpayOrderId, amount, currency }
+   → POST /api/checkout/create   { items: [...], shipping_address }
+
+   ── Hard stock check (all items in parallel) ──
+   → Promise.all(variantItems.map(checkVariantStock))
+   → If any item is out-of-stock or insufficient:
+       return 409 { outOfStock: [...], insufficientStock: [...] }
+       (Customer must update cart before proceeding)
+
+   ── If all items pass ──
+   → razorpay.orders.create({ amount, currency: 'INR' })
+   → INSERT INTO orders (status='pending', payment_id=razorpayOrderId)
+   → INSERT INTO order_items (variant_id, variant_name, quantity, price, ...)
+   → Returns { razorpayOrderId, amount, orderId }
 
 2. Browser opens Razorpay checkout modal
-   → Customer enters card / UPI / netbanking details
-   → Razorpay processes payment
+   → Customer completes payment (card / UPI / netbanking)
 
 3a. On payment SUCCESS:
-    → Razorpay SDK calls the handler callback with:
-       { razorpay_order_id, razorpay_payment_id, razorpay_signature }
-    → Client sends these to: POST /api/payments/verify
-    → Server validates HMAC signature:
-        expectedSig = HMAC-SHA256(
-          razorpay_order_id + '|' + razorpay_payment_id,
-          RAZORPAY_KEY_SECRET
-        )
-    → If valid: UPDATE orders SET status='processing',
-        payment_id=razorpay_payment_id WHERE id=<orderId>
+    → Razorpay calls handler: { razorpay_order_id, payment_id, signature }
+    → Client sends to: POST /api/checkout/verify
+
+    ── Server-side HMAC verification ──
+    expectedSig = HMAC-SHA256(
+      razorpay_order_id + '|' + razorpay_payment_id,
+      RAZORPAY_KEY_SECRET
+    )
+
+    ── If signature valid ──
+    → UPDATE orders SET status='completed', payment_id=<payment_id>
+    → For each order item with a variant_id:
+         deductStockForOrder(variantId, qty, orderId, userId)
+         ← Uses FOR UPDATE locks; deducts from highest-stock supplier first
+         ← Stock errors: logged to inventory_logs, never fail the response
     → Returns { success: true, orderId }
     → Browser redirects to /orders/<orderId>
 
 3b. On payment FAILURE:
-    → Razorpay modal shows error to customer
-    → Order remains 'pending' in DB
+    → Razorpay modal shows error; order stays 'pending'
+    → No stock is deducted
     → Admin can cancel pending orders manually
 
 Environment Variables Required:
-  NEXT_PUBLIC_RAZORPAY_KEY_ID   ← Public key (client-side Razorpay modal)
-  RAZORPAY_KEY_SECRET           ← Secret (server-side only, never exposed)`}</Code>
+  NEXT_PUBLIC_RAZORPAY_KEY_ID   ← Client-side (Razorpay modal initialisation)
+  RAZORPAY_KEY_SECRET           ← Server-side only (HMAC verification)`}</Code>
 
       <Tip type="warn">
         The <code style={inlineCode}>RAZORPAY_KEY_SECRET</code> must <strong>never</strong> be prefixed with
@@ -862,21 +1051,32 @@ const result = await pool.query(
         </thead>
         <tbody>
           {[
-            ['GET',    '/api/products',                  'Public',     'List all products with images'],
-            ['POST',   '/api/products',                  'Admin',      'Create a new product'],
-            ['GET',    '/api/products/[id]',             'Public',     'Single product with images + variants'],
-            ['PATCH',  '/api/products/[id]',             'Admin',      'Update product fields'],
-            ['DELETE', '/api/products/[id]',             'Admin',      'Delete product + R2 images'],
-            ['POST',   '/api/products/images/upload',    'Admin',      'Upload image to R2'],
-            ['GET',    '/api/images/[key]',              'Public',     'Proxy private R2 image'],
-            ['GET',    '/api/orders',                    'Admin/Mod',  'List all orders'],
-            ['PATCH',  '/api/orders/[id]',               'Admin/Mod',  'Update order status'],
-            ['POST',   '/api/payments/create-order',     'Customer+',  'Create Razorpay order'],
-            ['POST',   '/api/payments/verify',           'Customer+',  'Verify payment signature'],
-            ['GET',    '/api/admin/users',               'Admin',      'List all users'],
-            ['POST',   '/api/admin/update-role',         'Admin',      'Change a user\'s role'],
-            ['GET',    '/api/auth/me',                   'Any',        'Current user session info'],
-            ['GET',    '/api/dashboard/stats',           'Admin/Mod',  'Overview stat counts'],
+            ['GET',    '/api/products',                              'Public',      'List published products (admins see drafts too)'],
+            ['POST',   '/api/products',                              'Admin',       'Create product (defaults to draft status)'],
+            ['GET',    '/api/products/[id]',                        'Public',      'Single product; 404 for draft/archived to non-admins'],
+            ['PUT',    '/api/products/[id]',                        'Admin',       'Update product fields including status'],
+            ['DELETE', '/api/products/[id]',                        'Admin',       'Delete product + R2 images'],
+            ['POST',   '/api/products/images/upload',               'Admin',       'Upload image to Cloudflare R2'],
+            ['GET',    '/api/images/[key]',                         'Public',      'Proxy private R2 image'],
+            ['GET',    '/api/orders',                               'Admin/Mod',   'List all orders'],
+            ['PATCH',  '/api/orders/[id]',                          'Admin/Mod',   'Update order status'],
+            ['POST',   '/api/checkout/create',                      'Customer+',   'Stock check + create Razorpay order'],
+            ['POST',   '/api/checkout/verify',                      'Customer+',   'Verify signature + deduct stock'],
+            ['GET',    '/api/admin/users',                          'Admin',       'List all users'],
+            ['POST',   '/api/admin/update-role',                    'Admin',       'Change a user\'s role'],
+            ['GET',    '/api/admin/suppliers',                      'Admin',       'List supplier profiles'],
+            ['POST',   '/api/admin/suppliers',                      'Admin',       'Create supplier profile'],
+            ['GET',    '/api/admin/supplier-variants',              'Admin/Mod',   'Get variant-supplier assignments'],
+            ['POST',   '/api/admin/supplier-variants',              'Admin/Mod',   'Assign variant to supplier + send email'],
+            ['DELETE', '/api/admin/supplier-variants',              'Admin',       'Remove variant assignment'],
+            ['GET',    '/api/admin/inventory/out-of-stock',         'Admin/Mod',   'Out-of-stock + low-stock data'],
+            ['POST',   '/api/admin/inventory/notify-supplier',      'Admin/Mod',   'Send restock request email'],
+            ['GET',    '/api/supplier/variants',                    'Supplier',    'View own assigned variants + stock'],
+            ['PUT',    '/api/supplier/variants',                    'Supplier',    'Update own stock quantity for a variant'],
+            ['GET',    '/api/supplier/logs',                        'Supplier',    'View own inventory history'],
+            ['GET',    '/api/auth/session',                         'Any',         'Current user session info'],
+            ['GET',    '/api/dashboard/stats',                      'Admin/Mod',   'Overview stat counts'],
+            ['POST',   '/api/cart',                                 'Customer+',   'Add to cart with soft stock check'],
           ].map(([m, p, a, d], i) => (
             <tr key={p}>
               <td style={{ ...tdStyle, fontFamily: 'monospace', fontWeight: 700, color: m === 'GET' ? '#166534' : m === 'POST' ? '#1e40af' : m === 'DELETE' ? '#991b1b' : '#92400e', background: i % 2 === 0 ? 'white' : '#faf7f4', fontSize: 12 }}>{m}</td>
@@ -1061,6 +1261,7 @@ const SECTION_COMPONENTS: Record<string, React.FC> = {
   'structure':  SectionStructure,
   'database':   SectionDatabase,
   'auth':       SectionAuth,
+  'inventory':  SectionInventory,
   'images':     SectionImages,
   'payments':   SectionPayments,
   'api':        SectionAPI,

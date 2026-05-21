@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { query } from '@/lib/db/connection';
+import { query, getClient } from '@/lib/db/connection';
+import { checkVariantStock } from '@/lib/db/suppliers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +52,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Hard stock check ──────────────────────────────────────────────────────
+    // Validate every variant item against live DB stock before creating the order.
+    // This is the last gate before money changes hands — run all checks in parallel.
+    const outOfStock: string[] = [];
+    const insufficientStock: string[] = [];
+
+    const variantItems = items.filter((item: Record<string, unknown>) => item.variant_id);
+    const stockChecks = await Promise.all(
+      variantItems.map((item: Record<string, unknown>) =>
+        checkVariantStock(Number(item.variant_id), Number(item.quantity))
+          .then(result => ({ item, ...result }))
+      )
+    );
+
+    for (const { item, available, stock } of stockChecks) {
+      if (!available) {
+        const label = item.variant_name
+          ? `${item.name} (${item.variant_name})`
+          : String(item.name || `Variant #${item.variant_id}`);
+
+        if (stock === 0) {
+          outOfStock.push(label);
+        } else {
+          insufficientStock.push(`${label} (requested ${item.quantity}, available ${stock})`);
+        }
+      }
+    }
+
+    if (outOfStock.length > 0 || insufficientStock.length > 0) {
+      const parts: string[] = [];
+      if (outOfStock.length > 0) {
+        parts.push(`Out of stock: ${outOfStock.join(', ')}`);
+      }
+      if (insufficientStock.length > 0) {
+        parts.push(`Insufficient stock: ${insufficientStock.join('; ')}`);
+      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Some items cannot be fulfilled. ${parts.join('. ')} Please update your cart.`,
+          outOfStock,
+          insufficientStock,
+        },
+        { status: 409 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Calculate total amount
     let totalAmount = 0;
     for (const item of items) {
@@ -83,13 +132,34 @@ export async function POST(request: NextRequest) {
       [userId, totalAmount, razorpayOrder.id, shipping_address]
     );
 
-    // Insert order items into the order_items table
-    for (const item of items) {
-      await query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price)
-         VALUES ($1, $2, $3, $4)`,
-        [orderResult.rows[0].id, item.product_id, item.quantity, item.price]
+    const orderId = orderResult.rows[0].id;
+
+    // Insert order items in a transaction so a partial failure doesn't leave orphan records
+    const itemClient = await getClient();
+    try {
+      await itemClient.query('BEGIN');
+      await Promise.all(
+        items.map((item: Record<string, unknown>) =>
+          itemClient.query(
+            `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price, variant_name)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              orderId,
+              item.product_id,
+              item.variant_id || null,
+              item.quantity,
+              item.price,
+              item.variant_name || null,
+            ]
+          )
+        )
       );
+      await itemClient.query('COMMIT');
+    } catch (insertErr) {
+      await itemClient.query('ROLLBACK');
+      throw insertErr;
+    } finally {
+      itemClient.release();
     }
 
     return NextResponse.json({
@@ -99,6 +169,7 @@ export async function POST(request: NextRequest) {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         total_amount: totalAmount,
+        order_id: orderId,
       }
     });
   } catch (err: unknown) {

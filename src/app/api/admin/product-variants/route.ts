@@ -17,9 +17,20 @@ import { ok, created, badRequest, unauthorized, forbidden, notFound, serverError
 /**
  * GET /api/admin/product-variants
  * Returns variants for a product via ?product_id= query param
+ * SECURITY: Requires admin/moderator authentication - this is an admin API
  */
 export async function GET(request: NextRequest) {
   try {
+    // ── Authentication check ─────────────────────────────────────────────────
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return unauthorized();
+    }
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return forbidden('Admin or moderator access required');
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('product_id');
 
@@ -47,8 +58,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return unauthorized();
     }
-    if (session.role !== 'admin') {
-      return forbidden('Only admins can create variants');
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return forbidden('Admin or moderator access required to create variants');
     }
 
     const body = await request.json();
@@ -90,8 +101,8 @@ export async function PUT(request: NextRequest) {
     if (!session) {
       return unauthorized();
     }
-    if (session.role !== 'admin') {
-      return forbidden('Only admins can update variants');
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return forbidden('Admin or moderator access required to update variants');
     }
 
     const body = await request.json();

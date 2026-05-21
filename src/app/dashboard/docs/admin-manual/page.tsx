@@ -15,6 +15,7 @@ const SECTIONS = [
   { id: 'orders',        icon: 'fas fa-shopping-bag',    title: 'Managing Orders' },
   { id: 'users',         icon: 'fas fa-users',           title: 'User Management' },
   { id: 'suppliers',     icon: 'fas fa-truck',           title: 'Suppliers' },
+  { id: 'inventory',     icon: 'fas fa-warehouse',       title: 'Inventory Alerts' },
   { id: 'reviews',       icon: 'fas fa-star',            title: 'Reviews' },
   { id: 'appointments',  icon: 'fas fa-calendar-check',  title: 'Appointments' },
   { id: 'settings',      icon: 'fas fa-cog',             title: 'Settings' },
@@ -215,16 +216,17 @@ function SectionOverview() {
         </thead>
         <tbody>
           {[
-            ['Overview',          '/dashboard',                    'Admin, Moderator'],
-            ['Products',          '/dashboard/products',           'Admin only'],
-            ['Orders',            '/dashboard/orders',             'Admin, Moderator'],
-            ['Appointments',      '/dashboard/appointments',       'Admin, Moderator'],
-            ['Reviews',           '/dashboard/reviews',            'Admin, Moderator'],
-            ['Suppliers',         '/dashboard/suppliers',          'Admin only'],
-            ['Users',             '/dashboard/users',              'Admin only'],
-            ['Variant Dictionary','/dashboard/variants',           'Admin only'],
-            ['Settings',          '/dashboard/settings',           'Admin only'],
-            ['Admin Manual',      '/dashboard/docs/admin-manual',  'Admin only'],
+            ['Overview',          '/dashboard',                       'Admin, Moderator'],
+            ['Products',          '/dashboard/products',              'Admin, Moderator¹'],
+            ['Orders',            '/dashboard/orders',                'Admin, Moderator'],
+            ['Appointments',      '/dashboard/appointments',          'Admin, Moderator'],
+            ['Reviews',           '/dashboard/reviews',               'Admin, Moderator'],
+            ['Inventory Alerts',  '/dashboard/inventory',             'Admin, Moderator'],
+            ['Suppliers',         '/dashboard/suppliers',             'Admin only'],
+            ['Users',             '/dashboard/users',                 'Admin only'],
+            ['Variant Dictionary','/dashboard/variants',              'Admin only'],
+            ['Settings',          '/dashboard/settings',              'Admin only'],
+            ['Admin Manual',      '/dashboard/docs/admin-manual',     'Admin only'],
             ['Tech Architecture', '/dashboard/docs/tech-architecture','Admin only'],
           ].map(([page, path, who], i) => (
             <tr key={path} style={{ background: i % 2 === 0 ? 'white' : '#faf7f4' }}>
@@ -235,6 +237,9 @@ function SectionOverview() {
           ))}
         </tbody>
       </table>
+      <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
+        ¹ Moderators can view all products (including drafts) but cannot create, edit, or delete them.
+      </p>
     </div>
   );
 }
@@ -251,7 +256,8 @@ function SectionAddProduct() {
       </p>
 
       <Tip type="warn">
-        Only <strong>admins</strong> can create or edit products. Moderators have read-only access to product data.
+        Only <strong>admins</strong> can create, edit, or delete products. Moderators can view all products
+        (including drafts) but cannot make changes.
       </Tip>
 
       <Step n={1} title="Navigate to Products">
@@ -290,30 +296,40 @@ function SectionAddProduct() {
             The default stock count. If the product has variants, stock is tracked per variant SKU.
             Set this to the total available units if no variants are used.
           </Field>
-          <Field label="Supplier">
-            Optionally link this product to a supplier from the Suppliers list. Useful for procurement tracking
-            and cost reporting.
+          <Field label="Status">
+            Controls visibility. <strong>draft</strong> (default) — product is saved but hidden from the
+            storefront; only admins and moderators can see it. <strong>published</strong> — visible to all
+            customers. <strong>archived</strong> — retired product, hidden from storefront but preserved in
+            order history.
           </Field>
         </div>
       </Step>
 
-      <Step n={4} title="Save the product">
+      <Step n={4} title="Save the product (draft)">
         Click <strong>Save Product</strong>. The system generates a unique URL slug from the product name automatically.
-        You will be redirected to the product edit page where you can continue adding images and variants.
+        New products are saved as <strong>draft</strong> by default — they are not visible to customers yet.
+        You will be redirected to the product edit page to continue.
       </Step>
 
       <Step n={5} title="Upload product images">
-        See the <strong>Product Images</strong> section below for the full image upload workflow.
+        See the <strong>Product Images</strong> section for the full image upload workflow.
       </Step>
 
-      <Step n={6} title="Add variants (optional)">
-        If the product comes in different sizes, thicknesses, or colours, see the <strong>Variants & Options</strong> section.
+      <Step n={6} title="Assign variants and suppliers (optional)">
+        If the product comes in different sizes or configurations, see <strong>Variants & Options</strong>.
+        Assign suppliers to individual variants from the <strong>Suppliers</strong> section so inventory
+        can be tracked per-supplier.
       </Step>
 
-      <Tip type="success">
-        After saving, the product is immediately visible to customers on the storefront.
-        If you are not ready to publish, set <strong>Stock Quantity to 0</strong> — out-of-stock products
-        show an "unavailable" state on the product page.
+      <Step n={7} title="Publish the product">
+        Once the product is ready — images uploaded, variants configured, suppliers assigned — set
+        <strong> Status → published</strong> and save. The product will immediately appear on the storefront.
+      </Step>
+
+      <Tip type="info">
+        Products remain in <strong>draft</strong> until you explicitly publish them. This lets you prepare
+        products in advance without customers seeing incomplete listings.
+        Use <strong>archived</strong> to retire products without losing order history.
       </Tip>
 
       <h3 style={h3Style}>Editing an Existing Product</h3>
@@ -500,21 +516,16 @@ function SectionOrders() {
       <h3 style={h3Style}>Order Statuses</h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         {[
-          { label: 'pending',    color: '#92400e', bg: 'rgba(254,243,199,0.7)' },
-          { label: 'processing', color: '#1e40af', bg: 'rgba(219,234,254,0.7)' },
-          { label: 'shipped',    color: '#5b21b6', bg: 'rgba(237,233,254,0.7)' },
-          { label: 'completed',  color: '#166534', bg: 'rgba(220,252,231,0.7)' },
-          { label: 'cancelled',  color: '#991b1b', bg: 'rgba(254,226,226,0.7)' },
+          { label: 'pending',    color: '#92400e', bg: 'rgba(254,243,199,0.7)',  desc: '— Payment received, awaiting processing' },
+          { label: 'processing', color: '#1e40af', bg: 'rgba(219,234,254,0.7)', desc: '— Order confirmed, being prepared' },
+          { label: 'shipped',    color: '#5b21b6', bg: 'rgba(237,233,254,0.7)', desc: '— Dispatched to customer' },
+          { label: 'completed',  color: '#166534', bg: 'rgba(220,252,231,0.7)', desc: '— Delivered and closed; stock already deducted' },
+          { label: 'cancelled',  color: '#991b1b', bg: 'rgba(254,226,226,0.7)', desc: '— Cancelled by admin or customer before shipment' },
+          { label: 'returned',   color: '#6b21a8', bg: 'rgba(243,232,255,0.7)', desc: '— Item returned by customer after delivery' },
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Status label={s.label} color={s.color} bg={s.bg} />
-            <span style={{ fontSize: 12, color: '#666' }}>
-              {s.label === 'pending' && '— Payment received, awaiting processing'}
-              {s.label === 'processing' && '— Order confirmed, being prepared'}
-              {s.label === 'shipped' && '— Dispatched to customer'}
-              {s.label === 'completed' && '— Delivered and closed'}
-              {s.label === 'cancelled' && '— Cancelled by admin or customer'}
-            </span>
+            <span style={{ fontSize: 12, color: '#666' }}>{s.desc}</span>
           </div>
         ))}
       </div>
@@ -537,13 +548,20 @@ function SectionOrders() {
       </Step>
       <Step n={3} title="Save the update">
         Click <strong>Update Status</strong>. The change is immediate. Customers do not currently
-        receive automated email notifications on status change (manual communication required).
+        receive automated email notifications on status change — contact them manually if needed.
       </Step>
 
       <Tip type="info">
         The <strong>Razorpay Payment ID</strong> on each order can be used to look up the transaction
         in your Razorpay dashboard at <code style={{ background: '#f5f0eb', padding: '1px 6px', borderRadius: 4 }}>dashboard.razorpay.com</code> for
         payment verification or refund processing.
+      </Tip>
+
+      <Tip type="info">
+        <strong>Inventory deduction</strong> happens automatically when a payment is verified — not when
+        the order status changes. The system deducts stock from the supplier with the most available units
+        first, across all suppliers assigned to a variant. If an item goes out of stock as a result, it
+        will appear on the <strong>Inventory Alerts</strong> page.
       </Tip>
     </div>
   );
@@ -612,34 +630,173 @@ function SectionSuppliers() {
         Suppliers
       </h2>
       <p style={pStyle}>
-        Suppliers represent the vendors or manufacturers you source products from.
-        Linking a product to a supplier helps with inventory and cost tracking.
+        Suppliers are businesses or individuals who stock and fulfil product variants.
+        The system tracks inventory per supplier — each supplier manages their own stock levels
+        through a dedicated <strong>Supplier Portal</strong>, while admins coordinate assignments and
+        restock requests from the dashboard.
       </p>
 
-      <h3 style={h3Style}>Adding a Supplier</h3>
-      <Step n={1} title="Navigate to Suppliers">
-        Click <strong>Suppliers</strong> in the sidebar.
-      </Step>
-      <Step n={2} title="Click Add Supplier">
-        Fill in the supplier details: <strong>Name</strong>, <strong>Contact Email</strong>,
-        <strong>Phone</strong>, and <strong>Address</strong>. All fields except name are optional.
-      </Step>
-      <Step n={3} title="Save">
-        The supplier is now available for selection when creating or editing products.
+      <Tip type="info">
+        Suppliers have their own login and portal at <code style={{ background: '#f5f0eb', padding: '1px 6px', borderRadius: 4 }}>/supplier</code>.
+        They can only see and update stock for variants assigned to them. They cannot access any admin pages.
+      </Tip>
+
+      <h3 style={h3Style}>Onboarding a New Supplier (3 Steps)</h3>
+
+      <Step n={1} title="Create the supplier's user account">
+        The supplier must sign in once with their Google account at <strong>colourmyspace.com</strong>.
+        Then go to <strong>Users</strong> in the sidebar, find their account, and change their role
+        to <strong>supplier</strong>. They will immediately be restricted to the /supplier portal only.
       </Step>
 
-      <h3 style={h3Style}>Linking a Supplier to a Product</h3>
+      <Step n={2} title="Create their supplier profile">
+        Navigate to <strong>Suppliers → Add Supplier</strong>. Fill in:
+        <div style={{ marginTop: 10 }}>
+          <Field label="Company Name" req>The supplier&apos;s business name (shown in emails and internal reports).</Field>
+          <Field label="User Account" req>Link to the supplier&apos;s user account created in step 1.</Field>
+          <Field label="Phone">Contact phone number. Optional but recommended for urgent restocking.</Field>
+          <Field label="Address">Warehouse or office address. Optional.</Field>
+          <Field label="GST ID">GST registration number for invoicing purposes. Optional.</Field>
+          <Field label="Notes">Internal notes about this supplier — lead times, payment terms, etc.</Field>
+        </div>
+      </Step>
+
+      <Step n={3} title="Assign product variants">
+        Once the supplier profile exists, go to any <strong>product edit page</strong> and scroll to the
+        <strong> Variants</strong> panel. For each variant you want this supplier to fulfil, click
+        <strong> Assign Supplier</strong> and select the supplier. You can optionally add a note.
+        <br /><br />
+        The supplier receives an <strong>automatic email notification</strong> when a variant is assigned,
+        with the product name, variant details, and SKU. They can then set their initial stock quantity
+        in their supplier portal.
+      </Step>
+
+      <Tip type="success">
+        A single variant can be shared across multiple suppliers. The system sums all supplier stock levels
+        to compute the variant&apos;s total stock shown to customers. During checkout, stock is deducted from
+        the supplier with the most units first.
+      </Tip>
+
+      <h3 style={h3Style}>Supplier Portal (/supplier)</h3>
       <p style={pStyle}>
-        When creating or editing a product, select the supplier from the <strong>Supplier</strong>
-        dropdown. Multiple products can be linked to the same supplier. A supplier can be changed
-        at any time from the product edit page.
+        Suppliers log in and land at <code style={{ background: '#f5f0eb', padding: '1px 6px', borderRadius: 4 }}>/supplier</code> instead of
+        the admin dashboard. From there they can:
+      </p>
+      <div style={{ marginBottom: 16 }}>
+        {[
+          { icon: 'fas fa-boxes', text: 'View all product variants assigned to them' },
+          { icon: 'fas fa-edit', text: 'Update their own stock quantity for each variant' },
+          { icon: 'fas fa-exclamation-triangle', text: 'See out-of-stock alerts highlighted in red at the top of the page' },
+          { icon: 'fas fa-history', text: 'View their own inventory update history' },
+        ].map(item => (
+          <div key={item.icon} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8 }}>
+            <i className={item.icon} style={{ color: '#c19a6b', fontSize: 14, marginTop: 2, width: 18, flexShrink: 0 }}></i>
+            <span style={{ fontSize: 13, color: '#555' }}>{item.text}</span>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={h3Style}>Supplier Detail Page (Admin)</h3>
+      <p style={pStyle}>
+        Clicking a supplier in the admin Suppliers list shows their detail page:
+        contact information, all assigned variants with current stock, and a notes field for internal use.
+        Admins can also remove variant assignments from this page.
       </p>
 
-      <h3 style={h3Style}>Supplier Detail Page</h3>
+      <Tip type="warn">
+        If you need to remove a supplier, first reassign all their variants to another supplier so stock
+        continuity is maintained. Removing an assignment does not restore stock to the variant total
+        automatically.
+      </Tip>
+    </div>
+  );
+}
+
+function SectionInventory() {
+  return (
+    <div style={card}>
+      <h2 style={h2Style}>
+        <i className="fas fa-warehouse" style={{ color: '#c19a6b', fontSize: 20 }}></i>
+        Inventory Alerts
+      </h2>
       <p style={pStyle}>
-        Clicking a supplier in the list shows their detail page with all linked products,
-        contact information, and a notes field for internal use.
+        The Inventory Alerts page (<code style={{ background: '#f5f0eb', padding: '1px 6px', borderRadius: 4 }}>/dashboard/inventory</code>) gives
+        admins and moderators a centralised view of stock health — out-of-stock variants, low-stock variants,
+        and variants with no supplier assigned. From here you can notify suppliers with a single click.
       </p>
+
+      <h3 style={h3Style}>The Three Tabs</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+        {[
+          { icon: 'fas fa-times-circle', color: '#ef4444', bg: 'rgba(239,68,68,0.06)', label: 'Out of Stock', desc: 'All active variants where total stock = 0. Customers cannot purchase these.' },
+          { icon: 'fas fa-exclamation-circle', color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', label: 'Low Stock', desc: 'Variants with stock ≤ threshold (default 10). Variants still purchasable but need restocking soon.' },
+          { icon: 'fas fa-unlink', color: '#6b7280', bg: 'rgba(107,114,128,0.06)', label: 'No Supplier', desc: 'Out-of-stock variants that have no supplier assigned. Cannot be restocked without assigning one first.' },
+        ].map(t => (
+          <div key={t.label} style={{ border: `1px solid ${t.color}40`, borderRadius: 10, padding: '14px 16px', background: t.bg }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+              <i className={t.icon} style={{ color: t.color, fontSize: 16 }}></i>
+              <span style={{ fontWeight: 700, fontSize: 13, color: '#333' }}>{t.label}</span>
+            </div>
+            <div style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>{t.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={h3Style}>Reading the Table</h3>
+      <p style={pStyle}>
+        Each row shows a variant with its <strong>product name</strong>, <strong>SKU</strong>,
+        <strong> total stock</strong>, and a breakdown of each assigned supplier&apos;s individual stock.
+        The <strong>Last Updated</strong> column shows when stock was last changed — useful for spotting
+        stale records.
+      </p>
+      <p style={pStyle}>
+        Variants from <strong>draft</strong> products are included and labelled with a grey DRAFT badge,
+        so you can identify inventory issues before a product goes live.
+      </p>
+
+      <h3 style={h3Style}>Notifying a Supplier to Restock</h3>
+      <Step n={1} title="Click the Notify button">
+        On any row that has at least one supplier assigned, click <strong>🚨 Notify</strong> (out-of-stock)
+        or <strong>⚠ Notify</strong> (low-stock). A modal opens.
+      </Step>
+      <Step n={2} title="Select which supplier(s) to notify">
+        If the variant has multiple suppliers, choose to notify <em>all of them</em> or select a specific one
+        from the dropdown. By default, all active suppliers are notified.
+      </Step>
+      <Step n={3} title="Add an optional note">
+        Type a message to include in the email — e.g. <em>"We need at least 20 units by Friday."</em>
+        Leave blank for a generic restock request.
+      </Step>
+      <Step n={4} title="Send">
+        Click <strong>Send Notification</strong>. Each supplier receives a branded email with the product
+        name, variant details, current stock level, and your note. The notification is recorded in the
+        inventory audit log for traceability.
+      </Step>
+
+      <Tip type="success">
+        Notification emails are sent immediately and non-blocking — a partial failure (one supplier&apos;s
+        email bounces) will not prevent the others from being sent. The result banner shows exactly which
+        suppliers were reached and which failed.
+      </Tip>
+
+      <h3 style={h3Style}>No Supplier Assigned — What to Do</h3>
+      <p style={pStyle}>
+        If a variant has no supplier, you cannot notify anyone. The <strong>Assign Supplier</strong> button
+        links you directly to the Suppliers page. Follow the <strong>Onboarding</strong> flow in the
+        Suppliers section to set one up, then return here to send a restock request.
+      </p>
+
+      <h3 style={h3Style}>Supplier&apos;s View</h3>
+      <p style={pStyle}>
+        When a supplier logs into their portal, any variant they manage with zero stock is highlighted
+        in red with an <strong>OUT OF STOCK</strong> badge at the top of their list. Their update button
+        turns red and reads <strong>⚡ Restock Now</strong> as a visual prompt to act immediately.
+      </p>
+
+      <Tip type="info">
+        The summary stat cards at the top of the page are clickable — clicking a card switches to that tab.
+        Use the search box to filter by product name, variant, SKU, or supplier company name.
+      </Tip>
     </div>
   );
 }
@@ -777,6 +934,7 @@ const SECTION_COMPONENTS: Record<string, React.FC> = {
   'orders':       SectionOrders,
   'users':        SectionUsers,
   'suppliers':    SectionSuppliers,
+  'inventory':    SectionInventory,
   'reviews':      SectionReviews,
   'appointments': SectionAppointments,
   'settings':     SectionSettings,

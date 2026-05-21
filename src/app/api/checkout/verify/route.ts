@@ -2,13 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { query } from '@/lib/db/connection';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { clearCart } from '@/lib/db/cart';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendStockDiscrepancyAlert } from '@/lib/email';
 import { getOrderItems } from '@/lib/db/orders';
+import { deductStockForOrder } from '@/lib/db/suppliers';
 import { toErrorMessage } from '@/lib/error-utils';
 
 export async function POST(request: NextRequest) {
   try {
+    // ── Authentication check ─────────────────────────────────────────────────
+    const session = await getSessionFromCookieWithDB();
+    const userId = session?.userId || null;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Initialize Razorpay inside the function to handle missing env vars gracefully
     const razorpayKey = process.env.RAZORPAY_KEY_ID;
     const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -35,14 +49,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the payment signature
+    // Verify the payment signature using timing-safe comparison (SECURITY: prevents timing attacks)
     const bodyData = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
       .update(bodyData)
       .digest('hex');
 
-    const isSignatureValid = expectedSignature === razorpay_signature;
+    // SECURITY: Use timing-safe comparison to prevent timing attacks
+    // Note: timingSafeEqual throws if buffer lengths differ, so check first
+    const signatureBuffer = Buffer.from(razorpay_signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      console.error('[checkout/verify] Invalid signature length');
+      return NextResponse.json(
+        { success: false, error: 'Invalid payment signature' },
+        { status: 400 }
+      );
+    }
+
+    const isSignatureValid = crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
 
     if (!isSignatureValid) {
       return NextResponse.json(
@@ -92,6 +119,17 @@ export async function POST(request: NextRequest) {
 
     const order = orderResult.rows[0];
 
+    // ── User ownership verification ─────────────────────────────────────────────
+    // SECURITY: Verify the order belongs to the authenticated user
+    if (order.user_id !== userId) {
+      console.error(`[checkout/verify] User ${userId} attempted to verify order ${order.id} owned by ${order.user_id}`);
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Update the order status to 'completed'
     const updateResult = await query(
       `UPDATE orders
@@ -107,6 +145,45 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // ── Deduct inventory for each variant item ────────────────────────────────
+    // Do this synchronously before clearing the cart so any stock-error is
+    // visible in logs. We intentionally do NOT fail the HTTP response on stock
+    // errors here — the payment has already been captured and the customer must
+    // not face an error screen. Log the discrepancy for manual admin review.
+    let orderItemsForStock: Awaited<ReturnType<typeof query>> | null = null;
+    try {
+      orderItemsForStock = await query(
+        'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = $1',
+        [order.id]
+      );
+      for (const item of orderItemsForStock.rows) {
+        if (item.variant_id) {
+          await deductStockForOrder(
+            Number(item.variant_id),
+            Number(item.quantity),
+            Number(order.id),
+            Number(order.user_id)
+          );
+        }
+      }
+    } catch (stockErr) {
+      // Log but never let a stock error roll back a confirmed payment
+      console.error(`[checkout/verify] ⚠️ Stock deduction failed for order ${order.id}:`, stockErr);
+      // Notify admins — payment is captured, inventory must be reconciled manually
+      const orderItemsForAlert = orderItemsForStock?.rows ?? [];
+      for (const item of orderItemsForAlert) {
+        if (item.variant_id) {
+          await sendStockDiscrepancyAlert({
+            orderId: Number(order.id),
+            variantId: Number(item.variant_id),
+            quantity: Number(item.quantity),
+            error: stockErr instanceof Error ? stockErr.message : String(stockErr),
+          }).catch(() => {}); // Never let the alert itself throw
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Clear the user's cart after successful payment
     await clearCart(order.user_id);

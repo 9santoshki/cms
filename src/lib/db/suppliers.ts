@@ -282,7 +282,6 @@ export async function updateVariantStockWithLog(
   try {
     await client.query('BEGIN');
 
-    // Verify variant exists
     const variantExists = await client.query(
       `SELECT id FROM product_variants WHERE id = $1`,
       [variantId]
@@ -292,7 +291,6 @@ export async function updateVariantStockWithLog(
       return null;
     }
 
-    // Get this supplier's current quantity for the variant
     const currentResult = await client.query(
       `SELECT stock_quantity FROM supplier_variants WHERE supplier_id = $1 AND variant_id = $2`,
       [supplierId, variantId]
@@ -302,13 +300,13 @@ export async function updateVariantStockWithLog(
       : 0;
     const changeQuantity = newQuantity - previousQuantity;
 
-    // Update this supplier's quantity on the assignment row
     await client.query(
       `UPDATE supplier_variants SET stock_quantity = $1 WHERE supplier_id = $2 AND variant_id = $3`,
       [newQuantity, supplierId, variantId]
     );
 
-    // Recompute variant total = SUM of all supplier quantities for this variant
+    // Recompute variant total as SUM across all suppliers so the canonical stock
+    // stays consistent even when multiple suppliers share a variant.
     const sumResult = await client.query(
       `SELECT COALESCE(SUM(stock_quantity), 0) AS total FROM supplier_variants WHERE variant_id = $1`,
       [variantId]
@@ -320,7 +318,6 @@ export async function updateVariantStockWithLog(
       [totalStock, variantId]
     );
 
-    // Create audit log entry (tracks the supplier-level change)
     const logResult = await client.query(
       `INSERT INTO inventory_logs (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -335,6 +332,257 @@ export async function updateVariantStockWithLog(
       log: logResult.rows[0] as InventoryLog
     };
   } catch (err: unknown) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// ============================================================================
+// Inventory Monitoring
+// ============================================================================
+
+export interface OutOfStockVariant {
+  variant_id: number;
+  product_id: number;
+  product_name: string;
+  product_status: string;
+  variant_name: string;
+  sku: string | null;
+  price: number;
+  stock_quantity: number;
+  last_stock_update: string | null;
+  suppliers: Array<{
+    supplier_id: number;
+    company_name: string;
+    email: string;
+    phone: string | null;
+    is_active: boolean;
+    supplier_stock: number;
+    min_stock_threshold: number;
+  }>;
+}
+
+/**
+ * Base query for inventory alerts. `stockFilter` is a parameterized SQL fragment
+ * that goes after "WHERE pv.is_active = TRUE AND"; `params` are its bound values.
+ * E.g. stockFilter='pv.stock_quantity <= 0', params=[] — or
+ *      stockFilter='pv.stock_quantity > 0 AND pv.stock_quantity <= $1', params=[10]
+ */
+async function fetchInventoryAlerts(
+  stockFilter: string,
+  params: unknown[] = []
+): Promise<OutOfStockVariant[]> {
+  const result = await query(
+    `SELECT
+       pv.id                     AS variant_id,
+       pv.sku,
+       pv.price,
+       pv.stock_quantity,
+       pv.updated_at             AS last_stock_update,
+       p.id                      AS product_id,
+       p.name                    AS product_name,
+       COALESCE(p.status, 'published') AS product_status,
+       COALESCE(
+         (SELECT STRING_AGG(o.display_value, ' / ' ORDER BY t.display_order)
+          FROM product_variant_values vv
+          JOIN variant_options o   ON vv.option_id = o.id
+          JOIN variant_option_types t ON o.option_type_id = t.id
+          WHERE vv.variant_id = pv.id),
+         ''
+       ) AS variant_name,
+       COALESCE(
+         JSON_AGG(
+           JSON_BUILD_OBJECT(
+             'supplier_id',         s.id,
+             'company_name',        s.company_name,
+             'email',               u.email,
+             'phone',               s.phone,
+             'is_active',           s.is_active,
+             'supplier_stock',      sv.stock_quantity,
+             'min_stock_threshold', sv.min_stock_threshold
+           ) ORDER BY s.company_name
+         ) FILTER (WHERE s.id IS NOT NULL),
+         '[]'
+       ) AS suppliers
+     FROM product_variants pv
+     JOIN products p ON pv.product_id = p.id
+     LEFT JOIN supplier_variants sv ON pv.id = sv.variant_id
+     LEFT JOIN suppliers s           ON sv.supplier_id = s.id
+     LEFT JOIN users u               ON s.user_id = u.id
+     WHERE pv.is_active = TRUE
+       AND ${stockFilter}
+     GROUP BY pv.id, p.id
+     ORDER BY p.name, pv.id`,
+    params
+  );
+
+  return result.rows.map((row: Record<string, unknown>) => ({
+    ...row,
+    suppliers:
+      typeof row.suppliers === 'string' ? JSON.parse(row.suppliers) : row.suppliers,
+  })) as OutOfStockVariant[];
+}
+
+/** All active variants with stock_quantity = 0 */
+export async function getOutOfStockVariants(): Promise<OutOfStockVariant[]> {
+  return fetchInventoryAlerts('pv.stock_quantity <= 0');
+}
+
+/**
+ * Active variants whose total stock is at or below `threshold`.
+ * Uses a parameterized query — threshold is never interpolated into SQL.
+ */
+export async function getLowStockVariants(threshold = 10): Promise<OutOfStockVariant[]> {
+  return fetchInventoryAlerts(
+    'pv.stock_quantity > 0 AND pv.stock_quantity <= $1',
+    [Number(threshold)]
+  );
+}
+
+// ============================================================================
+// Order-Driven Inventory Operations
+// ============================================================================
+
+/**
+ * Check whether enough stock is available for a given variant.
+ * Returns `{ available: true }` or `{ available: false, stock: N }`.
+ */
+export async function checkVariantStock(
+  variantId: number,
+  requestedQty: number
+): Promise<{ available: boolean; stock: number }> {
+  const result = await query(
+    'SELECT stock_quantity FROM product_variants WHERE id = $1 AND is_active = TRUE',
+    [variantId]
+  );
+  if (result.rows.length === 0) return { available: false, stock: 0 };
+  const stock = Number(result.rows[0].stock_quantity);
+  return { available: stock >= requestedQty, stock };
+}
+
+/**
+ * Deduct stock across supplier buckets for a confirmed order.
+ *
+ * Strategy: consume from the supplier with the most stock first so that
+ * partial-stock suppliers are depleted last and the total stays consistent.
+ *
+ * The function runs inside a single serialisable transaction and uses
+ * FOR UPDATE locks to prevent race conditions under concurrent checkouts.
+ *
+ * Throws if the variant has insufficient stock — the caller should handle
+ * this and NOT mark the payment as failed (the payment was already captured;
+ * log the discrepancy and alert admin instead).
+ */
+export async function deductStockForOrder(
+  variantId: number,
+  quantity: number,
+  orderId: number,
+  changedBy: number | null
+): Promise<void> {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Idempotency check: if stock was already deducted for this order, skip
+    const idempotencyCheck = await client.query(
+      `SELECT 1 FROM inventory_logs WHERE variant_id = $1 AND change_type = 'order' AND order_id = $2 LIMIT 1`,
+      [variantId, orderId]
+    );
+    if (idempotencyCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      console.warn(`[deductStockForOrder] Stock already deducted for variant ${variantId}, order ${orderId} — skipping`);
+      return;
+    }
+
+    // Lock the variant row first to prevent concurrent over-deduction
+    const variantRow = await client.query(
+      'SELECT stock_quantity FROM product_variants WHERE id = $1 FOR UPDATE',
+      [variantId]
+    );
+    if (variantRow.rows.length === 0) {
+      throw new Error(`Variant ${variantId} not found`);
+    }
+
+    const previousTotal = Number(variantRow.rows[0].stock_quantity);
+    if (previousTotal < quantity) {
+      throw new Error(
+        `Insufficient stock for variant ${variantId}: available ${previousTotal}, requested ${quantity}`
+      );
+    }
+
+    // Deduct from supplier buckets, highest-stock supplier first
+    const supplierRows = await client.query(
+      `SELECT id, stock_quantity
+       FROM supplier_variants
+       WHERE variant_id = $1 AND stock_quantity > 0
+       ORDER BY stock_quantity DESC
+       FOR UPDATE`,
+      [variantId]
+    );
+
+    let remaining = quantity;
+    for (const row of supplierRows.rows) {
+      if (remaining <= 0) break;
+      const deduct = Math.min(remaining, Number(row.stock_quantity));
+      await client.query(
+        'UPDATE supplier_variants SET stock_quantity = stock_quantity - $1 WHERE id = $2',
+        [deduct, row.id]
+      );
+      remaining -= deduct;
+    }
+
+    if (remaining > 0) {
+      // Sum of supplier stocks was inconsistent with variant total — rollback
+      throw new Error(
+        `Stock inconsistency for variant ${variantId}: could not deduct ${remaining} remaining units`
+      );
+    }
+
+    const newTotal = previousTotal - quantity;
+
+    // Update variant total
+    await client.query(
+      'UPDATE product_variants SET stock_quantity = $1, updated_at = NOW() WHERE id = $2',
+      [newTotal, variantId]
+    );
+
+    // Audit log
+    await client.query(
+      `INSERT INTO inventory_logs
+         (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, order_id, notes)
+       VALUES ($1, $2, $3, $4, $5, 'order', $6, $7)`,
+      [
+        variantId,
+        previousTotal,
+        newTotal,
+        -quantity,
+        changedBy,
+        orderId,
+        `Deducted for Order #${orderId}`,
+      ]
+    );
+
+    // Low-stock check: warn if any supplier's share has fallen below their threshold
+    await client.query(
+      `INSERT INTO inventory_logs
+         (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, notes)
+       SELECT
+         $1, $2, $2, 0, $3, 'alert',
+         'LOW STOCK ALERT: variant total is ' || $2 || ' units after Order #' || $4
+       WHERE EXISTS (
+         SELECT 1 FROM supplier_variants
+         WHERE variant_id = $1
+           AND min_stock_threshold > 0
+           AND $2 <= min_stock_threshold
+         LIMIT 1
+       )`,
+      [variantId, newTotal, changedBy, orderId]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {

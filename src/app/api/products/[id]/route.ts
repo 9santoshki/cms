@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductById, getProductBySlug, getProductWithImages, getProductBySlugWithImages, updateProduct, deleteProduct } from '@/lib/db/products';
+import {
+  getProductById,
+  getProductBySlug,
+  getProductWithImages,
+  getProductBySlugWithImages,
+  updateProduct,
+  deleteProduct,
+  generateUniqueSlug,
+} from '@/lib/db/products';
 
 export async function GET(
   _request: NextRequest,
@@ -11,49 +19,39 @@ export async function GET(
     const productIdOrSlug = params.id;
 
     if (productIdOrSlug === undefined) {
-      console.error('Parameter is undefined');
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Product parameter is missing',
-        },
+        { success: false, error: 'Product parameter is missing' },
         { status: 400 }
       );
     }
 
-    // Check if it's a number (id) or a slug
     const isNumericId = /^\d+$/.test(productIdOrSlug);
-
-    let product;
-    if (isNumericId) {
-      // It's a numeric ID
-      product = await getProductWithImages(productIdOrSlug);
-    } else {
-      // It's a slug
-      product = await getProductBySlugWithImages(productIdOrSlug);
-    }
+    const product = isNumericId
+      ? await getProductWithImages(productIdOrSlug)
+      : await getProductBySlugWithImages(productIdOrSlug);
 
     if (!product) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Product not found',
-        },
+        { success: false, error: 'Product not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: product,
-    });
+    // Non-admin visitors cannot see draft / archived products
+    const session = await getSessionFromCookieWithDB();
+    const isAdmin = session?.role === 'admin' || session?.role === 'moderator';
+    if (!isAdmin && product.status && product.status !== 'published') {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: product });
   } catch (err: unknown) {
     console.error('Error fetching product:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -66,48 +64,51 @@ export async function PUT(
   try {
     const session = await getSessionFromCookieWithDB();
     if (!session) {
-      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
     if (session.role !== 'admin' && session.role !== 'moderator') {
-      return NextResponse.json({ success: false, error: 'Admin or moderator access required' }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Admin or moderator access required' },
+        { status: 403 }
+      );
     }
 
     const params = await context.params;
     const { id } = params;
 
     const body = await request.json();
-    const { name, description, price, sale_price, image_url, category, stock_quantity } = body;
+    const { name, description, price, sale_price, image_url, category, stock_quantity, status } =
+      body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Name, description, and price are required',
-        },
+        { success: false, error: 'Name, description, and price are required' },
         { status: 400 }
       );
     }
 
-    // Get existing product
-    const existingProduct = await getProductById(id);
+    // Validate status if provided
+    const validStatuses = ['draft', 'published', 'archived'];
+    const productStatus = validStatuses.includes(status) ? status : undefined;
 
+    const existingProduct = await getProductById(id);
     if (!existingProduct) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Product not found',
-        },
+        { success: false, error: 'Product not found' },
         { status: 404 }
       );
     }
 
-    // If name has changed, generate a new slug
+    // Regenerate slug only if the name changed, using the clean slug generator
     let slug = existingProduct.slug;
     if (name !== existingProduct.name) {
-      slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+      slug = await generateUniqueSlug(name, id);
     }
 
-    const product = await updateProduct(id, {
+    const updates: Parameters<typeof updateProduct>[1] = {
       name,
       description,
       price,
@@ -116,32 +117,26 @@ export async function PUT(
       category,
       stock_quantity,
       slug,
-    });
+    };
+    if (productStatus) {
+      updates.status = productStatus;
+    }
+
+    const product = await updateProduct(id, updates);
 
     if (!product) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Product not found',
-        },
+        { success: false, error: 'Product not found' },
         { status: 404 }
       );
     }
 
-    // Fetch updated product with images
     const updatedProduct = await getProductWithImages(id);
-
-    return NextResponse.json({
-      success: true,
-      data: updatedProduct,
-    });
+    return NextResponse.json({ success: true, data: updatedProduct });
   } catch (err: unknown) {
     console.error('Error updating product:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -154,38 +149,34 @@ export async function DELETE(
   try {
     const session = await getSessionFromCookieWithDB();
     if (!session) {
-      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
     if (session.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      );
     }
 
     const params = await context.params;
     const { id } = params;
 
     const success = await deleteProduct(id);
-
     if (!success) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Product not found',
-        },
+        { success: false, error: 'Product not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Product deleted successfully',
-    });
+    return NextResponse.json({ success: true, message: 'Product deleted successfully' });
   } catch (err: unknown) {
     console.error('Error deleting product:', err);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

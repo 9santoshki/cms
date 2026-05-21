@@ -3,6 +3,8 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
+import { deductStockForOrder } from '@/lib/db/suppliers';
+import { sendStockDiscrepancyAlert } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,17 +45,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the payment signature
+    // Verify the payment signature with timing-safe comparison
+    // SECURITY: timingSafeEqual throws if buffer lengths differ, so check first
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', razorpaySecret!) // Using the local variable instead of env var
+      .createHmac('sha256', razorpaySecret!)
       .update(body)
       .digest('hex');
 
-    const isSignatureValid = crypto.timingSafeEqual(
-      Buffer.from(razorpay_signature),
-      Buffer.from(expectedSignature)
-    );
+    const signatureBuffer = Buffer.from(razorpay_signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      console.error('[checkout/verify-payment] Invalid signature length');
+      return NextResponse.json(
+        { success: false, error: 'Invalid payment signature' },
+        { status: 400 }
+      );
+    }
+
+    const isSignatureValid = crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
 
     if (!isSignatureValid) {
       return NextResponse.json(
@@ -119,6 +130,40 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // ── Deduct inventory ──────────────────────────────────────────────────────
+    let orderItemsForStock: Awaited<ReturnType<typeof query>> | null = null;
+    try {
+      orderItemsForStock = await query(
+        'SELECT variant_id, quantity FROM order_items WHERE order_id = $1',
+        [order.id]
+      );
+      for (const item of orderItemsForStock.rows) {
+        if (item.variant_id) {
+          await deductStockForOrder(
+            Number(item.variant_id),
+            Number(item.quantity),
+            Number(order.id),
+            Number(userId)
+          );
+        }
+      }
+    } catch (stockErr) {
+      console.error(`[verify-payment] ⚠️ Stock deduction failed for order ${order.id}:`, stockErr);
+      // Notify admins — payment is captured, inventory must be reconciled manually
+      const orderItemsForAlert = orderItemsForStock?.rows ?? [];
+      for (const item of orderItemsForAlert) {
+        if (item.variant_id) {
+          await sendStockDiscrepancyAlert({
+            orderId: Number(order.id),
+            variantId: Number(item.variant_id),
+            quantity: Number(item.quantity),
+            error: stockErr instanceof Error ? stockErr.message : String(stockErr),
+          }).catch(() => {}); // Never let the alert itself throw
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json({
       success: true,
