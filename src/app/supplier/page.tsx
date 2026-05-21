@@ -260,6 +260,7 @@ interface AssignedVariant {
 interface SupplierProfile {
   id: number;
   company_name: string;
+  contact_person?: string;
   phone?: string;
   address?: string;
   gst_id?: string;
@@ -448,6 +449,12 @@ const SupplierDashboardPage = () => {
                 <InfoLabel>Email</InfoLabel>
                 <InfoValue>{user?.email}</InfoValue>
               </InfoItem>
+              {supplier.contact_person && (
+                <InfoItem>
+                  <InfoLabel>Contact Person</InfoLabel>
+                  <InfoValue>{supplier.contact_person}</InfoValue>
+                </InfoItem>
+              )}
               {supplier.phone && (
                 <InfoItem>
                   <InfoLabel>Phone</InfoLabel>

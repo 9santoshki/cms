@@ -33,6 +33,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
     { icon: 'fas fa-calendar-check', label: 'Appointments', href: '/dashboard/appointments', show: true },
     { icon: 'fas fa-star', label: 'Reviews', href: '/dashboard/reviews', show: canModerate },
     { icon: 'fas fa-truck', label: 'Suppliers', href: '/dashboard/suppliers', show: isAdmin },
+    { icon: 'fas fa-exclamation-triangle', label: 'Inventory', href: '/dashboard/inventory', show: canModerate },
     { icon: 'fas fa-users', label: 'Users', href: '/dashboard/users', show: isAdmin },
     { icon: 'fas fa-tags', label: 'Variant Dictionary', href: '/dashboard/variants', show: isAdmin },
     { icon: 'fas fa-cog', label: 'Settings', href: '/dashboard/settings', show: isAdmin },

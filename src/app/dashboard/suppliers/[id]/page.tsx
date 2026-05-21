@@ -288,6 +288,12 @@ const SupplierDetailPage = () => {
                   <span style={{ color: '#666' }}>{supplier.user_name}</span>
                   <span style={{ color: '#999' }}>({supplier.user_email})</span>
                 </div>
+                {supplier.contact_person && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                    <i className="fas fa-id-card" style={{ color: '#999', width: '16px' }}></i>
+                    <span style={{ color: '#666' }}>{supplier.contact_person}</span>
+                  </div>
+                )}
                 {supplier.phone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                     <i className="fas fa-phone" style={{ color: '#999', width: '16px' }}></i>
@@ -298,6 +304,18 @@ const SupplierDetailPage = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                     <i className="fas fa-file-alt" style={{ color: '#999', width: '16px' }}></i>
                     <span style={{ color: '#666' }}>GST: {supplier.gst_id}</span>
+                  </div>
+                )}
+                {supplier.address && (
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px', fontSize: '14px' }}>
+                    <i className="fas fa-map-marker-alt" style={{ color: '#999', width: '16px', marginTop: '2px' }}></i>
+                    <span style={{ color: '#666' }}>{supplier.address}</span>
+                  </div>
+                )}
+                {supplier.notes && (
+                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px', fontSize: '14px', marginTop: '4px' }}>
+                    <i className="fas fa-sticky-note" style={{ color: '#999', width: '16px', marginTop: '2px' }}></i>
+                    <span style={{ color: '#666', fontStyle: 'italic' }}>{supplier.notes}</span>
                   </div>
                 )}
               </div>
