@@ -1101,22 +1101,22 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
         <RelatedProductsSection>
           <RelatedProductsTitle>You May Also Like</RelatedProductsTitle>
           <RelatedProductsGrid>
-            {relatedProducts.map((relatedProduct) => (
-              <RelatedProductCard
-                key={relatedProduct.id}
-                onClick={() => router.push(`/products/${relatedProduct.slug || relatedProduct.id}`)}
-              >
-                <RelatedProductImageContainer>
-                  <ProductDetailImage
-                    imageClass={relatedProduct.imageClass}
-                    imageUrl={relatedProduct.primary_image || relatedProduct.image_url || ''}
-                    style={{ width: '100%', height: '100%' } as React.CSSProperties}
-                  />
-                  {(() => {
-                    const relOriginal = parsePrice(relatedProduct.price);
-                    const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
-                    const relHasDiscount = relOriginal > 0 && relOriginal > relDisplay;
-                    return relHasDiscount ? (
+            {relatedProducts.map((relatedProduct) => {
+              const rpOriginal    = parsePrice(relatedProduct.price);
+              const rpDisplay     = parsePrice(relatedProduct.sale_price) || rpOriginal;
+              const rpHasDiscount = rpOriginal > 0 && rpOriginal > rpDisplay;
+              return (
+                <RelatedProductCard
+                  key={relatedProduct.id}
+                  onClick={() => router.push(`/products/${relatedProduct.slug || relatedProduct.id}`)}
+                >
+                  <RelatedProductImageContainer>
+                    <ProductDetailImage
+                      imageClass={relatedProduct.imageClass}
+                      imageUrl={relatedProduct.primary_image || relatedProduct.image_url || ''}
+                      style={{ width: '100%', height: '100%' } as React.CSSProperties}
+                    />
+                    {rpHasDiscount && (
                       <div style={{
                         position: 'absolute',
                         top: '0.5rem',
@@ -1128,30 +1128,26 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                         fontSize: '0.7rem',
                         fontWeight: '600'
                       }}>
-                        {getDiscountPercentage(relOriginal, relDisplay)}% OFF
+                        {getDiscountPercentage(rpOriginal, rpDisplay)}% OFF
                       </div>
-                    ) : null;
-                  })()}
-                </RelatedProductImageContainer>
-                <RelatedProductInfo>
-                  <RelatedProductName>{relatedProduct.name}</RelatedProductName>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#c19a6b' }}>
-                      ₹{(parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price)).toLocaleString()}
-                    </p>
-                    {(() => {
-                      const relOriginal = parsePrice(relatedProduct.price);
-                      const relDisplay = parsePrice(relatedProduct.sale_price) || parsePrice(relatedProduct.price);
-                      return relOriginal > 0 && relOriginal > relDisplay ? (
+                    )}
+                  </RelatedProductImageContainer>
+                  <RelatedProductInfo>
+                    <RelatedProductName>{relatedProduct.name}</RelatedProductName>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#c19a6b' }}>
+                        ₹{rpDisplay.toLocaleString()}
+                      </p>
+                      {rpHasDiscount && (
                         <span style={{ fontSize: '0.875rem', color: '#9ca3af', textDecoration: 'line-through' }}>
-                          ₹{relOriginal.toLocaleString()}
+                          ₹{rpOriginal.toLocaleString()}
                         </span>
-                      ) : null;
-                    })()}
-                  </div>
-                </RelatedProductInfo>
-              </RelatedProductCard>
-            ))}
+                      )}
+                    </div>
+                  </RelatedProductInfo>
+                </RelatedProductCard>
+              );
+            })}
           </RelatedProductsGrid>
         </RelatedProductsSection>
       )}

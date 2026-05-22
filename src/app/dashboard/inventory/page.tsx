@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -40,6 +40,17 @@ interface Summary {
 
 type Tab = 'out-of-stock' | 'low-stock' | 'no-supplier' | 'all';
 
+interface EditTarget { variant: InventoryVariant; supplier: SupplierInfo }
+
+type ModalResult = { ok: boolean; message: string };
+
+const EMPTY_STATE: Record<Tab, { icon: string; text: string }> = {
+  'out-of-stock': { icon: '✅', text: 'All items are in stock!' },
+  'low-stock':    { icon: '📦', text: 'No items in low-stock range.' },
+  'all':          { icon: '📦', text: 'No active variants found.' },
+  'no-supplier':  { icon: '🔗', text: 'Every out-of-stock variant has a supplier assigned.' },
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const InventoryPage = () => {
@@ -64,12 +75,11 @@ const InventoryPage = () => {
   const [notifyResult, setNotifyResult]     = useState<string | null>(null);
 
   // Edit-stock modal state
-  interface EditTarget { variant: InventoryVariant; supplier: SupplierInfo }
   const [editTarget, setEditTarget]   = useState<EditTarget | null>(null);
   const [editQty, setEditQty]         = useState('');
   const [editNote, setEditNote]       = useState('');
   const [editLoading, setEditLoading] = useState(false);
-  const [editResult, setEditResult]   = useState<string | null>(null);
+  const [editResult, setEditResult]   = useState<ModalResult | null>(null);
 
   // ── Auth guard ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -98,14 +108,19 @@ const InventoryPage = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Fetch all variants (lazy — only when "All Stock" tab is first opened) ───
+  // allLoadedRef lets fetchAllVariants read the loaded flag without being listed
+  // as a dependency, keeping the callback stable across renders.
+  const allLoadedRef = useRef(false);
+
   const fetchAllVariants = useCallback(async () => {
-    if (allLoaded) return;
+    if (allLoadedRef.current) return;
     setAllLoading(true);
     try {
       const res  = await fetch('/api/admin/inventory/all');
       const json = await res.json();
       if (json.success) {
         setAllVariants(json.data.variants);
+        allLoadedRef.current = true;
         setAllLoaded(true);
       }
     } catch (err) {
@@ -113,7 +128,7 @@ const InventoryPage = () => {
     } finally {
       setAllLoading(false);
     }
-  }, [allLoaded]);
+  }, []); // stable — reads allLoadedRef imperatively
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
@@ -121,14 +136,15 @@ const InventoryPage = () => {
     if (tab === 'all') fetchAllVariants();
   };
 
-  // After an edit-stock save, also refresh the all-variants list if it was loaded
+  // Refresh alert counts + all-variants list in parallel after a stock edit.
   const refreshAfterEdit = useCallback(() => {
-    fetchData();
-    if (allLoaded) {
-      setAllLoaded(false); // force re-fetch next render cycle
-      setTimeout(() => fetchAllVariants(), 0);
-    }
-  }, [fetchData, allLoaded, fetchAllVariants]);
+    const wasAllLoaded = allLoadedRef.current;
+    if (wasAllLoaded) allLoadedRef.current = false;
+    return Promise.all([
+      fetchData(),
+      ...(wasAllLoaded ? [fetchAllVariants()] : []),
+    ]);
+  }, [fetchData, fetchAllVariants]); // both stable
 
   // ── Computed lists ──────────────────────────────────────────────────────────
   const noSupplierList = outOfStock.filter(v => v.suppliers.length === 0);
@@ -162,7 +178,7 @@ const InventoryPage = () => {
     if (!editTarget) return;
     const qty = Number(editQty);
     if (!Number.isInteger(qty) || qty < 0) {
-      setEditResult('Please enter a valid non-negative whole number.');
+      setEditResult({ ok: false, message: 'Please enter a valid non-negative whole number.' });
       return;
     }
     setEditLoading(true);
@@ -180,16 +196,16 @@ const InventoryPage = () => {
       });
       const json = await res.json();
       if (json.success) {
-        setEditResult(`✓ ${json.data.message}`);
+        setEditResult({ ok: true, message: json.data.message });
         setTimeout(() => {
           setEditTarget(null);
           refreshAfterEdit();
         }, 1200);
       } else {
-        setEditResult(json.error ?? 'Failed to update stock.');
+        setEditResult({ ok: false, message: json.error ?? 'Failed to update stock.' });
       }
     } catch {
-      setEditResult('Network error — please try again.');
+      setEditResult({ ok: false, message: 'Network error — please try again.' });
     } finally {
       setEditLoading(false);
     }
@@ -355,15 +371,9 @@ const InventoryPage = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 24px', color: '#888' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>
-              {activeTab === 'out-of-stock' ? '✅' : activeTab === 'low-stock' ? '📦' : activeTab === 'all' ? '📦' : '🔗'}
-            </div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>{EMPTY_STATE[activeTab].icon}</div>
             <p style={{ margin: 0, fontSize: 15, color: '#555' }}>
-              {search ? 'No items match your search.'
-                : activeTab === 'out-of-stock' ? 'All items are in stock!'
-                : activeTab === 'low-stock'    ? 'No items in low-stock range.'
-                : activeTab === 'all'          ? 'No active variants found.'
-                : 'Every out-of-stock variant has a supplier assigned.'}
+              {search ? 'No items match your search.' : EMPTY_STATE[activeTab].text}
             </p>
           </div>
         ) : (
@@ -560,18 +570,15 @@ const InventoryPage = () => {
             </div>
 
             {/* Result banner */}
-            {editResult && (() => {
-              const isError = !editResult.startsWith('✓');
-              return (
-                <div style={{
-                  padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: 13,
-                  background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
-                  color:      isError ? '#dc2626'              : '#15803d',
-                }}>
-                  {editResult}
-                </div>
-              );
-            })()}
+            {editResult && (
+              <div style={{
+                padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: 13,
+                background: editResult.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                color:      editResult.ok ? '#15803d'             : '#dc2626',
+              }}>
+                {editResult.message}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <button
