@@ -19,28 +19,28 @@ interface VariantSelectorProps {
 
 // Styled components for variant selection
 const VariantSection = styled.div`
-  margin: 1.5rem 0;
+  margin: 0.5rem 0;
 `;
 
 const VariantLabel = styled.div`
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #374151;
   font-weight: 500;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.375rem;
 `;
 
 const OptionGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
 `;
 
 const OptionButton = styled.button<{ $selected: boolean; $disabled?: boolean }>`
-  padding: 0.75rem 1.25rem;
+  padding: 0.4rem 0.875rem;
   border: 2px solid ${props => props.$selected ? '#d97706' : '#d1d5db'};
   background-color: ${props => props.$selected ? '#fffbeb' : '#f9fafb'};
   color: ${props => props.$disabled ? '#9ca3af' : props.$selected ? '#92400e' : '#374151'};
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: ${props => props.$selected ? '600' : '500'};
   border-radius: 8px;
   cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
@@ -54,8 +54,8 @@ const OptionButton = styled.button<{ $selected: boolean; $disabled?: boolean }>`
 `;
 
 const SelectedVariantInfo = styled.div`
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
   background-color: #f0fdf4;
   border: 1px solid #86efac;
   border-radius: 8px;
@@ -65,13 +65,13 @@ const SelectedVariantInfo = styled.div`
 `;
 
 const VariantPrice = styled.div`
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #166534;
 `;
 
 const VariantStock = styled.div`
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #4ade80;
 `;
 

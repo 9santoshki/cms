@@ -89,39 +89,43 @@ export const ProductDetailImage = styled.div.withConfig({
 `;
 
 export const ProductDetailInfo = styled.div`
-  padding: 30px;
+  padding: 20px 24px;
 
   @media (min-width: ${theme.breakpoints.mobile}) {
     width: 50%;
-    padding: 40px;
+    padding: 24px 28px;
   }
 `;
 
 export const ProductDetailTitle = styled.h2`
-  font-size: 1.8rem;
-  margin-bottom: 15px;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
   color: ${theme.colors.textDark};
   font-weight: 300;
   letter-spacing: -0.5px;
 
   @media (min-width: ${theme.breakpoints.mobile}) {
-    font-size: 2.2rem;
+    font-size: 1.625rem;
   }
 `;
 
 export const ProductDetailPrice = styled.div`
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 400;
   color: ${theme.colors.primary};
-  margin-bottom: 20px;
+  margin-bottom: 0;
   letter-spacing: -0.5px;
 `;
 
 export const ProductDetailDescription = styled.p`
   color: ${theme.colors.textSecondary};
-  margin-bottom: 30px;
-  line-height: 1.8;
-  font-size: 1.1rem;
+  margin-bottom: 10px;
+  line-height: 1.55;
+  font-size: 0.875rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
 export const ProductDetailActions = styled.div`

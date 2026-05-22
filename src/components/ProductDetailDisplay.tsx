@@ -191,9 +191,9 @@ const ProductCategoryTag = styled.span`
 const RatingContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin: 1.5rem 0 2rem;
-  padding-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin: 0.375rem 0 0.625rem;
+  padding-bottom: 0.625rem;
   border-bottom: 1px solid #e5e7eb;
 `;
 
@@ -211,11 +211,11 @@ const QuantitySelector = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin: 1.5rem 0;
+  margin: 0.5rem 0;
 `;
 
 const QuantityButton = styled.button`
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 1rem;
   text-align: center;
   background-color: #f3f4f6;
   color: #374151;
@@ -243,14 +243,14 @@ const QuantityDisplay = styled.span`
 // Action buttons
 const ActionButtons = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin: 2rem 0;
+  flex-direction: row;
+  gap: 0.625rem;
+  margin: 0.625rem 0;
 `;
 
 const AddToCartButton = styled.button`
-  width: 100%;
-  padding: 1rem;
+  flex: 1;
+  padding: 0.75rem 1rem;
   background: linear-gradient(90deg, #d97706, #b45309);
   color: white;
   font-weight: 600;
@@ -262,58 +262,72 @@ const AddToCartButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  font-size: 0.9rem;
 
   &:hover {
     background: linear-gradient(90deg, #b45309, #92400e);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -3px rgba(0, 0, 0, 0.15);
   }
 
   &:disabled {
     opacity: 0.6;
+    transform: none;
+    box-shadow: none;
   }
 `;
 
 const WishlistButton = styled.button`
-  width: 100%;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border: 2px solid #d1d5db;
-  color: #1f2937;
-  font-weight: 600;
+  color: #6b7280;
+  font-size: 1.1rem;
   border-radius: 8px;
   background-color: white;
   cursor: pointer;
   transition: all 0.3s;
+  flex-shrink: 0;
 
   &:hover {
     border-color: #f59e0b;
+    color: #d97706;
     background-color: #fffbeb;
   }
 `;
 
 // Trust badges
 const TrustBadges = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1.5rem 0;
+  display: flex;
+  gap: 0;
+  padding: 0.625rem 0;
+  margin-top: 0.25rem;
   border-top: 1px solid #e5e7eb;
-  margin-top: 1.5rem;
 `;
 
 const TrustBadgeItem = styled.div`
-  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
+  border-right: 1px solid #e5e7eb;
+
+  &:last-child {
+    border-right: none;
+  }
 `;
 
 const TrustBadgeIcon = styled.div`
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: #d97706;
-  margin-bottom: 0.5rem;
+  flex-shrink: 0;
 `;
 
 const TrustBadgeText = styled.p`
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
+  line-height: 1.3;
 `;
 
 // Thumbnail gallery
@@ -577,6 +591,10 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   // null = variants not yet loaded (fall back to product.stock_quantity).
   const [anyVariantInStock, setAnyVariantInStock] = useState<boolean | null>(null);
 
+  // True when a specific variant is matched AND it has no stock.
+  // Undefined/null selected variant means no variant system → don't block.
+  const isVariantOutOfStock = selectedVariant !== null && selectedVariant.stock_quantity <= 0;
+
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState(0);
@@ -813,7 +831,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
         {/* Product Info - Right Column */}
         <ProductDetailInfo>
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '0.375rem' }}>
             <ProductCategoryTag>
               {product.category || 'Furniture'}
             </ProductCategoryTag>
@@ -837,9 +855,9 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </ReviewsCount>
           </RatingContainer>
 
-          <div style={{ marginBottom: '2rem' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Price</div>
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ marginBottom: '0.625rem' }}>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <ProductDetailPrice>
                 ₹{displayPrice.toLocaleString()}
               </ProductDetailPrice>
@@ -850,7 +868,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                 </>
               )}
             </div>
-            <p style={{ fontSize: '0.875rem', color: '#16a34a', fontWeight: '500', marginTop: '0.75rem' }}>✓ Best Price Guarantee</p>
+            <p style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: '500', marginTop: '0.25rem' }}>✓ Best Price Guarantee</p>
           </div>
 
           <ProductDetailDescription>
@@ -894,7 +912,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <ActionButtons>
             <AddToCartButton
               onClick={handleAddToCart}
-              disabled={isLoading}
+              disabled={isLoading || isVariantOutOfStock}
             >
               {isLoading ? (
                 <>
@@ -904,12 +922,14 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                   </svg>
                   Adding to Cart...
                 </>
+              ) : isVariantOutOfStock ? (
+                'Out of Stock'
               ) : (
                 `Add to Cart — ₹${(displayPrice * quantity).toLocaleString()}`
               )}
             </AddToCartButton>
-            <WishlistButton>
-              ♡ Add to Wishlist
+            <WishlistButton title="Add to Wishlist">
+              ♡
             </WishlistButton>
           </ActionButtons>
 

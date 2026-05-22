@@ -60,6 +60,14 @@ const InventoryPage = () => {
   const [notifying, setNotifying]           = useState(false);
   const [notifyResult, setNotifyResult]     = useState<string | null>(null);
 
+  // Edit-stock modal state
+  interface EditTarget { variant: InventoryVariant; supplier: SupplierInfo }
+  const [editTarget, setEditTarget]   = useState<EditTarget | null>(null);
+  const [editQty, setEditQty]         = useState('');
+  const [editNote, setEditNote]       = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editResult, setEditResult]   = useState<string | null>(null);
+
   // ── Auth guard ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) { router.push('/auth?redirect=/dashboard/inventory'); return; }
@@ -103,6 +111,52 @@ const InventoryPage = () => {
       v.suppliers.some(s => s.company_name.toLowerCase().includes(q))
     );
   });
+
+  // ── Edit-stock action ────────────────────────────────────────────────────────
+
+  const openEditStock = (variant: InventoryVariant, supplier: SupplierInfo) => {
+    setEditTarget({ variant, supplier });
+    setEditQty(String(supplier.supplier_stock));
+    setEditNote('');
+    setEditResult(null);
+  };
+
+  const handleEditStock = async () => {
+    if (!editTarget) return;
+    const qty = Number(editQty);
+    if (!Number.isInteger(qty) || qty < 0) {
+      setEditResult('Please enter a valid non-negative whole number.');
+      return;
+    }
+    setEditLoading(true);
+    setEditResult(null);
+    try {
+      const res  = await fetch('/api/admin/inventory/supplier-stock', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          variant_id:   editTarget.variant.variant_id,
+          supplier_id:  editTarget.supplier.supplier_id,
+          new_quantity: qty,
+          notes:        editNote.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditResult(`✓ ${json.data.message}`);
+        setTimeout(() => {
+          setEditTarget(null);
+          fetchData();
+        }, 1200);
+      } else {
+        setEditResult(json.error ?? 'Failed to update stock.');
+      }
+    } catch {
+      setEditResult('Network error — please try again.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   // ── Notify action ────────────────────────────────────────────────────────────
   const openNotify = (variant: InventoryVariant, supplier: SupplierInfo | null = null) => {
@@ -319,7 +373,7 @@ const InventoryPage = () => {
                             ⚠ None assigned
                           </span>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {v.suppliers.map(s => (
                               <div key={s.supplier_id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 500, color: '#333' }}>{s.company_name}</span>
@@ -329,6 +383,22 @@ const InventoryPage = () => {
                                 {!s.is_active && (
                                   <span style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>inactive</span>
                                 )}
+                                <button
+                                  onClick={() => openEditStock(v, s)}
+                                  title="Edit stock"
+                                  style={{
+                                    padding: '2px 6px',
+                                    fontSize: 11,
+                                    background: 'rgba(193,154,107,0.12)',
+                                    color: '#c19a6b',
+                                    border: '1px solid rgba(193,154,107,0.3)',
+                                    borderRadius: 4,
+                                    cursor: 'pointer',
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  ✏ Edit
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -374,6 +444,108 @@ const InventoryPage = () => {
           </div>
         )}
       </div>
+
+      {/* ── Edit Supplier Stock Modal ── */}
+      {editTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 32, maxWidth: 480, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
+              ✏ Edit Stock
+            </h2>
+            <p style={{ fontSize: 14, color: '#666', marginBottom: 24 }}>
+              Override this supplier&apos;s stock count. The variant total will update automatically.
+            </p>
+
+            {/* Item + supplier summary */}
+            <div style={{ background: '#faf9f7', border: '1px solid #e8d5c4', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+              <div style={{ fontWeight: 600, color: '#1a1a1a' }}>{editTarget.variant.product_name}</div>
+              {editTarget.variant.variant_name && (
+                <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>{editTarget.variant.variant_name}</div>
+              )}
+              <div style={{ marginTop: 10, display: 'flex', gap: 20 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Supplier</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{editTarget.supplier.company_name}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Current Stock</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: editTarget.supplier.supplier_stock > 0 ? '#22c55e' : '#ef4444' }}>
+                    {editTarget.supplier.supplier_stock} units
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* New quantity input */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 8 }}>
+                New stock quantity
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={editQty}
+                onChange={e => setEditQty(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleEditStock()}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e8d5c4', borderRadius: 8, fontSize: 15, fontWeight: 600, boxSizing: 'border-box' }}
+                autoFocus
+              />
+            </div>
+
+            {/* Notes */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 8 }}>
+                Reason / notes <span style={{ fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea
+                value={editNote}
+                onChange={e => setEditNote(e.target.value)}
+                placeholder="e.g. Correcting supplier data entry error."
+                rows={2}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e8d5c4', borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Result banner */}
+            {editResult && (() => {
+              const isError = !editResult.startsWith('✓');
+              return (
+                <div style={{
+                  padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: 13,
+                  background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
+                  color:      isError ? '#dc2626'              : '#15803d',
+                }}>
+                  {editResult}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setEditTarget(null)}
+                disabled={editLoading}
+                style={{ padding: '12px 24px', background: 'white', border: '1px solid #e8d5c4', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#666' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditStock}
+                disabled={editLoading}
+                style={{
+                  padding: '12px 24px',
+                  background: editLoading ? '#e8d5c4' : 'linear-gradient(135deg,#c19a6b,#a67c52)',
+                  color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
+                  cursor: editLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {editLoading ? 'Saving…' : 'Save Stock'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Notify Supplier Modal ── */}
       {notifyVariant && (
