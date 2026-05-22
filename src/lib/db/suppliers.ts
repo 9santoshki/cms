@@ -430,6 +430,11 @@ export async function getOutOfStockVariants(): Promise<OutOfStockVariant[]> {
   return fetchInventoryAlerts('pv.stock_quantity <= 0');
 }
 
+/** All active variants regardless of stock level */
+export async function getAllInventoryVariants(): Promise<OutOfStockVariant[]> {
+  return fetchInventoryAlerts('TRUE');
+}
+
 /**
  * Active variants whose total stock is at or below `threshold`.
  * Uses a parameterized query — threshold is never interpolated into SQL.

@@ -38,7 +38,7 @@ interface Summary {
   threshold: number;
 }
 
-type Tab = 'out-of-stock' | 'low-stock' | 'no-supplier';
+type Tab = 'out-of-stock' | 'low-stock' | 'no-supplier' | 'all';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -48,6 +48,9 @@ const InventoryPage = () => {
 
   const [outOfStock, setOutOfStock]   = useState<InventoryVariant[]>([]);
   const [lowStock, setLowStock]       = useState<InventoryVariant[]>([]);
+  const [allVariants, setAllVariants] = useState<InventoryVariant[]>([]);
+  const [allLoaded, setAllLoaded]     = useState(false);
+  const [allLoading, setAllLoading]   = useState(false);
   const [summary, setSummary]         = useState<Summary | null>(null);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState<Tab>('out-of-stock');
@@ -94,12 +97,46 @@ const InventoryPage = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // ── Fetch all variants (lazy — only when "All Stock" tab is first opened) ───
+  const fetchAllVariants = useCallback(async () => {
+    if (allLoaded) return;
+    setAllLoading(true);
+    try {
+      const res  = await fetch('/api/admin/inventory/all');
+      const json = await res.json();
+      if (json.success) {
+        setAllVariants(json.data.variants);
+        setAllLoaded(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch all variants:', err);
+    } finally {
+      setAllLoading(false);
+    }
+  }, [allLoaded]);
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    setSearch('');
+    if (tab === 'all') fetchAllVariants();
+  };
+
+  // After an edit-stock save, also refresh the all-variants list if it was loaded
+  const refreshAfterEdit = useCallback(() => {
+    fetchData();
+    if (allLoaded) {
+      setAllLoaded(false); // force re-fetch next render cycle
+      setTimeout(() => fetchAllVariants(), 0);
+    }
+  }, [fetchData, allLoaded, fetchAllVariants]);
+
   // ── Computed lists ──────────────────────────────────────────────────────────
   const noSupplierList = outOfStock.filter(v => v.suppliers.length === 0);
 
   const activeList: InventoryVariant[] =
     activeTab === 'out-of-stock' ? outOfStock
     : activeTab === 'low-stock'  ? lowStock
+    : activeTab === 'all'        ? allVariants
     : noSupplierList;
 
   const filtered = activeList.filter(v => {
@@ -146,7 +183,7 @@ const InventoryPage = () => {
         setEditResult(`✓ ${json.data.message}`);
         setTimeout(() => {
           setEditTarget(null);
-          fetchData();
+          refreshAfterEdit();
         }, 1200);
       } else {
         setEditResult(json.error ?? 'Failed to update stock.');
@@ -242,7 +279,7 @@ const InventoryPage = () => {
           ].map(s => (
             <button
               key={s.tab}
-              onClick={() => setActiveTab(s.tab)}
+              onClick={() => handleTabChange(s.tab)}
               style={{
                 ...card,
                 padding: '20px',
@@ -265,33 +302,38 @@ const InventoryPage = () => {
 
         {/* Header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['out-of-stock', 'low-stock', 'no-supplier'] as Tab[]).map(t => (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {([
+              { t: 'out-of-stock' as Tab, label: 'Out of Stock', count: outOfStock.length },
+              { t: 'low-stock'    as Tab, label: 'Low Stock',    count: lowStock.length },
+              { t: 'no-supplier'  as Tab, label: 'No Supplier',  count: noSupplierList.length },
+              { t: 'all'          as Tab, label: 'All Stock',    count: allLoaded ? allVariants.length : null },
+            ]).map(({ t, label, count }) => (
               <button
                 key={t}
-                onClick={() => setActiveTab(t)}
+                onClick={() => handleTabChange(t)}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '20px',
-                  border: 'none',
+                  border: t === 'all' ? '2px solid #c19a6b' : 'none',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: activeTab === t ? '#c19a6b' : '#f5f0eb',
-                  color:      activeTab === t ? 'white'   : '#666',
+                  background: activeTab === t ? '#c19a6b' : t === 'all' ? 'white' : '#f5f0eb',
+                  color:      activeTab === t ? 'white'   : t === 'all' ? '#c19a6b' : '#666',
                 }}
               >
-                {t === 'out-of-stock' ? 'Out of Stock' : t === 'low-stock' ? 'Low Stock' : 'No Supplier'}
-                <span style={{
-                  marginLeft: 6, padding: '2px 7px',
-                  borderRadius: 10, fontSize: 11,
-                  background: activeTab === t ? 'rgba(255,255,255,0.25)' : '#e8d5c4',
-                  color: activeTab === t ? 'white' : '#c19a6b',
-                }}>
-                  {t === 'out-of-stock' ? outOfStock.length
-                   : t === 'low-stock'  ? lowStock.length
-                   : noSupplierList.length}
-                </span>
+                {label}
+                {count !== null && (
+                  <span style={{
+                    marginLeft: 6, padding: '2px 7px',
+                    borderRadius: 10, fontSize: 11,
+                    background: activeTab === t ? 'rgba(255,255,255,0.25)' : '#e8d5c4',
+                    color: activeTab === t ? 'white' : '#c19a6b',
+                  }}>
+                    {count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -306,13 +348,22 @@ const InventoryPage = () => {
         </div>
 
         {/* Table */}
-        {filtered.length === 0 ? (
+        {activeTab === 'all' && allLoading ? (
+          <div style={{ textAlign: 'center', padding: '48px 24px', color: '#888' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid #f0f0f0', borderTop: '3px solid #c19a6b', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+            <p style={{ margin: 0, fontSize: 14 }}>Loading all variants…</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 24px', color: '#888' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>
-              {activeTab === 'out-of-stock' ? '✅' : activeTab === 'low-stock' ? '📦' : '🔗'}
+              {activeTab === 'out-of-stock' ? '✅' : activeTab === 'low-stock' ? '📦' : activeTab === 'all' ? '📦' : '🔗'}
             </div>
             <p style={{ margin: 0, fontSize: 15, color: '#555' }}>
-              {search ? 'No items match your search.' : activeTab === 'out-of-stock' ? 'All items are in stock!' : activeTab === 'low-stock' ? 'No items in low-stock range.' : 'Every out-of-stock variant has a supplier assigned.'}
+              {search ? 'No items match your search.'
+                : activeTab === 'out-of-stock' ? 'All items are in stock!'
+                : activeTab === 'low-stock'    ? 'No items in low-stock range.'
+                : activeTab === 'all'          ? 'No active variants found.'
+                : 'Every out-of-stock variant has a supplier assigned.'}
             </p>
           </div>
         ) : (
