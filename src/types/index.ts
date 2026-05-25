@@ -136,6 +136,7 @@ export interface Product {
   images?: string[];
   primary_image?: string;
   category?: string;
+  subcategory?: string;
   slug?: string;
   stock_quantity?: number;
   /** Lifecycle state — only 'published' products are visible to customers */
@@ -149,6 +150,12 @@ export interface Product {
   color?: string;
   warranty?: string;
   assembly_required?: boolean;
+  /** Product-specific FAQs (question/answer pairs) */
+  faqs?: Array<{ question: string; answer: string }>;
+  /** Return policy type: 'standard' | 'no_return' | 'exchange_only' */
+  return_policy?: 'standard' | 'no_return' | 'exchange_only';
+  /** Number of reviews for this product */
+  review_count?: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -205,21 +205,21 @@ const SuppliersPage = () => {
         description="Manage supplier profiles and assign product variants to suppliers."
       >
         {/* Header Actions */}
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
           <button
             onClick={() => setShowModal(true)}
             style={{
-              padding: '12px 24px',
+              padding: '8px 16px',
               background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <i className="fas fa-plus"></i>
@@ -228,11 +228,11 @@ const SuppliersPage = () => {
           <button
             onClick={fetchData}
             style={{
-              padding: '12px 24px',
+              padding: '8px 16px',
               background: 'white',
               border: '1px solid #e8d5c4',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               color: '#c19a6b'
@@ -246,28 +246,28 @@ const SuppliersPage = () => {
         {suppliers.length === 0 ? (
           <div style={{
             background: 'white',
-            borderRadius: '12px',
-            padding: '64px 32px',
+            borderRadius: '8px',
+            padding: '32px 16px',
             textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+            boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
             border: '1px solid #e8d5c4'
           }}>
-            <i className="fas fa-truck" style={{ fontSize: '64px', color: '#e8d5c4', marginBottom: '16px' }}></i>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+            <i className="fas fa-truck" style={{ fontSize: '40px', color: '#e8d5c4', marginBottom: '10px' }}></i>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
               No Suppliers Yet
             </h3>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px' }}>
+            <p style={{ color: '#666', fontSize: '13px', marginBottom: '12px' }}>
               Add suppliers to enable decentralized inventory management.
             </p>
             <button
               onClick={() => setShowModal(true)}
               style={{
-                padding: '12px 24px',
+                padding: '8px 16px',
                 background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
+                borderRadius: '6px',
+                fontSize: '13px',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
@@ -278,29 +278,29 @@ const SuppliersPage = () => {
         ) : (
           <div className="suppliers-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-            gap: '16px'
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '12px'
           }}>
             {suppliers.map((supplier) => (
               <div
                 key={supplier.id}
                 style={{
                   background: 'white',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
                   border: '1px solid #e8d5c4',
                   transition: 'transform 0.2s ease'
                 }}
               >
                 {/* Supplier Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                       <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '8px',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '6px',
                         background: supplier.is_active
                           ? 'linear-gradient(135deg, #f59e0b, #d97706)'
                           : 'linear-gradient(135deg, #9ca3af, #6b7280)',
@@ -308,20 +308,20 @@ const SuppliersPage = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '20px'
+                        fontSize: '16px'
                       }}>
                         <i className="fas fa-building"></i>
                       </div>
                       <div>
-                        <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                        <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '2px' }}>
                           {supplier.company_name}
                         </h3>
                         <div style={{
-                          padding: '4px 8px',
+                          padding: '2px 6px',
                           background: supplier.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.1)',
                           color: supplier.is_active ? '#22c55e' : '#6b7280',
-                          borderRadius: '4px',
-                          fontSize: '11px',
+                          borderRadius: '3px',
+                          fontSize: '10px',
                           fontWeight: '600',
                           display: 'inline-block'
                         }}>
@@ -333,27 +333,27 @@ const SuppliersPage = () => {
                 </div>
 
                 {/* Supplier Info */}
-                <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                    <i className="fas fa-user" style={{ color: '#999', width: '16px' }}></i>
+                <div style={{ display: 'grid', gap: '4px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                    <i className="fas fa-user" style={{ color: '#999', width: '14px' }}></i>
                     <span style={{ color: '#666' }}>{supplier.user_name || 'Unknown'}</span>
                     <span style={{ color: '#999' }}>({supplier.user_email})</span>
                   </div>
                   {supplier.phone && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                      <i className="fas fa-phone" style={{ color: '#999', width: '16px' }}></i>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                      <i className="fas fa-phone" style={{ color: '#999', width: '14px' }}></i>
                       <span style={{ color: '#666' }}>{supplier.phone}</span>
                     </div>
                   )}
                   {supplier.gst_id && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                      <i className="fas fa-file-alt" style={{ color: '#999', width: '16px' }}></i>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                      <i className="fas fa-file-alt" style={{ color: '#999', width: '14px' }}></i>
                       <span style={{ color: '#666' }}>GST: {supplier.gst_id}</span>
                     </div>
                   )}
                   {supplier.address && (
-                    <div style={{ display: 'flex', alignItems: 'start', gap: '8px', fontSize: '13px' }}>
-                      <i className="fas fa-map-marker-alt" style={{ color: '#999', width: '16px', marginTop: '2px' }}></i>
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '6px', fontSize: '12px' }}>
+                      <i className="fas fa-map-marker-alt" style={{ color: '#999', width: '14px', marginTop: '1px' }}></i>
                       <span style={{ color: '#666' }}>{supplier.address}</span>
                     </div>
                   )}
@@ -362,19 +362,19 @@ const SuppliersPage = () => {
                 {/* Actions */}
                 <div style={{
                   display: 'flex',
-                  gap: '8px',
-                  paddingTop: '16px',
+                  gap: '6px',
+                  paddingTop: '10px',
                   borderTop: '1px solid #f0f0f0'
                 }}>
                   <button
                     onClick={() => router.push(`/dashboard/suppliers/${supplier.id}`)}
                     style={{
-                      padding: '10px 16px',
+                      padding: '6px 12px',
                       background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '13px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
                       fontWeight: '600',
                       cursor: 'pointer',
                       flex: 1
@@ -385,11 +385,11 @@ const SuppliersPage = () => {
                   <button
                     onClick={() => handleEdit(supplier)}
                     style={{
-                      padding: '10px 16px',
+                      padding: '6px 12px',
                       background: 'white',
                       border: '1px solid #e8d5c4',
-                      borderRadius: '6px',
-                      fontSize: '13px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
                       fontWeight: '600',
                       cursor: 'pointer',
                       color: '#c19a6b'
@@ -400,11 +400,11 @@ const SuppliersPage = () => {
                   <button
                     onClick={() => handleDelete(supplier.id)}
                     style={{
-                      padding: '10px 16px',
+                      padding: '6px 12px',
                       background: 'white',
                       border: '1px solid #fee2e2',
-                      borderRadius: '6px',
-                      fontSize: '13px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
                       fontWeight: '600',
                       cursor: 'pointer',
                       color: '#ef4444'

@@ -6,6 +6,14 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProduct } from '@/context/ProductContext';
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  parent_id: number | null;
+  is_active: boolean;
+}
+
 const DashboardProductsPage = () => {
   const router = useRouter();
   const { user } = useAuth();
@@ -13,6 +21,7 @@ const DashboardProductsPage = () => {
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -26,7 +35,21 @@ const DashboardProductsPage = () => {
     }
 
     fetchProducts();
+    fetchCategories();
   }, [user]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/admin/categories');
+      const data = await res.json();
+      if (data.success) {
+        // Only parent categories for the filter
+        setCategories(data.data.filter((c: Category) => c.parent_id === null && c.is_active));
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   useEffect(() => {
     if (products && products.length > 0) {
@@ -103,26 +126,26 @@ const DashboardProductsPage = () => {
       {/* Actions Bar */}
       <div style={{
         background: 'white',
-        borderRadius: '12px',
-        padding: '20px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        marginBottom: '12px',
+        boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4'
       }}>
         <div className="products-action-bar" style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr auto',
-          gap: '16px',
+          gap: '12px',
           alignItems: 'end'
         }}>
           {/* Search */}
           <div>
             <label style={{
               display: 'block',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '600',
               color: '#666',
-              marginBottom: '8px',
+              marginBottom: '4px',
               letterSpacing: '0.3px'
             }}>
               Search Products
@@ -130,11 +153,11 @@ const DashboardProductsPage = () => {
             <div style={{ position: 'relative' }}>
               <i className="fas fa-search" style={{
                 position: 'absolute',
-                left: '14px',
+                left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: '#999',
-                fontSize: '14px'
+                fontSize: '12px'
               }}></i>
               <input
                 type="text"
@@ -143,10 +166,10 @@ const DashboardProductsPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '10px 14px 10px 40px',
+                  padding: '8px 12px 8px 32px',
                   border: '1px solid #e8d5c4',
-                  borderRadius: '8px',
-                  fontSize: '14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
                   outline: 'none',
                   transition: 'all 0.2s ease'
                 }}
@@ -166,10 +189,10 @@ const DashboardProductsPage = () => {
           <div>
             <label style={{
               display: 'block',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '600',
               color: '#666',
-              marginBottom: '8px',
+              marginBottom: '4px',
               letterSpacing: '0.3px'
             }}>
               Filter by Category
@@ -179,10 +202,10 @@ const DashboardProductsPage = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '8px 12px',
                 border: '1px solid #e8d5c4',
-                borderRadius: '8px',
-                fontSize: '14px',
+                borderRadius: '6px',
+                fontSize: '13px',
                 outline: 'none',
                 cursor: 'pointer',
                 background: 'white'
@@ -195,10 +218,9 @@ const DashboardProductsPage = () => {
               }}
             >
               <option value="all">All Categories</option>
-              <option value="Living Room">Living Room</option>
-              <option value="Dining Room">Dining Room</option>
-              <option value="Bedroom">Bedroom</option>
-              <option value="Office">Office</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
           </div>
 
@@ -206,27 +228,27 @@ const DashboardProductsPage = () => {
           <button
             onClick={() => router.push('/dashboard/products/new')}
             style={{
-              padding: '10px 24px',
+              padding: '8px 16px',
               background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(193, 154, 107, 0.2)'
+              boxShadow: '0 2px 6px rgba(193, 154, 107, 0.2)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 3px 8px rgba(193, 154, 107, 0.3)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(193, 154, 107, 0.2)';
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(193, 154, 107, 0.2)';
             }}
           >
             <i className="fas fa-plus"></i>
@@ -239,49 +261,49 @@ const DashboardProductsPage = () => {
       {contextError ? (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '32px',
+          borderRadius: '8px',
+          padding: '16px',
           textAlign: 'center',
           border: '1px solid #fecaca',
           backgroundColor: '#fee2e2'
         }}>
-          <i className="fas fa-exclamation-circle" style={{ fontSize: '48px', color: '#dc2626', marginBottom: '16px' }}></i>
-          <p style={{ color: '#991b1b', fontSize: '16px', fontWeight: '600' }}>{contextError}</p>
+          <i className="fas fa-exclamation-circle" style={{ fontSize: '32px', color: '#dc2626', marginBottom: '8px' }}></i>
+          <p style={{ color: '#991b1b', fontSize: '14px', fontWeight: '600' }}>{contextError}</p>
         </div>
       ) : loading ? (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '64px',
+          borderRadius: '8px',
+          padding: '32px',
           textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
           <div style={{
-            width: '48px',
-            height: '48px',
+            width: '36px',
+            height: '36px',
             border: '3px solid #f0f0f0',
             borderTop: '3px solid #c19a6b',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             margin: '0 auto'
           }}></div>
-          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading products...</p>
+          <p style={{ marginTop: '12px', color: '#666', fontSize: '13px' }}>Loading products...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '64px 32px',
+          borderRadius: '8px',
+          padding: '32px 16px',
           textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <i className="fas fa-box-open" style={{ fontSize: '64px', color: '#e8d5c4', marginBottom: '16px' }}></i>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <i className="fas fa-box-open" style={{ fontSize: '40px', color: '#e8d5c4', marginBottom: '12px' }}></i>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
             No Products Found
           </h3>
-          <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px' }}>
+          <p style={{ color: '#666', fontSize: '13px', marginBottom: '12px' }}>
             {categoryFilter === 'all' && !searchTerm
               ? "Get started by adding your first product."
               : "Try adjusting your filters or search term."}
@@ -290,17 +312,17 @@ const DashboardProductsPage = () => {
             <button
               onClick={() => router.push('/dashboard/products/new')}
               style={{
-                padding: '10px 24px',
+                padding: '8px 16px',
                 background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
+                borderRadius: '6px',
+                fontSize: '13px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '6px'
               }}
             >
               <i className="fas fa-plus"></i>
@@ -311,8 +333,8 @@ const DashboardProductsPage = () => {
       ) : (
         <div className="products-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '20px'
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: '12px'
         }}>
           {filteredProducts.map((product: any) => (
             <div
@@ -320,26 +342,26 @@ const DashboardProductsPage = () => {
               onClick={() => router.push(`/dashboard/products/${product.id}`)}
               style={{
                 background: 'white',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+                boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
                 border: '1px solid #e8d5c4',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(193, 154, 107, 0.15)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.15)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.08)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(193, 154, 107, 0.08)';
               }}
             >
               {/* Product Image */}
               <div style={{
                 width: '100%',
-                height: '200px',
+                height: '140px',
                 background: (product.primary_image || product.image_url)
                   ? `url(${product.primary_image || product.image_url}) center/cover no-repeat`
                   : 'linear-gradient(135deg, #f8f4f0, #efe9e3)',
@@ -348,20 +370,20 @@ const DashboardProductsPage = () => {
                 justifyContent: 'center'
               }}>
                 {!(product.primary_image || product.image_url) && (
-                  <i className="fas fa-image" style={{ fontSize: '48px', color: '#e8d5c4' }}></i>
+                  <i className="fas fa-image" style={{ fontSize: '32px', color: '#e8d5c4' }}></i>
                 )}
               </div>
 
               {/* Product Info */}
-              <div style={{ padding: '20px' }}>
+              <div style={{ padding: '12px' }}>
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'start',
-                  marginBottom: '8px'
+                  marginBottom: '4px'
                 }}>
                   <h3 style={{
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     color: '#333',
                     margin: 0,
@@ -371,11 +393,11 @@ const DashboardProductsPage = () => {
                   </h3>
                   <span style={{
                     display: 'inline-block',
-                    padding: '4px 10px',
+                    padding: '2px 8px',
                     background: 'rgba(193, 154, 107, 0.1)',
                     color: '#c19a6b',
-                    borderRadius: '6px',
-                    fontSize: '11px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
                     fontWeight: '600',
                     textTransform: 'uppercase',
                     letterSpacing: '0.3px'
@@ -385,10 +407,10 @@ const DashboardProductsPage = () => {
                 </div>
 
                 <p style={{
-                  fontSize: '13px',
+                  fontSize: '12px',
                   color: '#666',
-                  margin: '8px 0',
-                  lineHeight: '1.5',
+                  margin: '4px 0',
+                  lineHeight: '1.4',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -401,29 +423,29 @@ const DashboardProductsPage = () => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginTop: '16px',
-                  paddingTop: '16px',
+                  marginTop: '8px',
+                  paddingTop: '8px',
                   borderTop: '1px solid #f0f0f0'
                 }}>
                   <div>
                     <span style={{
-                      fontSize: '20px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       color: '#c19a6b'
                     }}>
                       ₹{product.price?.toLocaleString()}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/dashboard/products/${product.id}`);
                       }}
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '8px',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
                         border: '1px solid #e8d5c4',
                         background: 'white',
                         color: '#c19a6b',

@@ -1,46 +1,35 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ProductCardWithVariant from '@/components/ProductCardWithVariant';
+import { MobileFilterPanel, MobileFilterSection } from '@/components/MobileFilterPanel';
 import { apiClient } from '@/lib/api';
+import { parsePrice, PRICE_RANGES, SHOP_CATEGORIES } from '@/lib/utils';
 import { Product } from '@/types';
 import {
   SearchContainer,
   SearchHeaderSection,
   SearchContent,
-  FiltersSection,
-  FiltersCard,
-  FilterGroup,
-  CategoryList,
-  CategoryItem,
-  PriceRange,
-  ApplyButton,
-  ClearButton,
+  SearchInputWrapper,
   ResultsSection,
   ResultsHeader,
-  ProductsGrid,
-  ProductCard,
-  ProductImage,
-  ProductInfo,
   LoadingState,
   EmptyState,
-  SearchInputWrapper,
-  MobileFilterToggle,
-  MobileFiltersOverlay,
-  MobileFiltersPanel
 } from '@/styles/SearchStyles';
-
-const CATEGORIES = [
-  { id: '', name: 'All Categories' },
-  { id: 'furniture', name: 'Furniture' },
-  { id: 'decor', name: 'Home Decor' },
-  { id: 'lighting', name: 'Lighting' },
-  { id: 'textiles', name: 'Textiles' },
-  { id: 'outdoor', name: 'Outdoor' },
-  { id: 'accessories', name: 'Accessories' }
-];
+import {
+  ProductFilters,
+  FilterSection,
+  FilterHeader,
+  FilterContent,
+  FilterOption,
+  FilterDepartmentHeader,
+  ClearFiltersButton,
+  ActiveFiltersSummary,
+  MobileFilterToggle,
+} from '@/styles/NewShopStyles';
 
 const SearchPage = () => {
   const router = useRouter();
@@ -52,22 +41,44 @@ const SearchPage = () => {
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Collapsible filter sections state
+  const [collapsedSections, setCollapsedSections] = useState({
+    category: false,
+    price: false,
+  });
+
+  // Toggle section collapse
+  const toggleSection = (section: keyof typeof collapsedSections) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   // Perform search
-  const performSearch = useCallback(async (searchQuery: string, category?: string, min?: string, max?: string) => {
+  const performSearch = useCallback(async (searchQuery: string, category?: string, priceRange?: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const params: any = {};
+      const params: Record<string, string | number> = {};
       if (searchQuery) params.q = searchQuery;
       if (category) params.category = category;
-      if (min) params.minPrice = parseFloat(min);
-      if (max) params.maxPrice = parseFloat(max);
+
+      // Handle price range
+      if (priceRange === 'under5000') {
+        params.maxPrice = 5000;
+      } else if (priceRange === '5000-15000') {
+        params.minPrice = 5000;
+        params.maxPrice = 15000;
+      } else if (priceRange === 'over15000') {
+        params.minPrice = 15000;
+      }
+
       params.limit = 50;
 
       const result = await apiClient.searchProducts(params);
@@ -108,14 +119,14 @@ const SearchPage = () => {
       setSearchInput(q);
       setSelectedCategory(cat);
 
-      performSearch(q, cat, minPrice, maxPrice);
+      performSearch(q, cat, selectedPriceRange);
     }
   }, []);
 
   // Re-search when sort changes
   useEffect(() => {
     if (!loading && searchResults.length > 0) {
-      performSearch(query, selectedCategory, minPrice, maxPrice);
+      performSearch(query, selectedCategory, selectedPriceRange);
     }
   }, [sortBy]);
 
@@ -130,117 +141,55 @@ const SearchPage = () => {
     if (selectedCategory) params.set('category', selectedCategory);
     router.push(`/search?${params.toString()}`);
 
-    performSearch(searchInput, selectedCategory, minPrice, maxPrice);
+    performSearch(searchInput, selectedCategory, selectedPriceRange);
   };
 
-  // Handle filter apply
-  const handleApplyFilters = () => {
-    setMobileFiltersOpen(false);
-    performSearch(query, selectedCategory, minPrice, maxPrice);
+  // Handle category change
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    performSearch(query, categoryId, selectedPriceRange);
+  };
+
+  // Handle price range change
+  const handlePriceRangeChange = (range: string) => {
+    setSelectedPriceRange(range);
+    performSearch(query, selectedCategory, range);
   };
 
   // Handle clear filters
   const handleClearFilters = () => {
     setSelectedCategory('');
-    setMinPrice('');
-    setMaxPrice('');
-    performSearch(query, '', '', '');
+    setSelectedPriceRange('all');
+    performSearch(query, '', 'all');
   };
 
-  // Handle category click
-  const handleCategoryClick = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-  };
+  // Check if any filters are active
+  const hasActiveFilters = selectedCategory !== '' || selectedPriceRange !== 'all';
 
-  // Navigate to product
-  const handleProductClick = (product: Product) => {
-    router.push(`/products/${product.slug || product.id}`);
-  };
-
-  // Get image URL - prioritize Cloudflare R2 URLs
-  const getImageUrl = (product: Product) => {
-    // First check primary_image (should have Cloudflare URL)
-    if (product.primary_image && product.primary_image.startsWith('http')) {
-      return product.primary_image;
+  // Memoize category counts - compute once when searchResults changes
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { '': searchResults.length };
+    for (const p of searchResults) {
+      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
     }
+    return counts;
+  }, [searchResults]);
 
-    // Check images array for Cloudflare URLs
-    if (product.images && product.images.length > 0) {
-      // Handle both object and string array formats
-      const imagesArray = product.images as any[];
-      const primaryImg = imagesArray.find((img: any) =>
-        typeof img === 'object' && img.is_primary
-      );
-      if (primaryImg && typeof primaryImg === 'object' && primaryImg.url && primaryImg.url.startsWith('http')) {
-        return primaryImg.url;
-      }
-      // Use first image if no primary
-      const firstImg = imagesArray[0];
-      if (typeof firstImg === 'object' && firstImg.url && firstImg.url.startsWith('http')) {
-        return firstImg.url;
-      }
-      if (typeof firstImg === 'string' && firstImg.startsWith('http')) {
-        return firstImg;
-      }
+  // Memoize price range counts - compute once when searchResults changes
+  const priceRangeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: searchResults.length };
+    for (const p of searchResults) {
+      const price = parsePrice(p.price);
+      if (price < 5000) counts.under5000 = (counts.under5000 || 0) + 1;
+      if (price >= 5000 && price <= 15000) counts['5000-15000'] = (counts['5000-15000'] || 0) + 1;
+      if (price > 15000) counts.over15000 = (counts.over15000 || 0) + 1;
     }
+    return counts;
+  }, [searchResults]);
 
-    // Check image_url if it's a valid URL
-    if (product.image_url && product.image_url.startsWith('http')) {
-      return product.image_url;
-    }
-
-    // Return null to show placeholder
-    return null;
-  };
-
-  // Render filters
-  const renderFilters = () => (
-    <>
-      <FilterGroup>
-        <h4>Category</h4>
-        <CategoryList>
-          {CATEGORIES.map(cat => (
-            <CategoryItem
-              key={cat.id}
-              $active={selectedCategory === cat.id}
-              onClick={() => handleCategoryClick(cat.id)}
-            >
-              {cat.name}
-            </CategoryItem>
-          ))}
-        </CategoryList>
-      </FilterGroup>
-
-      <FilterGroup>
-        <h4>Price Range</h4>
-        <PriceRange>
-          <input
-            type="number"
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-          <span>to</span>
-          <input
-            type="number"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
-        </PriceRange>
-      </FilterGroup>
-
-      <ApplyButton onClick={handleApplyFilters}>
-        Apply Filters
-      </ApplyButton>
-
-      {(selectedCategory || minPrice || maxPrice) && (
-        <ClearButton onClick={handleClearFilters}>
-          Clear All Filters
-        </ClearButton>
-      )}
-    </>
-  );
+  // O(1) lookup functions
+  const getCategoryCount = (categoryId: string) => categoryCounts[categoryId] || 0;
+  const getPriceRangeCount = (range: string) => priceRangeCounts[range] || 0;
 
   return (
     <SearchContainer>
@@ -256,7 +205,7 @@ const SearchPage = () => {
       </SearchHeaderSection>
 
       <SearchInputWrapper>
-        <form onSubmit={handleSearch} style={{ display: 'flex', flex: 1, gap: '10px' }}>
+        <form onSubmit={handleSearch}>
           <input
             type="text"
             placeholder="Search for products..."
@@ -270,34 +219,118 @@ const SearchPage = () => {
       </SearchInputWrapper>
 
       <SearchContent>
-        {/* Mobile Filter Toggle */}
         <MobileFilterToggle onClick={() => setMobileFiltersOpen(true)}>
           <i className="fas fa-filter"></i>
-          Filters
+          Filters {hasActiveFilters && ' (active)'}
         </MobileFilterToggle>
 
-        {/* Mobile Filters Overlay */}
-        <MobileFiltersOverlay
-          $isOpen={mobileFiltersOpen}
-          onClick={() => setMobileFiltersOpen(false)}
-        />
+        <MobileFilterPanel
+          isOpen={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+          onClearFilters={handleClearFilters}
+          hasActiveFilters={hasActiveFilters}
+          activeFilterSummary={
+            <>
+              {selectedCategory && (
+                <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                  <strong>Category:</strong> {selectedCategory}
+                </div>
+              )}
+              {selectedPriceRange !== 'all' && (
+                <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                  <strong>Price:</strong> {PRICE_RANGES.find(r => r.value === selectedPriceRange)?.label}
+                </div>
+              )}
+            </>
+          }
+        >
+          <MobileFilterSection
+            title="Category"
+            options={SHOP_CATEGORIES.map(c => ({ value: c.id, label: c.name }))}
+            selectedValue={selectedCategory}
+            onSelect={(val) => { handleCategoryChange(val); setMobileFiltersOpen(false); }}
+          />
+          <MobileFilterSection
+            title="Price Range"
+            options={PRICE_RANGES.map(r => ({ value: r.value, label: r.label }))}
+            selectedValue={selectedPriceRange}
+            onSelect={(val) => { handlePriceRangeChange(val); setMobileFiltersOpen(false); }}
+          />
+        </MobileFilterPanel>
 
-        {/* Mobile Filters Panel */}
-        <MobileFiltersPanel $isOpen={mobileFiltersOpen}>
-          <button className="close-btn" onClick={() => setMobileFiltersOpen(false)}>
-            <i className="fas fa-times"></i>
-          </button>
-          <h3 style={{ marginBottom: '20px', fontFamily: 'var(--font-playfair)' }}>Filters</h3>
-          {renderFilters()}
-        </MobileFiltersPanel>
+        {/* Desktop Filters - Shop-style */}
+        <ProductFilters>
+          {/* Department Header */}
+          <FilterDepartmentHeader>
+            <i className="fas fa-filter"></i>
+            Filters
+          </FilterDepartmentHeader>
 
-        {/* Desktop Filters */}
-        <FiltersSection>
-          <FiltersCard>
-            <h3>Filters</h3>
-            {renderFilters()}
-          </FiltersCard>
-        </FiltersSection>
+          {/* Active Filters Summary */}
+          {hasActiveFilters && (
+            <ActiveFiltersSummary>
+              {selectedCategory && (
+                <span><strong>Category:</strong> {selectedCategory}</span>
+              )}
+              {selectedPriceRange !== 'all' && (
+                <span><strong>Price:</strong> {PRICE_RANGES.find(r => r.value === selectedPriceRange)?.label}</span>
+              )}
+            </ActiveFiltersSummary>
+          )}
+
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
+            <ClearFiltersButton onClick={handleClearFilters}>
+              Clear All Filters
+            </ClearFiltersButton>
+          )}
+
+          {/* Category Filter */}
+          <FilterSection $collapsed={collapsedSections.category}>
+            <FilterHeader
+              $collapsed={collapsedSections.category}
+              onClick={() => toggleSection('category')}
+            >
+              <h3>Category</h3>
+              <i className="fas fa-chevron-down toggle-icon"></i>
+            </FilterHeader>
+            <FilterContent $collapsed={collapsedSections.category}>
+              {SHOP_CATEGORIES.map(cat => (
+                <FilterOption
+                  key={cat.id}
+                  $active={selectedCategory === cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                >
+                  <span style={{ flex: 1 }}>{cat.name}</span>
+                  <span style={{ color: '#888', fontSize: '11px' }}>{getCategoryCount(cat.id)}</span>
+                </FilterOption>
+              ))}
+            </FilterContent>
+          </FilterSection>
+
+          {/* Price Range Filter */}
+          <FilterSection $collapsed={collapsedSections.price}>
+            <FilterHeader
+              $collapsed={collapsedSections.price}
+              onClick={() => toggleSection('price')}
+            >
+              <h3>Price</h3>
+              <i className="fas fa-chevron-down toggle-icon"></i>
+            </FilterHeader>
+            <FilterContent $collapsed={collapsedSections.price}>
+              {PRICE_RANGES.map(range => (
+                <FilterOption
+                  key={range.value}
+                  $active={selectedPriceRange === range.value}
+                  onClick={() => handlePriceRangeChange(range.value)}
+                >
+                  <span style={{ flex: 1 }}>{range.label}</span>
+                  <span style={{ color: '#888', fontSize: '11px' }}>{getPriceRangeCount(range.value)}</span>
+                </FilterOption>
+              ))}
+            </FilterContent>
+          </FilterSection>
+        </ProductFilters>
 
         {/* Results */}
         <ResultsSection>
@@ -313,7 +346,7 @@ const SearchPage = () => {
               </div>
               <h3>Something went wrong</h3>
               <p>{error}</p>
-              <button className="browse-btn" onClick={() => performSearch(query, selectedCategory, minPrice, maxPrice)}>
+              <button className="browse-btn" onClick={() => performSearch(query, selectedCategory, selectedPriceRange)}>
                 Try Again
               </button>
             </EmptyState>
@@ -334,48 +367,19 @@ const SearchPage = () => {
                 </div>
               </ResultsHeader>
 
-              <ProductsGrid>
-                {searchResults.map((product) => {
-                  const imageUrl = getImageUrl(product);
-                  return (
-                    <ProductCard key={product.id} onClick={() => handleProductClick(product)}>
-                      <ProductImage>
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={product.name}
-                            className="product-img"
-                            onError={(e) => {
-                              // On error, hide image and show placeholder
-                              e.currentTarget.style.display = 'none';
-                              const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
-                              if (placeholder) placeholder.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className="placeholder" style={{ display: imageUrl ? 'none' : 'flex' }}>
-                          <i className="fas fa-image"></i>
-                        </div>
-                        {product.category && (
-                          <div className="category-badge">{product.category}</div>
-                        )}
-                      </ProductImage>
-                      <ProductInfo>
-                        <h3>{product.name}</h3>
-                        {product.description && (
-                          <p className="description">{product.description}</p>
-                        )}
-                        <div className="price-row">
-                          <span className="price">
-                            ₹{(typeof product.price === 'number' ? product.price : parseFloat(product.price || '0')).toLocaleString()}
-                          </span>
-                          <button className="view-btn">View</button>
-                        </div>
-                      </ProductInfo>
-                    </ProductCard>
-                  );
-                })}
-              </ProductsGrid>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                gap: '12px',
+                padding: '0'
+              }}>
+                {searchResults.map((product) => (
+                  <ProductCardWithVariant
+                    key={product.id}
+                    product={product}
+                  />
+                ))}
+              </div>
             </>
           ) : (
             <EmptyState>

@@ -146,15 +146,15 @@ const DashboardAppointmentsPage = () => {
       {/* Filters */}
       <div style={{
         background: 'white',
-        borderRadius: '12px',
-        padding: '20px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        marginBottom: '12px',
+        boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4'
       }}>
-        <div className="appointments-filter-bar" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="appointments-filter-bar" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{
-            fontSize: '13px',
+            fontSize: '12px',
             fontWeight: '600',
             color: '#666'
           }}>
@@ -164,10 +164,10 @@ const DashboardAppointmentsPage = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             style={{
-              padding: '8px 14px',
+              padding: '6px 12px',
               border: '1px solid #e8d5c4',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               outline: 'none',
               cursor: 'pointer'
             }}
@@ -182,17 +182,17 @@ const DashboardAppointmentsPage = () => {
           <button
             onClick={fetchAppointments}
             style={{
-              padding: '8px 20px',
+              padding: '6px 16px',
               background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <i className="fas fa-sync-alt"></i>
@@ -205,53 +205,53 @@ const DashboardAppointmentsPage = () => {
       {loading ? (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '64px',
+          borderRadius: '8px',
+          padding: '32px',
           textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
           <div style={{
-            width: '48px',
-            height: '48px',
+            width: '36px',
+            height: '36px',
             border: '3px solid #f0f0f0',
             borderTop: '3px solid #c19a6b',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             margin: '0 auto'
           }}></div>
-          <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>Loading appointments...</p>
+          <p style={{ marginTop: '12px', color: '#666', fontSize: '13px' }}>Loading appointments...</p>
         </div>
       ) : filteredAppointments.length === 0 ? (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '64px 32px',
+          borderRadius: '8px',
+          padding: '32px 16px',
           textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <i className="fas fa-calendar-check" style={{ fontSize: '64px', color: '#e8d5c4', marginBottom: '16px' }}></i>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <i className="fas fa-calendar-check" style={{ fontSize: '40px', color: '#e8d5c4', marginBottom: '12px' }}></i>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
             No Appointments Found
           </h3>
-          <p style={{ color: '#666', fontSize: '14px' }}>
+          <p style={{ color: '#666', fontSize: '13px' }}>
             {statusFilter === 'all' ? 'No appointments scheduled yet.' : `No ${statusFilter} appointments found.`}
           </p>
         </div>
       ) : (
         <div style={{
           background: 'white',
-          borderRadius: '12px',
+          borderRadius: '8px',
           overflow: 'hidden',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
           {filteredAppointments.map((appointment: any, index: number) => (
             <div
               key={appointment.id}
               style={{
-                padding: '20px',
+                padding: '12px 16px',
                 borderBottom: index < filteredAppointments.length - 1 ? '1px solid #f0f0f0' : 'none',
                 transition: 'background 0.2s ease'
               }}
@@ -262,41 +262,41 @@ const DashboardAppointmentsPage = () => {
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              <div className="appointment-card-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+              <div className="appointment-card-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                    Consultation Request #{appointment.id}
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                    Consultation #{appointment.id}
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <i className="fas fa-user" style={{ fontSize: '12px', color: '#999' }}></i>
-                    <p style={{ fontSize: '13px', color: '#666' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                    <i className="fas fa-user" style={{ fontSize: '10px', color: '#999' }}></i>
+                    <p style={{ fontSize: '12px', color: '#666' }}>
                       {appointment.user_name || appointment.guest_name || 'N/A'}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <i className="fas fa-envelope" style={{ fontSize: '12px', color: '#999' }}></i>
-                    <p style={{ fontSize: '13px', color: '#666' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                    <i className="fas fa-envelope" style={{ fontSize: '10px', color: '#999' }}></i>
+                    <p style={{ fontSize: '12px', color: '#666' }}>
                       {appointment.user_email || appointment.guest_email || 'N/A'}
                     </p>
                   </div>
                   {(appointment.user_phone || appointment.guest_phone) && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <i className="fas fa-phone" style={{ fontSize: '12px', color: '#999' }}></i>
-                      <p style={{ fontSize: '13px', color: '#666' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                      <i className="fas fa-phone" style={{ fontSize: '10px', color: '#999' }}></i>
+                      <p style={{ fontSize: '12px', color: '#666' }}>
                         {appointment.user_phone || appointment.guest_phone}
                       </p>
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <i className="fas fa-calendar" style={{ fontSize: '12px', color: '#999' }}></i>
-                    <p style={{ fontSize: '13px', color: '#666' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                    <i className="fas fa-calendar" style={{ fontSize: '10px', color: '#999' }}></i>
+                    <p style={{ fontSize: '12px', color: '#666' }}>
                       Preferred: {formatDate(appointment.appointment_date)}
                     </p>
                   </div>
                   {appointment.service_type && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="fas fa-clock" style={{ fontSize: '12px', color: '#999' }}></i>
-                      <p style={{ fontSize: '13px', color: '#666' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fas fa-clock" style={{ fontSize: '10px', color: '#999' }}></i>
+                      <p style={{ fontSize: '12px', color: '#666' }}>
                         {appointment.service_type}
                       </p>
                     </div>
@@ -305,7 +305,7 @@ const DashboardAppointmentsPage = () => {
                 <div className="appointment-card-right" style={{ textAlign: 'right' }}>
                   <div style={{
                     display: 'inline-block',
-                    padding: '6px 12px',
+                    padding: '4px 10px',
                     background: appointment.status === 'completed' ? 'rgba(34, 197, 94, 0.1)' :
                                appointment.status === 'confirmed' ? 'rgba(59, 130, 246, 0.1)' :
                                appointment.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' :
@@ -316,8 +316,8 @@ const DashboardAppointmentsPage = () => {
                            appointment.status === 'pending' ? '#f59e0b' :
                            appointment.status === 'cancelled' ? '#ef4444' :
                            '#6b7280',
-                    borderRadius: '6px',
-                    fontSize: '12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
                     fontWeight: '600',
                     textTransform: 'uppercase'
                   }}>
@@ -328,28 +328,28 @@ const DashboardAppointmentsPage = () => {
 
               {appointment.notes && (
                 <div style={{
-                  padding: '12px',
+                  padding: '8px 10px',
                   background: 'rgba(193, 154, 107, 0.03)',
-                  borderRadius: '8px',
-                  marginBottom: '12px',
-                  borderLeft: '3px solid #c19a6b'
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  borderLeft: '2px solid #c19a6b'
                 }}>
-                  <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5' }}>
+                  <p style={{ fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
                     <strong style={{ color: '#c19a6b' }}>Notes:</strong> {appointment.notes}
                   </p>
                 </div>
               )}
 
               {/* Status update controls */}
-              <div className="appointment-controls" style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+              <div className="appointment-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f0f0f0' }}>
                 <select
                   value={appointment.status}
                   onChange={(e) => updateAppointmentStatus(appointment.id, e.target.value)}
                   style={{
-                    padding: '8px 14px',
+                    padding: '6px 10px',
                     border: '1px solid #e8d5c4',
-                    borderRadius: '8px',
-                    fontSize: '13px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
                     outline: 'none',
                     cursor: 'pointer',
                     background: 'white'
@@ -363,10 +363,10 @@ const DashboardAppointmentsPage = () => {
                 <button
                   onClick={() => router.push(`/dashboard/appointments/${appointment.id}`)}
                   style={{
-                    padding: '8px 16px',
+                    padding: '6px 12px',
                     border: '1px solid #e8d5c4',
-                    borderRadius: '8px',
-                    fontSize: '13px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     background: 'white',

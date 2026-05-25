@@ -7,14 +7,17 @@
 • File Storage: Cloudflare R2 for product images with private access via API proxy
 • Payment Processing: Razorpay integration for checkout flow
 • State Management: Zustand for cart and React Context for app-wide state
+• Internationalization: LanguageContext supporting English, Hindi, Kannada translations
 
 ## Major Components & Ownership
 • `src/app/api/*` - Server-side API routes for all business logic
 • `src/lib/db/*` - Database abstraction layer with PostgreSQL queries
 • `src/components/*` - Reusable React UI components
-• `src/context/*` - Application state management (Auth, Cart, UI)
+• `src/context/*` - Application state management (Auth, Cart, UI, Language)
 • `src/store/*` - Zustand stores (shopping cart persistence)
 • `src/lib/cloudflare.ts` - Cloudflare R2 integration for image handling
+• `src/components/CategoryNav.tsx` - Category navigation system with 7 room categories + Services
+• `src/components/DashboardLayout.tsx` - Shared admin dashboard layout wrapper
 
 ## Boundaries & Responsibilities
 • API routes handle all external requests, authentication, and data validation

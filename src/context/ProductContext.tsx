@@ -19,7 +19,11 @@ type ProductAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_APPOINTMENTS'; payload: Appointment[] }
   | { type: 'SET_ORDERS'; payload: Order[] }
-  | { type: 'ADD_ORDER'; payload: Order };
+  | { type: 'ADD_ORDER'; payload: Order }
+  | { type: 'UPDATE_PRODUCT'; payload: Product }
+  | { type: 'DELETE_PRODUCT'; payload: number }
+  | { type: 'PREPEND_PRODUCT'; payload: Product }
+  | { type: 'PREPEND_APPOINTMENT'; payload: Appointment };
 
 const initialState: ProductState = {
   products: [],
@@ -43,6 +47,14 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
       return { ...state, orders: Array.isArray(action.payload) ? action.payload : [] };
     case 'ADD_ORDER':
       return { ...state, orders: [action.payload, ...state.orders] };
+    case 'UPDATE_PRODUCT':
+      return { ...state, products: state.products.map((p) => (p.id === action.payload.id ? action.payload : p)) };
+    case 'DELETE_PRODUCT':
+      return { ...state, products: state.products.filter((p) => p.id !== action.payload) };
+    case 'PREPEND_PRODUCT':
+      return { ...state, products: [action.payload, ...state.products] };
+    case 'PREPEND_APPOINTMENT':
+      return { ...state, appointments: [action.payload, ...state.appointments] };
     default:
       return state;
   }
@@ -116,7 +128,7 @@ export function ProductProvider({ children }: ProductProviderProps) {
     setError(null);
 
     try {
-      const response = await apiClient.getProducts();
+      const response = await apiClient.getProducts(100);
       if (response.success && response.data) {
         const productsData: unknown[] = Array.isArray(response.data)
           ? response.data
@@ -145,8 +157,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
   }, [setLoading, setError, setProducts]);
 
   const fetchOrders = useCallback(async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.getOrders();
       if (response.success && response.data) {
@@ -158,15 +170,15 @@ export function ProductProvider({ children }: ProductProviderProps) {
         dispatch({ type: 'SET_ORDERS', payload: [] });
       }
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to load orders.' });
+      setError(toErrorMessage(err) || 'Failed to load orders.');
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, []);
+  }, [setLoading, setError]);
 
   const fetchAppointments = useCallback(async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.getAppointments();
       if (response.success && response.data) {
@@ -177,15 +189,15 @@ export function ProductProvider({ children }: ProductProviderProps) {
         dispatch({ type: 'SET_APPOINTMENTS', payload: [] });
       }
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to load appointments.' });
+      setError(toErrorMessage(err) || 'Failed to load appointments.');
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, []);
+  }, [setLoading, setError]);
 
   const createOrder = useCallback(async (orderData: Partial<Order>): Promise<Order> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.createOrder(orderData);
       if (response.success && response.data) {
@@ -194,93 +206,84 @@ export function ProductProvider({ children }: ProductProviderProps) {
       }
       throw new Error(response.error || 'Failed to create order');
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to create order.' });
+      setError(toErrorMessage(err) || 'Failed to create order.');
       throw err;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, []);
+  }, [setLoading, setError]);
 
   const createAppointment = useCallback(async (appointmentData: Partial<Appointment>): Promise<Appointment> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.createAppointment(appointmentData as { appointment_date: string; notes?: string });
       if (response.success && response.data) {
-        dispatch({
-          type: 'SET_APPOINTMENTS',
-          payload: [response.data as Appointment, ...state.appointments],
-        });
+        dispatch({ type: 'PREPEND_APPOINTMENT', payload: response.data as Appointment });
         return response.data as Appointment;
       }
       throw new Error(response.error || 'Failed to create appointment');
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to create appointment.' });
+      setError(toErrorMessage(err) || 'Failed to create appointment.');
       throw err;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, [state.appointments]);
+  }, [setLoading, setError]);
 
   const updateProduct = useCallback(async (id: number, data: Partial<Product>): Promise<Product> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.updateProduct(id, data as { name: string; description: string; price: number });
       if (response.success && response.data) {
-        dispatch({
-          type: 'SET_PRODUCTS',
-          payload: state.products.map((p) => (p.id === id ? (response.data as Product) : p)),
-        });
+        dispatch({ type: 'UPDATE_PRODUCT', payload: response.data as Product });
         return response.data as Product;
       }
       throw new Error(response.error || 'Failed to update product');
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to update product.' });
+      setError(toErrorMessage(err) || 'Failed to update product.');
       throw err;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, [state.products]);
+  }, [setLoading, setError]);
 
   const deleteProduct = useCallback(async (id: number): Promise<boolean> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.deleteProduct(id);
       if (response.success) {
-        dispatch({ type: 'SET_PRODUCTS', payload: state.products.filter((p) => p.id !== id) });
+        dispatch({ type: 'DELETE_PRODUCT', payload: id });
         return true;
       }
       throw new Error(response.error || 'Failed to delete product');
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to delete product.' });
+      setError(toErrorMessage(err) || 'Failed to delete product.');
       throw err;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, [state.products]);
+  }, [setLoading, setError]);
 
   const createProduct = useCallback(async (productData: Partial<Product>): Promise<Product> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
+    setLoading(true);
+    setError(null);
     try {
       const response = await apiClient.createProduct(productData as { name: string; description: string; price: number });
       if (response.success && response.data) {
-        dispatch({
-          type: 'SET_PRODUCTS',
-          payload: [response.data as Product, ...state.products],
-        });
+        dispatch({ type: 'PREPEND_PRODUCT', payload: response.data as Product });
         return response.data as Product;
       }
       throw new Error(response.error || 'Failed to create product');
     } catch (err: unknown) {
-      dispatch({ type: 'SET_ERROR', payload: toErrorMessage(err) || 'Failed to create product.' });
+      setError(toErrorMessage(err) || 'Failed to create product.');
       throw err;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setLoading(false);
     }
-  }, [state.products]);
+  }, [setLoading, setError]);
 
   const value = useMemo<ProductContextValue>(
     () => ({

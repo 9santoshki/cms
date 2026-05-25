@@ -15,6 +15,15 @@ interface ProductImage {
   display_order: number;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  parent_id: number | null;
+  is_active: boolean;
+  children?: Category[];
+}
+
 interface Product {
   id: string;
   name: string;
@@ -22,6 +31,7 @@ interface Product {
   price: number;
   sale_price?: number;
   category?: string;
+  subcategory?: string;
   stock_quantity?: number;
   images: ProductImage[];
   primary_image?: string;
@@ -43,7 +53,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     price: '',
     sale_price: '',
     category: '',
+    subcategory: '',
   });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
     params.then((p) => setProductId(p.id));
@@ -60,10 +73,27 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       return;
     }
 
+    loadCategories();
+
     if (productId) {
       loadProduct();
     }
   }, [user, productId]);
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const res = await fetch('/api/admin/categories');
+      const data = await res.json();
+      if (data.success) {
+        setCategories(data.data);
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const loadProduct = async () => {
     if (!productId) return;
@@ -87,6 +117,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: data.data.price.toString(),
           sale_price: data.data.sale_price?.toString() || '',
           category: data.data.category || '',
+          subcategory: data.data.subcategory || '',
         });
       } else {
         setError(data.error || 'Failed to load product');
@@ -102,10 +133,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    // Clear subcategory when category changes
+    if (name === 'category') {
+      setFormData({
+        ...formData,
+        category: value,
+        subcategory: '',
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,6 +173,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           price: parseFloat(formData.price),
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           category: formData.category,
+          subcategory: formData.subcategory,
         }),
       });
 
@@ -557,39 +599,98 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            {/* Category */}
-            <div>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#666',
-                  marginBottom: '8px'
-                }}>
-                  Category
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    border: '1px solid #e8d5c4',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    background: 'white'
-                  }}
-                >
-                  <option value="">Select category</option>
-                  <option value="Living Room">Living Room</option>
-                  <option value="Dining Room">Dining Room</option>
-                  <option value="Bedroom">Bedroom</option>
-                  <option value="Office">Office</option>
-                </select>
+            {/* Category & Subcategory */}
+            <div style={{
+              background: 'rgba(193, 154, 107, 0.05)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid #e8d5c4'
+            }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-folder" style={{ color: '#c19a6b' }}></i>
+                Category
+              </h4>
+              <div className="product-form-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '20px'
+              }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#666',
+                    marginBottom: '8px'
+                  }}>
+                    Parent Category
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    disabled={loadingCategories}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid #e8d5c4',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      cursor: loadingCategories ? 'wait' : 'pointer',
+                      background: 'white'
+                    }}
+                  >
+                    <option value="">
+                      {loadingCategories ? 'Loading...' : 'Select category'}
+                    </option>
+                    {categories.filter(c => c.parent_id === null && c.is_active).map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#666',
+                    marginBottom: '8px'
+                  }}>
+                    Subcategory
+                  </label>
+                  <select
+                    name="subcategory"
+                    value={formData.subcategory}
+                    onChange={handleInputChange}
+                    disabled={!formData.category || loadingCategories}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid #e8d5c4',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      cursor: !formData.category || loadingCategories ? 'not-allowed' : 'pointer',
+                      background: 'white',
+                      opacity: !formData.category ? 0.6 : 1
+                    }}
+                  >
+                    <option value="">
+                      {!formData.category ? 'Select category first' : 'Select subcategory (optional)'}
+                    </option>
+                    {(() => {
+                      const selectedParent = categories.find(c => c.name === formData.category && c.parent_id === null);
+                      if (!selectedParent) return null;
+                      return (selectedParent.children || [])
+                        .filter(sub => sub.is_active)
+                        .map(sub => (
+                          <option key={sub.id} value={sub.name}>{sub.name}</option>
+                        ));
+                    })()}
+                  </select>
+                </div>
               </div>
             </div>
 

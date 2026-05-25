@@ -15,7 +15,7 @@ export const ConsultationHero = styled.section`
               url('/api/images/product_images%2F1767928644452-6a7vh9bf8fn-consultation-hero.jpg');
   background-size: cover;
   background-position: center;
-  height: 45vh;
+  height: 28vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,155 +43,157 @@ export const ConsultationHero = styled.section`
   }
 
   h1 {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
+    font-size: 2rem;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
-    height: 35vh;
+    height: 22vh;
 
     h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
 
     p {
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
   }
 `;
 
 // Benefits section
 export const BenefitsSection = styled.section`
-  padding: 60px 0;
+  padding: 30px 0;
   background: white;
 
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 
   h2 {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 20px;
     color: #222;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
 
     &::after {
       content: '';
       display: block;
-      width: 120px;
-      height: 3px;
+      width: 60px;
+      height: 2px;
       background: linear-gradient(to right, transparent, #c19a6b, transparent);
-      margin: 15px auto;
-      opacity: 0.7;
+      margin: 8px auto;
     }
   }
 `;
 
 export const BenefitsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  justify-items: center;
 `;
 
 export const BenefitCard = styled.div`
   text-align: center;
-  padding: 30px 20px;
+  padding: 20px;
 
   .icon {
-    font-size: 3rem;
+    font-size: 2rem;
     color: #c19a6b;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
   h3 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
+    font-size: 1rem;
+    margin-bottom: 8px;
     color: #222;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
 
   p {
     color: #666;
-    line-height: 1.7;
-    font-size: 15px;
+    line-height: 1.5;
+    font-size: 13px;
+    margin: 0;
   }
 `;
 
 // Booking section
 export const BookingSection = styled.section`
-  padding: 80px 0;
+  padding: 30px 0;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 
   .container {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 `;
 
 export const BookingCard = styled.div`
   background: white;
   border-radius: 0;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 `;
 
 export const BookingHeader = styled.div`
   background: linear-gradient(135deg, #c19a6b, #a8825f);
   color: white;
-  padding: 40px;
+  padding: 20px;
   text-align: center;
 
   h2 {
-    font-size: 2.2rem;
-    margin-bottom: 10px;
+    font-size: 1.3rem;
+    margin: 0 0 4px 0;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
   }
 
   p {
-    font-size: 1rem;
+    font-size: 0.85rem;
+    margin: 0;
     opacity: 0.9;
   }
 `;
 
 export const BookingForm = styled.form`
-  padding: 50px 40px;
+  padding: 24px;
 
   @media (max-width: 768px) {
-    padding: 40px 30px;
+    padding: 20px;
   }
 `;
 
 export const FormGroup = styled.div`
-  margin-bottom: 30px;
+  margin-bottom: 16px;
 
   label {
     display: block;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     color: #333;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   input[type="date"],
@@ -200,38 +202,38 @@ export const FormGroup = styled.div`
   input[type="tel"],
   textarea {
     width: 100%;
-    padding: 14px;
+    padding: 10px;
     border: 2px solid #e0e0e0;
-    font-size: 16px;
+    font-size: 14px;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     transition: all 0.3s ease;
 
     &:focus {
       outline: none;
       border-color: #c19a6b;
-      box-shadow: 0 0 0 3px rgba(193, 154, 107, 0.1);
+      box-shadow: 0 0 0 2px rgba(193, 154, 107, 0.1);
     }
   }
 
   textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 60px;
   }
 `;
 
 export const TimeSlotGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
 `;
 
 export const TimeSlotButton = styled.button<{ $selected?: boolean }>`
-  padding: 12px;
+  padding: 8px;
   border: 2px solid ${props => props.$selected ? '#c19a6b' : '#e0e0e0'};
   background: ${props => props.$selected ? '#c19a6b' : 'white'};
   color: ${props => props.$selected ? 'white' : '#333'};
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -250,8 +252,8 @@ export const TimeSlotButton = styled.button<{ $selected?: boolean }>`
 
 export const ButtonGroup = styled.div`
   display: flex;
-  gap: 15px;
-  margin-top: 40px;
+  gap: 10px;
+  margin-top: 20px;
 
   @media (max-width: 640px) {
     flex-direction: column;
@@ -260,11 +262,11 @@ export const ButtonGroup = styled.div`
 
 export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   flex: 1;
-  padding: 16px 30px;
-  font-size: 16px;
+  padding: 10px 20px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   border: none;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -276,8 +278,8 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
 
     &:hover:not(:disabled) {
       background: #a8825f;
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(193, 154, 107, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(193, 154, 107, 0.3);
     }
 
     &:disabled {
@@ -297,42 +299,42 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
 
 export const SuccessMessage = styled.div`
   text-align: center;
-  padding: 60px 40px;
+  padding: 30px 20px;
 
   .icon {
-    width: 80px;
-    height: 80px;
+    width: 50px;
+    height: 50px;
     background: linear-gradient(135deg, #4ade80, #22c55e);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 30px;
+    margin: 0 auto 16px;
     color: white;
-    font-size: 2.5rem;
+    font-size: 1.5rem;
   }
 
   h3 {
-    font-size: 2rem;
-    margin-bottom: 15px;
+    font-size: 1.3rem;
+    margin-bottom: 8px;
     color: #222;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
 
   p {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     color: #666;
-    margin-bottom: 30px;
+    margin-bottom: 16px;
   }
 `;
 
 export const ErrorAlert = styled.div`
-  padding: 16px 20px;
+  padding: 10px 14px;
   background: #fee;
   border: 2px solid #fcc;
   color: #c33;
-  margin-bottom: 25px;
-  font-size: 15px;
+  margin-bottom: 16px;
+  font-size: 13px;
   font-weight: 500;
 `;
 
@@ -361,19 +363,19 @@ export const LoadingSpinner = styled.div`
 
 // Trust section
 export const TrustSection = styled.section`
-  padding: 60px 0;
+  padding: 30px 0;
   background: white;
   text-align: center;
 
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 
   h3 {
-    font-size: 1.8rem;
-    margin-bottom: 30px;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
     color: #222;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
@@ -381,22 +383,22 @@ export const TrustSection = styled.section`
 
 export const TrustStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 40px;
-  margin-top: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
 `;
 
 export const TrustStat = styled.div`
   .number {
-    font-size: 3rem;
+    font-size: 2rem;
     font-weight: 700;
     color: #c19a6b;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
 
   .label {
-    font-size: 1rem;
+    font-size: 0.85rem;
     color: #666;
     text-transform: uppercase;
     letter-spacing: 1px;

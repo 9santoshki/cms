@@ -163,15 +163,15 @@ export const ServicesHero = styled.section`
               url('/api/images/product_images%2F1767928400633-5ag0gec9a4i-services-hero.jpg');
   background-size: cover;
   background-position: center;
-  height: 50vh;
+  height: 30vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: white;
-  margin: 40px 0 20px 0;
+  margin: 40px 0 10px 0;
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -192,77 +192,75 @@ export const ServicesHero = styled.section`
   }
 
   h1 {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
+    font-size: 2rem;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
-    height: 40vh;
-    
+    height: 25vh;
+
     h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
-    
+
     p {
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
   }
 `;
 
 // Services content with elegant styling
 export const ServicesContent = styled.section`
-  padding: 40px 0 80px;
+  padding: 20px 0 30px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 
   .container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 `;
 
 // Services intro with elegant divider
 export const ServicesIntro = styled.div`
   text-align: center;
-  margin-bottom: 60px;
-  
+  margin-bottom: 20px;
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
-  
+
   p {
-    font-size: 1.1rem;
-    line-height: 1.8;
+    font-size: 0.9rem;
+    line-height: 1.5;
     color: #555;
     max-width: 800px;
     margin: 0 auto;
@@ -273,18 +271,18 @@ export const ServicesIntro = styled.div`
 // Services grid with elegant styling
 export const ServicesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
   justify-content: center;
-  margin-bottom: 60px;
+  margin-bottom: 20px;
 `;
 
 // Service card with elegant styling
 export const ServiceCard = styled.div`
   background-color: white;
   border-radius: 0;
-  padding: 50px 30px;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  padding: 20px 16px;
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: none;
   position: relative;
@@ -298,7 +296,7 @@ export const ServiceCard = styled.div`
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 3px;
     background: linear-gradient(90deg, #c19a6b, #a8825f);
     transform: scaleX(0);
     transition: transform 0.4s ease;
@@ -310,13 +308,13 @@ export const ServiceCard = styled.div`
   }
 
   &:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.15);
   }
 
   h3 {
-    font-size: 1.9rem;
-    margin-bottom: 20px;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
     color: #222;
     font-weight: 400;
     letter-spacing: 1px;
@@ -327,9 +325,9 @@ export const ServiceCard = styled.div`
 
   p {
     color: #666;
-    line-height: 1.8;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
     position: relative;
     z-index: 3;
   }
@@ -337,85 +335,85 @@ export const ServiceCard = styled.div`
 
 // Service icon with elegant styling
 export const ServiceIcon = styled.div`
-  font-size: 4rem;
+  font-size: 2.5rem;
   color: #c19a6b;
-  margin-bottom: 25px;
+  margin-bottom: 12px;
   transition: transform 0.4s ease;
   position: relative;
   z-index: 3;
-  
+
   ${ServiceCard}:hover & {
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
 `;
 
 // Process section with elegant styling
 export const ProcessSection = styled.div`
   text-align: center;
-  margin-bottom: 60px;
-  
+  margin-bottom: 20px;
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 50px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 // Process steps grid
 export const ProcessSteps = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
   justify-content: center;
 `;
 
 // Process step with elegant styling
 export const ProcessStep = styled.div`
   position: relative;
-  padding: 30px 20px;
-  
+  padding: 20px;
+  text-align: center;
+
   .step-number {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #c19a6b;
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   h3 {
-    font-size: 1.7rem;
-    margin-bottom: 15px;
+    font-size: 1rem;
+    margin-bottom: 6px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   p {
     color: #666;
-    line-height: 1.7;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
+    margin: 0;
   }
 `;
 
 // CTA section with elegant styling
 export const ServicesCTA = styled.section`
-  padding: 150px 0;
+  padding: 50px 0;
   background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
   color: white;
   text-align: center;
@@ -437,25 +435,34 @@ export const ServicesCTA = styled.section`
     position: relative;
     z-index: 1;
     max-width: 800px;
-    margin: 0 auto 50px;
+    margin: 0 auto 12px;
     padding: 0 20px;
   }
 
   h2 {
-    font-size: 3.5rem;
-    margin-bottom: 30px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: white;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-transform: uppercase;
   }
 
+  h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #c19a6b, transparent);
+    margin: 8px auto;
+  }
+
   p {
-    font-size: 1.4rem;
-    margin-bottom: 50px;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
     color: #ddd;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    line-height: 1.9;
+    line-height: 1.5;
     letter-spacing: 0.5px;
   }
 
@@ -465,15 +472,15 @@ export const ServicesCTA = styled.section`
     z-index: 1;
     background-color: #c19a6b;
     color: white;
-    padding: 22px 60px;
-    font-size: 18px;
+    padding: 10px 24px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     border: none;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 8px 25px rgba(193, 154, 107, 0.4);
+    box-shadow: 0 4px 12px rgba(193, 154, 107, 0.4);
     display: inline-block;
     margin: 0 auto;
     border-radius: 0;

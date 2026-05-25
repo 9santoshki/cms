@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display, Montserrat } from 'next/font/google';
 import { AppProvider } from '@/context/AppContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -95,9 +96,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} ${playfair.variable} ${montserrat.variable}`}>
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <LanguageProvider>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </LanguageProvider>
         {/* This is the portal root for modals */}
         <div id="modal-root" />
       </body>

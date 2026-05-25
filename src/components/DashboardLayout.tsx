@@ -29,6 +29,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
   const menuItems = [
     { icon: 'fas fa-tachometer-alt', label: 'Overview', href: '/dashboard' },
     { icon: 'fas fa-box', label: 'Products', href: '/dashboard/products', show: isAdmin },
+    { icon: 'fas fa-folder', label: 'Categories', href: '/dashboard/categories', show: isAdmin },
     { icon: 'fas fa-shopping-bag', label: 'Orders', href: '/dashboard/orders', show: true },
     { icon: 'fas fa-calendar-check', label: 'Appointments', href: '/dashboard/appointments', show: true },
     { icon: 'fas fa-star', label: 'Reviews', href: '/dashboard/reviews', show: canModerate },
@@ -53,19 +54,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
           }
           .dashboard-sidebar {
             position: fixed !important;
-            top: 72px !important;
+            top: 56px !important;
             left: ${mobileMenuOpen ? '0' : '-100%'} !important;
-            width: 280px !important;
-            height: calc(100vh - 72px) !important;
+            width: 260px !important;
+            height: calc(100vh - 56px) !important;
             z-index: 999 !important;
             transition: left 0.3s ease !important;
             overflow-y: auto !important;
             background: white !important;
-            padding: 16px !important;
+            padding: 12px !important;
           }
           .dashboard-content-wrapper {
             flex-direction: column !important;
-            padding: 16px 12px !important;
+            padding: 12px 8px !important;
           }
           .dashboard-content {
             width: 100% !important;
@@ -77,7 +78,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
             display: none !important;
           }
           .dashboard-title {
-            font-size: 24px !important;
+            font-size: 18px !important;
           }
         }
         @media (min-width: 769px) {
@@ -107,8 +108,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
           <div style={{
             maxWidth: '1400px',
             margin: '0 auto',
-            padding: '0 16px',
-            height: '72px',
+            padding: '0 12px',
+            height: '56px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
@@ -220,7 +221,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
             onClick={() => setMobileMenuOpen(false)}
             style={{
               position: 'fixed',
-              top: '72px',
+              top: '56px',
               left: 0,
               right: 0,
               bottom: 0,
@@ -233,23 +234,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
         <div className="dashboard-content-wrapper" style={{
           maxWidth: '1400px',
           margin: '0 auto',
-          padding: '32px 24px',
+          padding: '16px 12px',
           display: 'flex',
-          gap: '32px'
+          gap: '16px'
         }}>
           {/* Sidebar */}
           <div className="dashboard-sidebar" style={{
-            width: '260px',
+            width: '200px',
             flexShrink: 0
           }}>
             <div style={{
               background: 'white',
-              borderRadius: '12px',
-              padding: '16px',
-              boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+              borderRadius: '8px',
+              padding: '12px',
+              boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
               border: '1px solid #e8d5c4',
               position: 'sticky',
-              top: '104px'
+              top: '88px'
             }}>
               <div style={{
                 fontSize: '11px',
@@ -257,8 +258,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
                 color: '#999',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
-                marginBottom: '12px',
-                padding: '0 12px'
+                marginBottom: '8px',
+                padding: '0 8px'
               }}>
                 Navigation
               </div>
@@ -270,7 +271,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
                       <div style={{
                         height: '1px',
                         background: '#f0ebe5',
-                        margin: '8px 12px',
+                        margin: '6px 8px',
                       }} />
                     )}
                     <Link
@@ -279,15 +280,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px',
-                        marginBottom: '4px',
-                        borderRadius: '8px',
+                        gap: '10px',
+                        padding: '8px',
+                        marginBottom: '2px',
+                        borderRadius: '6px',
                         textDecoration: 'none',
                         color: isActive ? '#c19a6b' : '#666',
                         background: isActive ? 'linear-gradient(135deg, rgba(193, 154, 107, 0.1), rgba(193, 154, 107, 0.05))' : 'transparent',
                         fontWeight: isActive ? '600' : '500',
-                        fontSize: '14px',
+                        fontSize: '13px',
                         transition: 'all 0.2s ease',
                         border: isActive ? '1px solid rgba(193, 154, 107, 0.2)' : '1px solid transparent'
                       }}
@@ -319,18 +320,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
 
           {/* Main Content */}
           <div className="dashboard-content" style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <h2 className="dashboard-title" style={{
-                fontSize: '28px',
+                fontSize: '20px',
                 fontWeight: '600',
                 color: '#333',
-                margin: '0 0 8px 0',
+                margin: '0 0 4px 0',
                 fontFamily: 'var(--font-playfair), "Playfair Display", serif'
               }}>
                 {title}
               </h2>
               {description && (
-                <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
                   {description}
                 </p>
               )}

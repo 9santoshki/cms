@@ -281,7 +281,15 @@ export default function VariantDictionaryPage() {
       title="Variant Dictionary"
       description="Manage the global option types (e.g. Thickness, Size) and their values (e.g. Thin, 24×36). These are shared across all products."
     >
-      <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        @media (max-width: 768px) {
+          .variants-header-bar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .variants-header-bar button { width: 100%; justify-content: center; }
+          .variants-type-grid { grid-template-columns: 1fr !important; }
+          .variants-edit-row { flex-direction: column !important; }
+          .variants-edit-row button { width: 100%; }
+        }
+      `}</style>
 
       {/* Flash */}
       {flash && (
@@ -300,28 +308,29 @@ export default function VariantDictionaryPage() {
       )}
 
       {/* ── Add Option Type bar ── */}
-      <div style={{
-        background: 'white', borderRadius: 12, padding: '16px 20px', marginBottom: 20,
-        boxShadow: '0 4px 12px rgba(193,154,107,0.08)', border: '1px solid #e8d5c4',
+      <div className="variants-header-bar" style={{
+        background: 'white', borderRadius: 8, padding: '12px 16px', marginBottom: 12,
+        boxShadow: '0 2px 8px rgba(193,154,107,0.08)', border: '1px solid #e8d5c4',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        gap: '10px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#333' }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#333' }}>
             {optionTypes.length} option type{optionTypes.length !== 1 ? 's' : ''} defined
           </p>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#888' }}>
+          <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>
             Each type appears as a selector on the product page (e.g. Thickness, Size, Color)
           </p>
         </div>
         <button
           onClick={() => { setShowAddType(v => !v); }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 18px',
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '6px 14px',
             background: showAddType ? '#f3ede7' : 'linear-gradient(135deg, #c19a6b, #a67c52)',
             color: showAddType ? '#c19a6b' : 'white',
             border: showAddType ? '1px solid #e8d5c4' : 'none',
-            borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}
         >
           <i className={showAddType ? 'fas fa-times' : 'fas fa-plus'}></i>
@@ -332,14 +341,14 @@ export default function VariantDictionaryPage() {
       {/* Add type form */}
       {showAddType && (
         <div style={{
-          background: 'white', borderRadius: 12, padding: 20, marginBottom: 20,
+          background: 'white', borderRadius: 8, padding: 16, marginBottom: 12,
           border: '1px dashed #d4b896',
-          boxShadow: '0 4px 12px rgba(193,154,107,0.06)',
+          boxShadow: '0 2px 8px rgba(193,154,107,0.06)',
         }}>
-          <h4 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600, color: '#555' }}>
+          <h4 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: '#555' }}>
             New Option Type
           </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 14 }}>
+          <div className="variants-type-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 10, marginBottom: 10 }}>
             <div>
               <label style={labelStyle}>Internal Name * <span style={{ fontWeight: 400, color: '#aaa' }}>(slug)</span></label>
               <input
@@ -347,7 +356,7 @@ export default function VariantDictionaryPage() {
                 value={newTypeName}
                 onChange={e => setNewTypeName(e.target.value)}
               />
-              <p style={{ margin: '3px 0 0', fontSize: 11, color: '#aaa' }}>lowercase, underscores only</p>
+              <p style={{ margin: '2px 0 0', fontSize: 10, color: '#aaa' }}>lowercase, underscores only</p>
             </div>
             <div>
               <label style={labelStyle}>Display Label *</label>
@@ -369,11 +378,11 @@ export default function VariantDictionaryPage() {
           <button
             onClick={handleAddType} disabled={addingType}
             style={{
-              padding: '8px 22px',
+              padding: '6px 16px',
               background: addingType ? '#aaa' : 'linear-gradient(135deg, #c19a6b, #a67c52)',
-              color: 'white', border: 'none', borderRadius: 8,
-              fontSize: 13, fontWeight: 600, cursor: addingType ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8,
+              color: 'white', border: 'none', borderRadius: 6,
+              fontSize: 12, fontWeight: 600, cursor: addingType ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
             {addingType ? <Spinner /> : <i className="fas fa-plus"></i>}
@@ -385,14 +394,14 @@ export default function VariantDictionaryPage() {
       {/* ── Option Types list ── */}
       {optionTypes.length === 0 ? (
         <div style={{
-          background: 'white', borderRadius: 12, padding: '48px 24px',
+          background: 'white', borderRadius: 8, padding: '32px 16px',
           textAlign: 'center', border: '1px dashed #e8d5c4', color: '#aaa',
         }}>
-          <i className="fas fa-tags" style={{ fontSize: 40, marginBottom: 12, display: 'block' }}></i>
-          <p style={{ margin: 0, fontSize: 14 }}>No option types yet. Click <strong>Add Option Type</strong> to get started.</p>
+          <i className="fas fa-tags" style={{ fontSize: 32, marginBottom: 8, display: 'block' }}></i>
+          <p style={{ margin: 0, fontSize: 13 }}>No option types yet. Click <strong>Add Option Type</strong> to get started.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {optionTypes.map(type => {
             const opts = optionsFor(type.id);
             const isExpanded = expandedTypeId === type.id;
@@ -401,8 +410,8 @@ export default function VariantDictionaryPage() {
 
             return (
               <div key={type.id} style={{
-                background: 'white', borderRadius: 12,
-                boxShadow: '0 4px 12px rgba(193,154,107,0.08)',
+                background: 'white', borderRadius: 8,
+                boxShadow: '0 2px 8px rgba(193,154,107,0.08)',
                 border: isExpanded ? '1px solid #c19a6b' : '1px solid #e8d5c4',
                 overflow: 'hidden',
                 opacity: type.is_active ? 1 : 0.6,
@@ -410,8 +419,8 @@ export default function VariantDictionaryPage() {
               }}>
                 {/* Type header row */}
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '14px 20px',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 16px',
                   cursor: 'pointer',
                   background: isExpanded ? 'rgba(193,154,107,0.04)' : 'white',
                 }}
@@ -428,7 +437,7 @@ export default function VariantDictionaryPage() {
 
                   {/* Type info or edit form */}
                   {isEditingType ? (
-                    <div style={{ display: 'flex', gap: 10, flex: 1, alignItems: 'flex-end' }}
+                    <div className="variants-edit-row" style={{ display: 'flex', gap: 10, flex: 1, alignItems: 'flex-end', flexWrap: 'wrap' }}
                       onClick={e => e.stopPropagation()}>
                       <div style={{ flex: 1 }}>
                         <label style={labelStyle}>Display Label</label>
@@ -509,7 +518,7 @@ export default function VariantDictionaryPage() {
 
                 {/* Expanded: options list */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid #f0ebe5', padding: '16px 20px' }}>
+                  <div style={{ borderTop: '1px solid #f0ebe5', padding: '12px 16px' }}>
 
                     {/* Options table */}
                     {opts.length === 0 ? (

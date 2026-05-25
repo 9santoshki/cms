@@ -135,7 +135,21 @@ run_migration "$APP_DIR/scripts/migrations/add_product_variants.sql"       "add_
 run_migration "$APP_DIR/scripts/migrations/add_suppliers.sql"               "add_suppliers"
 run_migration "$APP_DIR/scripts/migrations/add_supplier_stock.sql"          "add_supplier_stock"
 run_migration "$APP_DIR/scripts/migrations/add_inventory_improvements.sql"  "add_inventory_improvements"
+run_migration "$APP_DIR/scripts/migrations/add_subcategory_column.sql"      "add_subcategory_column"
+run_migration "$APP_DIR/scripts/migrations/add_categories_table.sql"        "add_categories_table"
 echo "✅ Migrations complete"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 2b: Seed mock products (idempotent)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ -f "$APP_DIR/scripts/seed_mock_products.sql" ]; then
+    echo "  Seeding mock products..."
+    psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f "$APP_DIR/scripts/seed_mock_products.sql" -v ON_ERROR_STOP=1
+    echo "  ✅ Mock products seeded"
+else
+    echo "  ⚠️  seed_mock_products.sql not found, skipping"
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -180,6 +194,11 @@ ENDSSH
 
 # Cleanup local tarball
 rm -f /tmp/cms-deploy-prod.tar.gz
+
+# Step 6: Purge Cloudflare cache so users get fresh HTML with new JS chunk hashes
+echo ""
+echo "🔄 Purging Cloudflare cache..."
+bash "$(dirname "$0")/purge-cloudflare-cache.sh" production
 
 echo ""
 echo "✅ PRODUCTION DEPLOYMENT COMPLETE!"

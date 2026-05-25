@@ -159,19 +159,19 @@ export const ContactHeader = styled.header`
 
 // Hero section with elegant overlay
 export const ContactHero = styled.section`
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
               url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
   background-size: cover;
   background-position: center;
-  height: 60vh;
+  height: 30vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: white;
-  margin-top: 80px;
+  margin: 40px 0 0 0;
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -192,45 +192,45 @@ export const ContactHero = styled.section`
   }
 
   h1 {
-    font-size: 4rem;
-    margin-bottom: 20px;
+    font-size: 2rem;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   p {
-    font-size: 1.4rem;
+    font-size: 0.9rem;
     margin: 0;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
-    height: 50vh;
-    
+    height: 25vh;
+
     h1 {
-      font-size: 2.5rem;
+      font-size: 1.5rem;
     }
-    
+
     p {
-      font-size: 1.1rem;
+      font-size: 0.8rem;
     }
   }
 `;
 
 // Contact content with elegant styling
 export const ContactContent = styled.section`
-  padding: 120px 0;
+  padding: 40px 0;
   background-color: white;
 
   .content-wrapper {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 `;
 
@@ -238,8 +238,8 @@ export const ContactContent = styled.section`
 export const ContactGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 70px;
-  margin-bottom: 100px;
+  gap: 40px;
+  margin-bottom: 40px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -249,60 +249,59 @@ export const ContactGrid = styled.div`
 // Contact information section with elegant styling
 export const ContactInfo = styled.div`
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 25px;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
     color: #222;
     font-weight: 400;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-    position: relative;
-    padding-bottom: 15px;
-  }
-  
-  h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 60px;
-    height: 2px;
-    background: #c19a6b;
+    text-align: center;
   }
 
-  p {
+  h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #c19a6b, transparent);
+    margin: 8px auto;
+  }
+
+  > p {
     color: #555;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 1.2rem;
-    line-height: 1.9;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: center;
   }
 
   .contact-details {
-    margin-bottom: 40px;
+    margin-bottom: 20px;
   }
 
   .contact-item {
     display: flex;
-    margin-bottom: 35px;
-    
+    margin-bottom: 16px;
+
     &:last-child {
       margin-bottom: 0;
     }
   }
 
   .contact-icon {
-    font-size: 2rem;
+    font-size: 1.3rem;
     color: #c19a6b;
-    margin-right: 25px;
-    min-width: 45px;
+    margin-right: 12px;
+    min-width: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .contact-text h3 {
-    font-size: 1.4rem;
-    margin-bottom: 10px;
+    font-size: 1rem;
+    margin-bottom: 4px;
     color: #222;
     font-weight: 500;
     font-family: var(--font-playfair), 'Playfair Display', serif;
@@ -311,14 +310,14 @@ export const ContactInfo = styled.div`
   .contact-text p {
     color: #666;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
-    line-height: 1.8;
+    font-size: 13px;
+    line-height: 1.5;
     margin-bottom: 0;
   }
 
   .social-links h3 {
-    font-size: 1.4rem;
-    margin-bottom: 25px;
+    font-size: 1rem;
+    margin-bottom: 12px;
     color: #222;
     font-weight: 500;
     font-family: var(--font-playfair), 'Playfair Display', serif;
@@ -326,24 +325,24 @@ export const ContactInfo = styled.div`
 
   .social-icons {
     display: flex;
-    gap: 18px;
-    margin-top: 20px;
-    
+    gap: 10px;
+    margin-top: 8px;
+
     .social-icon {
       display: inline-block;
-      width: 45px;
-      height: 45px;
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
       border: 1px solid #ddd;
       border-radius: 0;
       text-align: center;
-      line-height: 45px;
+      line-height: 32px;
       color: #666;
       transition: all 0.3s ease;
       text-decoration: none;
       position: relative;
       overflow: hidden;
-      
+
       &::before {
         content: '';
         position: absolute;
@@ -355,13 +354,13 @@ export const ContactInfo = styled.div`
         transform: translateX(-100%);
         transition: 0.6s;
       }
-      
+
       &:hover {
         background: #c19a6b;
         color: white;
-        transform: translateY(-5px);
+        transform: translateY(-3px);
         border-color: #c19a6b;
-        
+
         &::before {
           transform: translateX(100%);
         }
@@ -373,51 +372,49 @@ export const ContactInfo = styled.div`
 // Contact form section with elegant styling
 export const ContactFormWrapper = styled.div`
   .form-header {
-    margin-bottom: 30px;
+    margin-bottom: 16px;
+    text-align: center;
   }
-  
+
   .form-header h2 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
     font-weight: 400;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-    position: relative;
-    padding-bottom: 15px;
   }
-  
+
   .form-header h2::after {
     content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    display: block;
     width: 60px;
     height: 2px;
-    background: #c19a6b;
+    background: linear-gradient(to right, transparent, #c19a6b, transparent);
+    margin: 8px auto;
   }
 
   .form-header p {
     color: #555;
-    margin-bottom: 35px;
+    margin-bottom: 16px;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 1.2rem;
-    line-height: 1.8;
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 `;
 
 export const ContactForm = styled.form`
   .btn {
     width: 100%;
-    padding: 20px;
-    font-size: 16px;
+    padding: 12px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     border: none;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 4px 15px rgba(193, 154, 107, 0.4);
+    box-shadow: 0 2px 10px rgba(193, 154, 107, 0.4);
     position: relative;
     overflow: hidden;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
@@ -434,43 +431,43 @@ export const ContactForm = styled.form`
     }
 
     &:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(193, 154, 107, 0.6);
-      
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(193, 154, 107, 0.6);
+
       &::before {
         left: 100%;
       }
     }
   }
-  
+
   .btn.primary {
     background-color: #c19a6b;
     color: white;
   }
-  
+
   .btn.primary:hover {
     background-color: #a8825f;
   }
-  
+
   .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 4px 10px rgba(193, 154, 107, 0.2);
+    box-shadow: 0 2px 6px rgba(193, 154, 107, 0.2);
   }
 `;
 
 export const ContactFormItem = styled.div`
-  margin-bottom: 30px;
+  margin-bottom: 16px;
 
   label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     font-weight: 500;
     color: #333;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
-    letter-spacing: 1px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
   }
 
@@ -478,11 +475,11 @@ export const ContactFormItem = styled.div`
   select,
   textarea {
     width: 100%;
-    padding: 16px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 0;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     transition: all 0.3s ease;
     background: #fff;
 
@@ -497,7 +494,7 @@ export const ContactFormItem = styled.div`
 export const FormRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  gap: 16px;
 
   @media (max-width: 576px) {
     grid-template-columns: 1fr;
@@ -505,19 +502,19 @@ export const FormRow = styled.div`
 `;
 
 export const Alert = styled.div<{ type: 'success' | 'error' }>`
-  padding: 20px;
+  padding: 12px;
   border-radius: 0;
-  margin-bottom: 30px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-  font-size: 16px;
+  font-size: 13px;
   border: 1px solid;
-  border-left: 4px solid;
+  border-left: 3px solid;
 
   i {
-    margin-right: 15px;
-    font-size: 1.4rem;
+    margin-right: 10px;
+    font-size: 1rem;
   }
 
   ${props => props.type === 'success' && `
@@ -535,61 +532,60 @@ export const Alert = styled.div<{ type: 'success' | 'error' }>`
 
 // Map section with elegant styling
 export const MapSection = styled.div`
-  margin: 120px 0;
+  margin: 40px auto;
   text-align: center;
+  max-width: 900px;
 
   h2 {
-    font-size: 3rem;
-    margin-bottom: 70px;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 25px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 export const MapPlaceholder = styled.div`
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  height: 450px;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #eee;
   border-radius: 0;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  
+
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px -8px rgba(0, 0, 0, 0.15);
   }
 
   .map-content {
     text-align: center;
-    padding: 40px;
+    padding: 20px;
   }
 
   .map-content i {
-    font-size: 4rem;
+    font-size: 2.5rem;
     color: #c19a6b;
-    margin-bottom: 25px;
+    margin-bottom: 12px;
   }
 
   .map-content h3 {
-    font-size: 2rem;
-    margin-bottom: 20px;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
@@ -597,15 +593,15 @@ export const MapPlaceholder = styled.div`
 
   .map-content p {
     color: #666;
-    margin-bottom: 30px;
+    margin-bottom: 16px;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .btn {
-    padding: 16px 35px;
-    font-size: 16px;
-    letter-spacing: 1.5px;
+    padding: 10px 20px;
+    font-size: 14px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     font-weight: 600;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
@@ -620,12 +616,12 @@ export const MapPlaceholder = styled.div`
       background-color: transparent;
       color: #c19a6b;
       border: 2px solid #c19a6b;
-      
+
       &:hover {
         background-color: #c19a6b;
         color: white;
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(193, 154, 107, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 10px rgba(193, 154, 107, 0.4);
       }
     }
   }
@@ -633,43 +629,41 @@ export const MapPlaceholder = styled.div`
 
 // FAQ section with elegant styling
 export const FAQSection = styled.div`
-  margin: 120px 0;
+  margin: 40px auto;
   text-align: center;
+  max-width: 900px;
 
   h2 {
-    font-size: 3rem;
-    margin-bottom: 70px;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 25px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 export const FAQGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
 `;
 
 export const FAQItem = styled.div`
-  text-align: left;
+  text-align: center;
   background-color: white;
-  border-radius: 0;
-  padding: 50px 35px;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   border: none;
   position: relative;
   z-index: 1;
@@ -689,40 +683,28 @@ export const FAQItem = styled.div`
   }
 
   &:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
+
     &::before {
       opacity: 1;
     }
   }
 
   h3 {
-    font-size: 1.6rem;
-    margin-bottom: 20px;
+    font-size: 1rem;
+    margin-bottom: 10px;
     color: #222;
     font-weight: 500;
-    position: relative;
-    padding-left: 30px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-  }
-
-  h3::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 2px;
-    background: #c19a6b;
   }
 
   p {
     color: #666;
-    line-height: 1.9;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
+    margin: 0;
   }
 `;
 

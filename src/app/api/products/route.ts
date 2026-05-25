@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || searchParams.get('q') || '';
     const category = searchParams.get('category') || '';
+    const subcategory = searchParams.get('subcategory') || '';
     const minPrice = searchParams.get('minPrice')
       ? parseFloat(searchParams.get('minPrice')!)
       : undefined;
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
     const result = await getProductsWithImages({
       search,
       category,
+      subcategory,
       minPrice,
       maxPrice,
       page,

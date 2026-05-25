@@ -70,6 +70,21 @@ The `VariantSelector` component handles variant selection:
 - Displays variant-specific price and stock info
 - Disables unavailable option combinations
 
+The `MiniVariantSelector` component provides compact selection for product cards:
+- Displays first 2 option types with truncated labels
+- Limited to 3 options per type for compact display
+- Used in product grid/list views for quick variant preview
+- Callback notifies parent of selected variant ID, name, and price
+
+### Category Navigation
+
+The `CategoryNav` component provides category-based product browsing:
+- 7 shopping categories: Living Room, Dining Room, Bedroom, Home Office, Lighting, Decor, Outdoor
+- Each category has subcategories (e.g., Sofas & Sectionals, Coffee Tables)
+- Services category links to Portfolio, Design Services, Consultation, About, Contact
+- Supports desktop dropdown menus and mobile slide-out panel
+- Uses LanguageContext for translated category names
+
 ## Default Options
 
 ### Thickness

@@ -37,6 +37,12 @@
 • PUT /api/reviews/[id] - Update review status
 • DELETE /api/reviews/[id] - Delete review
 
+### Inventory (Admin)
+• GET /api/admin/inventory/out-of-stock - Get out-of-stock and low-stock variants with supplier info
+• GET /api/admin/inventory/all - Get all active variants for stock management
+• PUT /api/admin/inventory/supplier-stock - Update supplier-specific stock quantity
+• POST /api/admin/inventory/notify-supplier - Send restock request email to supplier(s)
+
 ### Images
 • GET /api/images/[key] - Access Cloudflare R2 images securely
 
@@ -45,10 +51,33 @@
 • PUT /api/profile - Update user profile
 • GET /api/users - Admin endpoint to get all users
 
+### Suppliers (Admin)
+• GET /api/admin/suppliers - List all suppliers
+• POST /api/admin/suppliers - Create supplier profile
+• PUT /api/admin/suppliers - Update supplier profile
+• DELETE /api/admin/suppliers?id=<id> - Delete supplier
+• GET /api/admin/supplier-variants - Get supplier-variant assignments
+• POST /api/admin/supplier-variants - Assign variant to supplier
+• DELETE /api/admin/supplier-variants - Remove assignment
+
+### Suppliers (Supplier Role)
+• GET /api/supplier/variants - Get assigned variants with stock info
+• PUT /api/supplier/variants - Update variant inventory
+• GET /api/supplier/logs - View recent inventory changes
+
+### Variants (Admin)
+• GET/POST/PUT /api/admin/variant-option-types - Manage option types (thickness, size, color)
+• GET/POST/PUT/DELETE /api/admin/variant-options - Manage options
+• GET/POST/PUT/DELETE /api/admin/product-variants - Manage product variants
+
+### Variants (Public)
+• GET /api/products/[id]/variants - Get variant options and SKUs for a product
+
 ## Authentication Requirements
 • Public: Product listings, static pages, guest appointment booking
 • Session Required: Cart operations, checkout, orders, appointments, profile management
-• Admin/Moderator: Admin dashboard, product creation, user management
+• Supplier: Supplier dashboard, assigned variant management, inventory updates
+• Admin/Moderator: Admin dashboard, product creation, user management, inventory management
 
 ## Versioning
 • Currently uses v0 (no prefix) - all endpoints are current version

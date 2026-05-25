@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useProduct } from '@/context/ProductContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { apiClient } from '@/lib/api';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -15,6 +16,7 @@ interface ProductDetailPageClientProps {
 
 const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
   const { slug } = props.params || {};
+  const { language } = useLanguage();
   const {
     products,
     loading: contextLoading,
@@ -103,7 +105,7 @@ const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
   }, [products.length, fetchProducts, contextLoading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white product-detail-page">
+    <div className="min-h-screen bg-white product-detail-page">
       <Header activePage="products" />
       {productError ? (
         <div className="flex items-center justify-center min-h-[70vh]">
@@ -126,8 +128,8 @@ const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
           </div>
         </div>
       ) : product ? (
-        <div className="container mx-auto px-4 py-8">
-          <ProductDetailDisplay product={product} />
+        <div className="container mx-auto px-4 py-4">
+          <ProductDetailDisplay product={product} key={language} />
         </div>
       ) : (
         <div className="flex items-center justify-center min-h-[70vh]">

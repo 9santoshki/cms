@@ -27,7 +27,7 @@ export async function generateUniqueSlug(name: string, excludeId?: string): Prom
   // Single query: fetch all slugs that start with the base slug
   const result = excludeId
     ? await query(
-        `SELECT slug FROM products WHERE slug = $1 OR slug LIKE $2 AND id != $3`,
+        `SELECT slug FROM products WHERE (slug = $1 OR slug LIKE $2) AND id != $3`,
         [base, `${base}-%`, excludeId]
       )
     : await query(
@@ -55,6 +55,7 @@ export interface Product {
   sale_price?: number;
   image_url?: string;
   category?: string;
+  subcategory?: string;
   slug?: string;
   stock_quantity?: number;
   /** Lifecycle state — customers only see 'published' products */
@@ -100,6 +101,7 @@ function findPrimaryImageUrl(images: ProductImageWithUrl[], fallbackUrl?: string
 export async function getProducts(filters: {
   search?: string;
   category?: string;
+  subcategory?: string;
   minPrice?: number;
   maxPrice?: number;
   page?: number;
@@ -129,6 +131,12 @@ export async function getProducts(filters: {
   if (filters.category) {
     whereConditions.push(`category = $${paramCount}`);
     params.push(filters.category);
+    paramCount++;
+  }
+
+  if (filters.subcategory) {
+    whereConditions.push(`subcategory = $${paramCount}`);
+    params.push(filters.subcategory);
     paramCount++;
   }
 
@@ -244,15 +252,11 @@ export async function searchProducts(searchTerm: string, limit: number = 10) {
 }
 
 /**
- * Get a product with its images from Cloudflare
+ * Attach images to a product row, fetching them from Cloudflare.
  */
-export async function getProductWithImages(id: string): Promise<ProductWithImages | null> {
-  const product = await getProductById(id);
-  if (!product) return null;
-
-  const images = await getProductImages(id);
+async function attachImages(product: Product): Promise<ProductWithImages> {
+  const images = await getProductImages(product.id);
   const imagesWithUrls = buildImagesWithUrls(images);
-
   return {
     ...product,
     images: imagesWithUrls,
@@ -261,20 +265,19 @@ export async function getProductWithImages(id: string): Promise<ProductWithImage
 }
 
 /**
+ * Get a product with its images from Cloudflare
+ */
+export async function getProductWithImages(id: string): Promise<ProductWithImages | null> {
+  const product = await getProductById(id);
+  return product ? attachImages(product) : null;
+}
+
+/**
  * Get a product by slug with its images
  */
 export async function getProductBySlugWithImages(slug: string): Promise<ProductWithImages | null> {
   const product = await getProductBySlug(slug);
-  if (!product) return null;
-
-  const images = await getProductImages(product.id);
-  const imagesWithUrls = buildImagesWithUrls(images);
-
-  return {
-    ...product,
-    images: imagesWithUrls,
-    primary_image: findPrimaryImageUrl(imagesWithUrls, product.image_url),
-  };
+  return product ? attachImages(product) : null;
 }
 
 /**
@@ -283,6 +286,7 @@ export async function getProductBySlugWithImages(slug: string): Promise<ProductW
 export async function getProductsWithImages(filters: {
   search?: string;
   category?: string;
+  subcategory?: string;
   minPrice?: number;
   maxPrice?: number;
   page?: number;

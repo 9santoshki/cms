@@ -18,8 +18,9 @@ export const ProductDetailContainer = styled.div`
   position: relative;
   background-color: white;
   border-radius: 0;
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 `;
@@ -47,6 +48,7 @@ export const ProductDetailContent = styled.div`
 
   @media (min-width: ${theme.breakpoints.mobile}) {
     flex-direction: row;
+    align-items: flex-start;
   }
 `;
 
@@ -89,11 +91,11 @@ export const ProductDetailImage = styled.div.withConfig({
 `;
 
 export const ProductDetailInfo = styled.div`
-  padding: 20px 24px;
+  padding: 12px 16px;
 
   @media (min-width: ${theme.breakpoints.mobile}) {
     width: 50%;
-    padding: 24px 28px;
+    padding: 16px 20px;
   }
 `;
 

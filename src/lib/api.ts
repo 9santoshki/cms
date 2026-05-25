@@ -59,8 +59,8 @@ class ApiClient {
   }
 
   // Products
-  async getProducts() {
-    return this.request<Product[]>('/products');
+  async getProducts(limit: number = 100) {
+    return this.request<Product[]>(`/products?limit=${limit}`);
   }
 
   async getProduct(id: number) {

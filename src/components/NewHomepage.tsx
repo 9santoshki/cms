@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
-import { useUI } from '../context/UIContext';
-import { useCartStore } from '../store/cartStore';
-import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
+import ProductCardWithVariant from './ProductCardWithVariant';
 
 // Font Awesome import
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -41,11 +40,6 @@ import {
   MainHero,
   SectionHeader,
   FeaturedSection,
-  ProductsGrid,
-  ProductCard,
-  ProductImage,
-  ProductInfo,
-  ProductPrice,
   PortfolioSection,
   PortfolioGrid,
   PortfolioCard,
@@ -58,14 +52,100 @@ import {
   ServiceIcon,
   ConsultationSection,
   LoadingSpinner,
-  ErrorContainer
+  ErrorContainer,
+  CategorySection,
+  CategorySectionHeader,
+  CategoryProductsRow
 } from '../styles/NewHomepageStylesElegant';
+
+// Featured subcategories for quick navigation - 3 rows with real category images
+const FEATURED_SUBCATEGORIES = [
+  // Row 1 - Living Room & Dining
+  { category: 'Living Room', subcategory: 'Sofas & Sectionals', image: '/images/categories/sofas.jpg' },
+  { category: 'Living Room', subcategory: 'Coffee Tables', image: '/images/categories/coffee-tables.jpg' },
+  { category: 'Living Room', subcategory: 'TV & Entertainment Units', image: '/images/categories/tv-units.jpg' },
+  { category: 'Living Room', subcategory: 'Accent Chairs', image: '/images/categories/accent-chairs.jpg' },
+  { category: 'Living Room', subcategory: 'Side Tables', image: '/images/categories/side-tables.jpg' },
+  { category: 'Dining Room', subcategory: 'Dining Tables', image: '/images/categories/dining-tables.jpg' },
+  { category: 'Dining Room', subcategory: 'Dining Chairs', image: '/images/categories/dining-chairs.jpg' },
+  { category: 'Dining Room', subcategory: 'Bar Carts & Stools', image: '/images/categories/bar-stools.jpg' },
+
+  // Row 2 - Bedroom & Home Office
+  { category: 'Bedroom', subcategory: 'Beds & Headboards', image: '/images/categories/beds.jpg' },
+  { category: 'Bedroom', subcategory: 'Dressers & Chests', image: '/images/categories/dressers.jpg' },
+  { category: 'Bedroom', subcategory: 'Nightstands', image: '/images/categories/side-tables.jpg' },
+  { category: 'Bedroom', subcategory: 'Wardrobes', image: '/images/categories/dressers.jpg' },
+  { category: 'Bedroom', subcategory: 'Bedding & Throws', image: '/images/categories/bedding.jpg' },
+  { category: 'Home Office', subcategory: 'Desks & Work Tables', image: '/images/categories/desks.jpg' },
+  { category: 'Home Office', subcategory: 'Office Chairs', image: '/images/categories/office-chairs.jpg' },
+  { category: 'Home Office', subcategory: 'Bookcases', image: '/images/categories/bookcases.jpg' },
+
+  // Row 3 - Lighting, Decor & Outdoor
+  { category: 'Lighting', subcategory: 'Chandeliers', image: '/images/categories/chandeliers.jpg' },
+  { category: 'Lighting', subcategory: 'Table Lamps', image: '/images/categories/table-lamps.jpg' },
+  { category: 'Lighting', subcategory: 'Floor Lamps', image: '/images/categories/floor-lamps.jpg' },
+  { category: 'Lighting', subcategory: 'Pendant Lights', image: '/images/categories/pendant-lights.jpg' },
+  { category: 'Decor', subcategory: 'Wall Art & Prints', image: '/images/categories/wall-art.jpg' },
+  { category: 'Decor', subcategory: 'Mirrors', image: '/images/categories/mirrors.jpg' },
+  { category: 'Decor', subcategory: 'Vases & Planters', image: '/images/categories/vases.jpg' },
+  { category: 'Decor', subcategory: 'Candles', image: '/images/categories/candles.jpg' },
+  { category: 'Outdoor', subcategory: 'Patio Furniture', image: '/images/categories/patio.jpg' },
+  { category: 'Outdoor', subcategory: 'Garden Decor', image: '/images/categories/garden.jpg' },
+  { category: 'Outdoor', subcategory: 'Outdoor Dining', image: '/images/categories/outdoor-dining.jpg' },
+];
 
 const NewHomepage = () => {
   const router = useRouter();
   const { products, fetchProducts, loading, error } = useProduct();
-  const cartItems = useCartStore(state => state.items);
-  const { user } = useAuth();
+  const { t, language } = useLanguage();
+
+  // Memoize subcategory translation map (created once per language change)
+  const subcategoryTranslationMap = useMemo(() => ({
+    'Sofas & Sectionals': t('sofasSectionals'),
+    'Coffee Tables': t('coffeeTables'),
+    'TV & Entertainment Units': t('tvEntertainmentUnits'),
+    'Accent Chairs': t('accentChairs'),
+    'Side Tables': t('sideTables'),
+    'Dining Tables': t('diningTables'),
+    'Dining Chairs': t('diningChairs'),
+    'Bar Carts & Stools': t('barCartsStools'),
+    'Beds & Headboards': t('bedsHeadboards'),
+    'Dressers & Chests': t('dressersChests'),
+    'Nightstands': t('nightstands'),
+    'Wardrobes': t('wardrobesArmoires'),
+    'Bedding & Throws': t('beddingThrows'),
+    'Desks & Work Tables': t('desksWorkTables'),
+    'Office Chairs': t('officeChairs'),
+    'Bookcases': t('bookcasesShelves'),
+    'Chandeliers': t('chandeliers'),
+    'Table Lamps': t('tableLamps'),
+    'Floor Lamps': t('floorLamps'),
+    'Pendant Lights': t('pendantLights'),
+    'Wall Art & Prints': t('wallArtPrints'),
+    'Mirrors': t('mirrors'),
+    'Vases & Planters': t('vasesPlanters'),
+    'Candles': t('candlesDiffusers'),
+    'Patio Furniture': t('patioFurniture'),
+    'Garden Decor': t('gardenPatioDecor'),
+    'Outdoor Dining': t('outdoorDiningSets'),
+  } as Record<string, string>), [t]);
+
+  // Helper to translate subcategory names
+  const translateSubcategory = (name: string): string => {
+    return subcategoryTranslationMap[name] || name;
+  };
+
+  // Memoize products grouped by category (O(products) once per render, not O(products * categories))
+  const productsByCategory = useMemo(() => {
+    const grouped: Record<string, any[]> = {};
+    for (const product of products) {
+      const cat = product.category;
+      if (!cat) continue;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(product);
+    }
+    return grouped;
+  }, [products]);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -162,6 +242,33 @@ const NewHomepage = () => {
     }
   ];
 
+  // Reusable category section component
+  const CategorySectionBlock = ({ categoryKey, title }: { categoryKey: string; title: string }) => {
+    const categoryProducts = productsByCategory[categoryKey] || [];
+    return (
+      <CategorySection>
+        <CategorySectionHeader>
+          <h3>{title}</h3>
+          <a onClick={() => router.push(`/shop?category=${encodeURIComponent(categoryKey)}`)}>{t('viewAll')}</a>
+        </CategorySectionHeader>
+        <CategoryProductsRow>
+          {categoryProducts.slice(0, 8).map((product: any) => (
+            <ProductCardWithVariant
+              key={product.id}
+              product={product}
+              width="180px"
+            />
+          ))}
+          {categoryProducts.length === 0 && (
+            <div style={{ padding: '20px', color: '#666', textAlign: 'center', minWidth: '100%' }}>
+              No products in this category yet
+            </div>
+          )}
+        </CategoryProductsRow>
+      </CategorySection>
+    );
+  };
+
 
 
 
@@ -187,15 +294,104 @@ const NewHomepage = () => {
   }
 
   return (
-    <HomepageContainer style={{ paddingTop: '80px' }}>
+    <HomepageContainer style={{ paddingTop: '130px' }}>
       {/* Navigation Bar - Sticky */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <Header activePage="home" />
       </div>
-      
+
       {/* Hero Slider Section */}
       <Slider />
 
+      {/* Quick Navigation - Subcategory Images */}
+      <section style={{
+        width: '88%',
+        maxWidth: '1100px',
+        margin: '15px auto 0 auto',
+        padding: '15px 20px',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 3px 15px rgba(0, 0, 0, 0.06)'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '15px',
+          fontSize: '12px',
+          color: '#666',
+          fontWeight: '600',
+          letterSpacing: '1px',
+          textTransform: 'uppercase'
+        }}>
+          {t('browseByCategory')}
+        </div>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '10px',
+          padding: '0'
+        }}>
+          {FEATURED_SUBCATEGORIES.map((item, index) => (
+            <div
+              key={index}
+              onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category)}&subcategory=${encodeURIComponent(item.subcategory)}`)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px',
+                background: '#fff',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                width: '120px',
+                flex: '0 0 auto',
+                border: '1px solid #eee'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#c19a6b';
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.12)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#eee';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                marginBottom: '8px',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundImage: `url('${item.image}')`,
+                border: '1px solid #f0f0f0'
+              }}>
+              </div>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#333',
+                textAlign: 'center',
+                lineHeight: '1.3',
+                maxWidth: '110px'
+              }}>
+                {translateSubcategory(item.subcategory).split(' ')[0]}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Amazon-style Category Sections */}
+      <CategorySectionBlock categoryKey="Living Room" title={t('livingRoom')} />
+      <CategorySectionBlock categoryKey="Bedroom" title={t('bedroom')} />
+      <CategorySectionBlock categoryKey="Lighting" title={t('lighting')} />
+      <CategorySectionBlock categoryKey="Decor" title={t('decor')} />
 
       {/* Portfolio Section */}
       <PortfolioSection>
@@ -233,122 +429,17 @@ const NewHomepage = () => {
             Curated masterpieces that exemplify our commitment to quality craftsmanship and design excellence
           </p>
         </SectionHeader>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-          gap: '20px', 
-          padding: '20px 0' 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '16px',
+          padding: '0'
         }}>
           {products.slice(0, 6).map((product: any) => (
-            <div 
-              key={product.id} 
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                height: '100%', 
-                minWidth: '250px',
-                maxWidth: '300px',
-                margin: '0 auto'
-              }}
-            >
-              <ProductCard 
-                onClick={() => router.push(`/products/${product.slug || product.id}`)} 
-                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
-              >
-                <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url}>
-                </ProductImage>
-                <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1rem', margin: '8px 0 4px 0' }}>{product.name}</h4>
-                    <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0' }}>{product.description}</p>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '8px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                        <span style={{ fontWeight: 'bold', color: '#c19a6b', fontSize: '1.1rem' }}>
-                          ₹{(product.sale_price || product.price)?.toLocaleString()}
-                        </span>
-                        {product.sale_price && product.price > product.sale_price && (
-                          <>
-                            <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '0.85rem' }}>
-                              ₹{product.price?.toLocaleString()}
-                            </span>
-                            <span style={{
-                              backgroundColor: '#e74c3c',
-                              color: 'white',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              fontWeight: '600'
-                            }}>
-                              {Math.round(((product.price - product.sale_price) / product.price) * 100)}% OFF
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <button
-                          className="btn secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!user) {
-                            // Store the pending cart action in localStorage
-                            localStorage.setItem('pendingCartAction', JSON.stringify({
-                              product: product,
-                              quantity: 1
-                            }));
-                            // Trigger a global event or callback to show login modal
-                            window.dispatchEvent(new CustomEvent('showLoginModal', { detail: { product, quantity: 1 } }));
-                          } else {
-                            // User is authenticated, proceed with adding to cart using Zustand
-                            import('@/store/cartStore').then((module) => {
-                              module.useCartStore.getState().addItem({
-                                id: Date.now(), // Temporary ID
-                                product_id: product.id,
-                                quantity: 1,
-                                name: product.name,
-                                price: product.price,
-                                image_url: product.primary_image || product.image_url,
-                              });
-                            });
-                          }
-                          }}
-                          style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minWidth: '40px', position: 'relative', zIndex: 1 }}
-                          aria-label="Add to cart"
-                        >
-                          <i className="fas fa-shopping-cart"></i>
-                        </button>
-                        {(() => {
-                          const cartItem = cartItems.find(item => item.product_id === product.id);
-                          return cartItem ? (
-                            <span style={{
-                              position: 'absolute',
-                              top: '-10px',
-                              right: '-10px',
-                              backgroundColor: '#e74c3c',
-                              color: 'white',
-                              borderRadius: '50%',
-                              width: '20px',
-                              height: '20px',
-                              fontSize: '0.7rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 'bold',
-                              border: '2px solid white',
-                              zIndex: 2,
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                            }}>
-                              {cartItem.quantity}
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </ProductInfo>
-              </ProductCard>
-            </div>
+            <ProductCardWithVariant
+              key={product.id}
+              product={product}
+            />
           ))}
         </div>
         <div className="section-footer">

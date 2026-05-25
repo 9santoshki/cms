@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
@@ -38,6 +38,7 @@ const EnhancedCartPage = () => {
   const loadServerCart = useCartStore(state => state.loadServerCart);
   const updateCartItem = useCartStore(state => state.updateItem);
   const removeFromCart = useCartStore(state => state.removeItem);
+  const [stockError, setStockError] = useState<string | null>(null);
 
   // Sync with server on every cart page visit so stale/deleted products are pruned
   useEffect(() => {
@@ -48,12 +49,20 @@ const EnhancedCartPage = () => {
     router.push(path);
   };
 
-  const updateQuantity = (productId: number, newQuantity: number, variantId?: number | null) => {
+  const updateQuantity = async (productId: number, newQuantity: number, variantId?: number | null) => {
+    setStockError(null); // Clear previous error
     if (newQuantity < 1) {
       removeFromCart(productId, variantId ?? null);
       return;
     }
-    updateCartItem(productId, newQuantity, variantId ?? null);
+    try {
+      await updateCartItem(productId, newQuantity, variantId ?? null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update quantity';
+      setStockError(message);
+      // Auto-clear after 5 seconds
+      setTimeout(() => setStockError(null), 5000);
+    }
   };
 
   const subtotal = calculateCartTotal(cartItems);
@@ -125,6 +134,24 @@ const EnhancedCartPage = () => {
             <div className="header-total">Total</div>
             <div className="header-actions"></div>
           </CartItemsHeader>
+
+          {/* Stock limit error message */}
+          {stockError && (
+            <div style={{
+              padding: '12px 16px',
+              marginBottom: '12px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="fas fa-exclamation-circle"></i>
+              {stockError}
+            </div>
+          )}
 
           <CartItemsList>
             {cartItems.map((item, index) => {

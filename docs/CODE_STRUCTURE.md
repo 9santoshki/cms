@@ -6,6 +6,15 @@
 • `api/` - Next.js API routes (auth, products, cart, orders, appointments, etc.)
 • `auth/` - Authentication pages and OAuth callback handling
 • `dashboard/` - Admin/moderator dashboard components
+  - `inventory/` - Inventory alerts page (out-of-stock, low-stock, no-supplier tabs, All Stock for editing any variant)
+  - `suppliers/` - Supplier management (create, edit, assign variants)
+  - `products/` - Product management with variant editing
+  - `orders/` - Order management and fulfillment
+  - `appointments/` - Consultation booking management
+  - `reviews/` - Review moderation
+  - `users/` - User management and role assignment
+  - `variants/` - Variant dictionary management
+  - `settings/` - Admin settings and configuration
 • `products/` - Product listing and detail pages
 • `[page-name]/` - Public-facing pages (shop, cart, checkout, about, etc.)
 
@@ -13,12 +22,16 @@
 • Reusable UI components (buttons, modals, forms)
 • Page-specific components (headers, footers, product cards)
 • Shared elements across the application
+• CategoryNav - Category navigation bar with dropdown menus (living room, dining, bedroom, etc.)
+• MiniVariantSelector - Compact variant selector for product cards
+• DashboardLayout - Shared admin dashboard layout wrapper
 
 ### src/context/
 • AuthContext - User session and authentication state
 • CartContext - Shopping cart management
 • ProductContext - Product catalog caching
 • UIContext - Modal states, loading indicators
+• LanguageContext - Internationalization (i18n) with English, Hindi, Kannada support
 • AppProvider - Combined provider wrapper
 
 ### src/lib/

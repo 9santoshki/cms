@@ -163,15 +163,15 @@ export const PortfolioHero = styled.section`
               url('/api/images/product_images%2F1767927658910-uprpaph78yh-hero-modern-office.jpg');
   background-size: cover;
   background-position: center;
-  height: 50vh;
+  height: 30vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: white;
-  margin: 40px 0 20px 0;
+  margin: 40px 0 10px 0;
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -192,45 +192,45 @@ export const PortfolioHero = styled.section`
   }
 
   h1 {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
+    font-size: 2rem;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
-    height: 40vh;
-    
+    height: 25vh;
+
     h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
-    
+
     p {
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
   }
 `;
 
 // Filter section with elegant styling
 export const PortfolioFilter = styled.section`
-  padding: 20px 0 40px;
+  padding: 12px 0 20px;
   background-color: white;
 
   .filter-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
     display: flex;
     justify-content: center;
   }
@@ -238,21 +238,21 @@ export const PortfolioFilter = styled.section`
   .filter-buttons {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 10px;
     flex-wrap: wrap;
     max-width: 1000px;
   }
 `;
 
 export const FilterButton = styled.button<{ $active?: boolean }>`
-  padding: 14px 28px;
+  padding: 8px 16px;
   background-color: ${props => props.$active ? '#c19a6b' : 'transparent'};
   color: ${props => props.$active ? 'white' : '#c19a6b'};
   border: 2px solid #c19a6b;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-size: 16px;
+  letter-spacing: 1px;
+  font-size: 13px;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   font-weight: 600;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -292,28 +292,28 @@ export const FilterButton = styled.button<{ $active?: boolean }>`
 
 // Portfolio grid with elegant styling
 export const PortfolioGrid = styled.section`
-  padding: 100px 0;
+  padding: 30px 0;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 
   .projects-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 
   .projects-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 50px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
     justify-content: center;
   }
 
   .no-projects {
     text-align: center;
-    padding: 80px 20px;
-    
+    padding: 40px 20px;
+
     h3 {
-      font-size: 2rem;
+      font-size: 1.2rem;
       color: #666;
       margin: 0;
       font-family: var(--font-playfair), 'Playfair Display', serif;
@@ -324,16 +324,16 @@ export const PortfolioGrid = styled.section`
 // Project card with elegant styling
 export const ProjectCard = styled.div`
   position: relative;
-  height: 450px;
+  height: 280px;
   border-radius: 0;
   overflow: hidden;
   box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.2);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
-  
+
   &:hover {
-    transform: translateY(-15px) scale(1.02);
-    box-shadow: 0 25px 50px -20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
   }
 `;
 
@@ -386,7 +386,7 @@ export const ProjectOverlay = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 30px 20px;
+  padding: 16px 12px;
   opacity: 0;
   transition: opacity 0.4s ease;
   box-sizing: border-box;
@@ -405,23 +405,23 @@ export const ProjectInfo = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 `;
 
 export const ProjectCategory = styled.span`
   display: inline-block;
-  padding: 6px 12px;
+  padding: 4px 10px;
   background: linear-gradient(135deg, #c19a6b, #a8825f);
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   margin: 0;
   font-weight: 500;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
 `;
 
 export const ProjectTitle = styled.h3`
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin: 0;
   color: white;
   font-weight: 400;
@@ -449,20 +449,20 @@ export const ProjectDescription = styled.p`
 
 export const ProjectButton = styled.button`
   width: auto;
-  min-width: 180px;
-  padding: 12px 30px;
+  min-width: 120px;
+  padding: 8px 16px;
   background-color: transparent;
   color: white;
   border: 2px solid white;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   font-weight: 600;
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   position: relative;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 12px;
   margin: 0;
 
   &::before {
@@ -505,7 +505,7 @@ export const ProjectButton = styled.button`
 
 // Call to action section with elegant styling
 export const PortfolioCTA = styled.section`
-  padding: 150px 0;
+  padding: 50px 0;
   background: linear-gradient(135deg, #222 0%, #333 100%);
   color: white;
   text-align: center;
@@ -532,37 +532,46 @@ export const PortfolioCTA = styled.section`
   }
 
   h2 {
-    font-size: 3.5rem;
-    margin-bottom: 30px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: white;
     font-family: var(--font-playfair), 'Playfair Display', serif;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-transform: uppercase;
   }
 
+  h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #c19a6b, transparent);
+    margin: 8px auto;
+  }
+
   p {
-    font-size: 1.4rem;
-    margin-bottom: 50px;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
     color: #ddd;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    line-height: 1.9;
+    line-height: 1.5;
     letter-spacing: 0.5px;
   }
 
   .cta-button {
-    padding: 22px 60px;
+    padding: 10px 24px;
     background-color: #c19a6b;
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 25px rgba(193, 154, 107, 0.4);
+    box-shadow: 0 4px 12px rgba(193, 154, 107, 0.4);
     display: inline-block;
     margin: 0 auto;
     border-radius: 0;

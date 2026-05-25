@@ -155,15 +155,15 @@ const DashboardSettingsPage = () => {
         <div style={{
           background: 'rgba(34, 197, 94, 0.1)',
           border: '1px solid rgba(34, 197, 94, 0.3)',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '12px',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '10px'
         }}>
-          <i className="fas fa-check-circle" style={{ fontSize: '20px', color: '#16a34a' }}></i>
-          <p style={{ color: '#16a34a', fontSize: '14px', fontWeight: '600', margin: 0 }}>
+          <i className="fas fa-check-circle" style={{ fontSize: '16px', color: '#16a34a' }}></i>
+          <p style={{ color: '#16a34a', fontSize: '13px', fontWeight: '600', margin: 0 }}>
             {successMessage}
           </p>
         </div>
@@ -173,15 +173,15 @@ const DashboardSettingsPage = () => {
         {/* Shipping Configuration */}
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '12px',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <i className="fas fa-shipping-fast" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <i className="fas fa-shipping-fast" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
               Shipping Configuration
             </h3>
           </div>
@@ -271,15 +271,15 @@ const DashboardSettingsPage = () => {
         {/* Tax Configuration */}
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '12px',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <i className="fas fa-receipt" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <i className="fas fa-receipt" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
               Tax Configuration
             </h3>
           </div>
@@ -375,36 +375,36 @@ const DashboardSettingsPage = () => {
         {/* Site Configuration */}
         <div style={{
           background: 'white',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '12px',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <i className="fas fa-cog" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <i className="fas fa-cog" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
               Site Information
             </h3>
           </div>
 
-          <div style={{ padding: '16px', background: 'rgba(193, 154, 107, 0.05)', borderRadius: '8px' }}>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0 }}>
+          <div style={{ padding: '12px', background: 'rgba(193, 154, 107, 0.05)', borderRadius: '6px' }}>
+            <p style={{ fontSize: '12px', color: '#666', lineHeight: '1.5', margin: 0 }}>
               Additional site configuration options will be available here. This includes site name, logo, contact information, and other general settings.
             </p>
           </div>
         </div>
 
         {/* Save Button */}
-        <div className="settings-action-buttons" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <div className="settings-action-buttons" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button
             type="button"
             onClick={loadSettings}
             style={{
-              padding: '10px 24px',
+              padding: '8px 16px',
               border: '1px solid #e8d5c4',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               background: 'white',
@@ -424,19 +424,19 @@ const DashboardSettingsPage = () => {
             type="submit"
             disabled={saving}
             style={{
-              padding: '10px 24px',
+              padding: '8px 16px',
               background: saving ? '#999' : 'linear-gradient(135deg, #c19a6b, #a67c52)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
+              borderRadius: '6px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: saving ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(193, 154, 107, 0.2)'
+              boxShadow: '0 2px 6px rgba(193, 154, 107, 0.2)'
             }}
           >
             {saving ? (

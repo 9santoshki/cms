@@ -98,50 +98,50 @@ const DashboardPage = () => {
       {/* Stats Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '20px',
-        marginBottom: '32px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '12px',
+        marginBottom: '16px'
       }}>
         {statCards.map((stat) => (
           <div
             key={stat.label}
             style={{
               background: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+              borderRadius: '8px',
+              padding: '16px',
+              boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
               border: '1px solid #e8d5c4',
               transition: 'all 0.3s ease',
               cursor: 'pointer'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(193, 154, 107, 0.15)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.15)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(193, 154, 107, 0.08)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(193, 154, 107, 0.08)';
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
                 background: `linear-gradient(135deg, ${stat.color}, ${stat.color}dd)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '20px'
+                fontSize: '16px'
               }}>
                 <i className={stat.icon}></i>
               </div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: '700', color: '#333', marginBottom: '4px' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#333', marginBottom: '2px' }}>
               {stat.value}
             </div>
-            <div style={{ fontSize: '13px', color: '#666', fontWeight: '500' }}>
+            <div style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>
               {stat.label}
             </div>
           </div>
@@ -151,24 +151,24 @@ const DashboardPage = () => {
       {/* Quick Actions */}
       <div style={{
         background: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        borderRadius: '8px',
+        padding: '16px',
+        boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4'
       }}>
         <h3 style={{
-          fontSize: '18px',
+          fontSize: '14px',
           fontWeight: '600',
           color: '#333',
-          margin: '0 0 20px 0',
+          margin: '0 0 12px 0',
           fontFamily: 'var(--font-playfair), "Playfair Display", serif'
         }}>
           Quick Actions
         </h3>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '12px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '8px'
         }}>
           {isAdmin && (
             <QuickAction href="/dashboard/products" icon="fas fa-plus" label="Add New Product" />
@@ -194,20 +194,20 @@ function QuickAction({ href, icon, label }: { href: string; icon: string; label:
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '16px',
-        borderRadius: '8px',
+        gap: '8px',
+        padding: '10px',
+        borderRadius: '6px',
         background: 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))',
         border: '1px solid rgba(193, 154, 107, 0.2)',
         textDecoration: 'none',
         color: '#333',
         fontWeight: '500',
-        fontSize: '14px',
+        fontSize: '13px',
         transition: 'all 0.2s ease'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.15), rgba(193, 154, 107, 0.08))';
-        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = 'linear-gradient(135deg, rgba(193, 154, 107, 0.08), rgba(193, 154, 107, 0.03))';

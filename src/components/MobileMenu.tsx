@@ -1,25 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (path: string) => void;
-  activePage?: string;
+  onOpenSearch?: () => void;
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({
   isOpen,
   onClose,
   onNavigate,
-  activePage = ''
+  onOpenSearch,
 }) => {
   const { user, logout, signInWithGoogle } = useAuth();
 
-  if (!isOpen) return null;
+  // Close on escape key and lock body scroll
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose]);
 
   const handleLogout = () => {
     logout();
@@ -36,241 +48,236 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     }
   };
 
+  const handleNav = (path: string) => {
+    onNavigate(path);
+    onClose();
+  };
+
+  const handleSearch = () => {
+    onClose();
+    if (onOpenSearch) onOpenSearch();
+  };
+
+  const menuItemStyle: React.CSSProperties = {
+    padding: '14px 20px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    color: '#333',
+    fontSize: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    borderBottom: '1px solid #f5f5f5',
+    minHeight: '48px', // Better touch target (44px minimum + padding)
+    touchAction: 'manipulation', // Remove tap delay on mobile
+  };
+
+  const categoryHeaderStyle: React.CSSProperties = {
+    padding: '14px 20px 10px',
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#c19a6b',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    background: '#f8f8f8',
+    marginTop: '8px',
+  };
+
+  const iconStyle: React.CSSProperties = {
+    width: '24px',
+    textAlign: 'center',
+    color: '#c19a6b',
+    fontSize: '16px',
+  };
+
+  // Menu items data
+  const shopCategories = [
+    { path: '/shop', icon: 'fa-th-large', label: 'All Products' },
+    { path: '/shop?category=Living Room', icon: 'fa-couch', label: 'Living Room' },
+    { path: '/shop?category=Dining Room', icon: 'fa-utensils', label: 'Dining Room' },
+    { path: '/shop?category=Bedroom', icon: 'fa-bed', label: 'Bedroom' },
+    { path: '/shop?category=Home Office', icon: 'fa-desktop', label: 'Home Office' },
+    { path: '/shop?category=Lighting', icon: 'fa-lightbulb', label: 'Lighting' },
+    { path: '/shop?category=Decor', icon: 'fa-palette', label: 'Decor & Accessories' },
+    { path: '/shop?category=Outdoor', icon: 'fa-tree', label: 'Outdoor' },
+  ];
+
+  const services = [
+    { path: '/portfolio', icon: 'fa-images', label: 'Portfolio' },
+    { path: '/services', icon: 'fa-pencil-ruler', label: 'Design Services' },
+    { path: '/booking', icon: 'fa-calendar-check', label: 'Book Consultation' },
+    { path: '/about', icon: 'fa-info-circle', label: 'About Us' },
+    { path: '/contact', icon: 'fa-envelope', label: 'Contact' },
+  ];
+
   return (
-    <div
-      className="mobile-menu"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        width: '100%',
-        backgroundColor: 'white',
-        boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-        padding: '20px 0',
-        zIndex: 999,
-        gap: '0'
-      }}
-    >
+    <>
+      {/* Backdrop overlay */}
       <div
-        className="mobile-menu-item"
+        onClick={onClose}
         style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          opacity: isOpen ? 1 : 0,
+          visibility: isOpen ? 'visible' : 'hidden',
+          transition: 'opacity 0.3s ease, visibility 0.3s ease',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/'); onClose(); }}
-      >
-        Home
-      </div>
+      />
+
+      {/* Menu panel */}
       <div
-        className="mobile-menu-item"
+        className="mobile-menu"
         style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '85vw',
+          maxWidth: '320px',
+          height: '100vh',
+          backgroundColor: 'white',
+          boxShadow: '4px 0 20px rgba(0,0,0,0.25)',
+          zIndex: 1001,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/shop'); onClose(); }}
       >
-        Shop
-      </div>
-      <div
-        className="mobile-menu-item"
-        style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/portfolio'); onClose(); }}
-      >
-        Portfolio
-      </div>
-      <div
-        className="mobile-menu-item"
-        style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/services'); onClose(); }}
-      >
-        Services
-      </div>
-      <div
-        className="mobile-menu-item"
-        style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/booking'); onClose(); }}
-      >
-        Book Consultation
-      </div>
-      {(user && (user.role === 'admin' || user.role === 'moderator')) && (
-        <div
-          className="mobile-menu-item"
-          style={{
-            padding: '15px 40px',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s',
-            color: '#333'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-          onClick={() => { onNavigate('/dashboard'); onClose(); }}
-        >
-          Dashboard
-        </div>
-      )}
-      {(user && user.role === 'supplier') && (
-        <div
-          className="mobile-menu-item"
-          style={{
-            padding: '15px 40px',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s',
-            color: '#333'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-          onClick={() => { onNavigate('/supplier'); onClose(); }}
-        >
-          My Dashboard
-        </div>
-      )}
-      <div
-        className="mobile-menu-item"
-        style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/about'); onClose(); }}
-      >
-        About
-      </div>
-      <div
-        className="mobile-menu-item"
-        style={{
-          padding: '15px 40px',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-          color: '#333'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-        onClick={() => { onNavigate('/contact'); onClose(); }}
-      >
-        Contact
-      </div>
-      {!user && (
-        <div
-          className="mobile-menu-item"
-          style={{
-            padding: '15px 40px',
-            backgroundColor: '#fef3c7', // amber-100 equivalent
-            color: '#92400e', // amber-700 equivalent
-            cursor: 'pointer',
-            transition: 'background-color 0.2s',
-            fontWeight: '500'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fde68a'} // amber-200
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
-          onClick={handleSignIn}
-        >
-          <i className="fas fa-user" style={{ marginRight: '10px' }}></i>
-          Sign In
-        </div>
-      )}
-      {user && (
-        <div>
-          <div
-            className="mobile-menu-item"
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 20px',
+          background: 'linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%)',
+          color: 'white',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}>
+          <span style={{ fontWeight: '600', fontSize: '16px' }}>Menu</span>
+          <button
+            onClick={onClose}
             style={{
-              padding: '15px 40px',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '24px',
               cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              color: '#333'
+              padding: '8px',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-            onClick={() => { onNavigate('/account'); onClose(); }}
           >
-            <i className="fas fa-user-circle" style={{ marginRight: '10px' }}></i>
-            Account
-          </div>
-          <div
-            className="mobile-menu-item"
-            style={{
-              padding: '15px 40px',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              color: '#333'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-            onClick={handleLogout}
-          >
-            <i className="fas fa-sign-out-alt" style={{ marginRight: '10px' }}></i>
-            Logout
-          </div>
-          {(user.role === 'admin' || user.role === 'moderator') && (
-            <div
-              className="mobile-menu-item"
-              style={{
-                padding: '15px 40px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                color: '#333'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-              onClick={() => { onNavigate('/dashboard'); onClose(); }}
-            >
-              <i className="fas fa-tachometer-alt" style={{ marginRight: '10px' }}></i>
-              Dashboard
-            </div>
-          )}
-          {user.role === 'supplier' && (
-            <div
-              className="mobile-menu-item"
-              style={{
-                padding: '15px 40px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                color: '#333'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
-              onClick={() => { onNavigate('/supplier'); onClose(); }}
-            >
-              <i className="fas fa-truck" style={{ marginRight: '10px' }}></i>
-              Supplier Dashboard
-            </div>
-          )}
+            <i className="fas fa-times"></i>
+          </button>
         </div>
-      )}
-    </div>
+
+        {/* Search */}
+        <div
+          style={{
+            ...menuItemStyle,
+            backgroundColor: '#f8f8f8',
+          }}
+          onClick={handleSearch}
+        >
+          <i className="fas fa-search" style={iconStyle}></i>
+          Search Products
+        </div>
+
+        {/* Shop Categories */}
+        <div style={categoryHeaderStyle}>
+          <i className="fas fa-shopping-bag" style={{ marginRight: '8px' }}></i>
+          Shop Categories
+        </div>
+        {shopCategories.map((item) => (
+          <div
+            key={item.path}
+            style={menuItemStyle}
+            onClick={() => handleNav(item.path)}
+          >
+            <i className={`fas ${item.icon}`} style={iconStyle}></i>
+            {item.label}
+          </div>
+        ))}
+
+        {/* Services */}
+        <div style={{ ...categoryHeaderStyle, marginTop: '8px' }}>
+          <i className="fas fa-concierge-bell" style={{ marginRight: '8px' }}></i>
+          Services & Info
+        </div>
+        {services.map((item) => (
+          <div
+            key={item.path}
+            style={menuItemStyle}
+            onClick={() => handleNav(item.path)}
+          >
+            <i className={`fas ${item.icon}`} style={iconStyle}></i>
+            {item.label}
+          </div>
+        ))}
+
+        {/* Dashboard links for admin/moderator */}
+        {user && (user.role === 'admin' || user.role === 'moderator') && (
+          <div style={menuItemStyle} onClick={() => handleNav('/dashboard')}>
+            <i className="fas fa-tachometer-alt" style={iconStyle}></i>
+            Dashboard
+          </div>
+        )}
+        {user && user.role === 'supplier' && (
+          <div style={menuItemStyle} onClick={() => handleNav('/supplier')}>
+            <i className="fas fa-truck" style={iconStyle}></i>
+            My Dashboard
+          </div>
+        )}
+
+        {/* Auth section */}
+        <div style={{ ...categoryHeaderStyle, marginTop: '8px' }}>
+          <i className="fas fa-user" style={{ marginRight: '8px' }}></i>
+          Account
+        </div>
+        {!user && (
+          <div
+            style={{
+              ...menuItemStyle,
+              backgroundColor: '#fef3c7',
+              color: '#92400e',
+              fontWeight: '500',
+            }}
+            onClick={handleSignIn}
+          >
+            <i className="fas fa-sign-in-alt" style={iconStyle}></i>
+            Sign In
+          </div>
+        )}
+        {user && (
+          <>
+            <div style={menuItemStyle} onClick={() => handleNav('/account')}>
+              <i className="fas fa-user-circle" style={iconStyle}></i>
+              My Account
+            </div>
+            <div style={menuItemStyle} onClick={() => handleNav('/orders')}>
+              <i className="fas fa-shopping-bag" style={iconStyle}></i>
+              My Orders
+            </div>
+            <div style={menuItemStyle} onClick={handleLogout}>
+              <i className="fas fa-sign-out-alt" style={iconStyle}></i>
+              Logout
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 };
 

@@ -72,7 +72,7 @@ const InventoryPage = () => {
   const [notifySupplier, setNotifySupplier] = useState<SupplierInfo | null>(null); // null = all
   const [adminNote, setAdminNote]           = useState('');
   const [notifying, setNotifying]           = useState(false);
-  const [notifyResult, setNotifyResult]     = useState<string | null>(null);
+  const [notifyResult, setNotifyResult]     = useState<ModalResult | null>(null);
 
   // Edit-stock modal state
   const [editTarget, setEditTarget]   = useState<EditTarget | null>(null);
@@ -216,7 +216,7 @@ const InventoryPage = () => {
     setNotifyVariant(variant);
     setNotifySupplier(supplier);
     setAdminNote('');
-    setNotifyResult(null);
+    setNotifyResult(null);  // ModalResult | null — typed reset is fine
   };
 
   const handleNotify = async () => {
@@ -234,7 +234,7 @@ const InventoryPage = () => {
         }),
       });
       const json = await res.json();
-      setNotifyResult(json.data?.message ?? json.error ?? 'Done');
+      setNotifyResult({ ok: json.success, message: json.data?.message ?? json.error ?? 'Done' });
       if (json.success) {
         // Brief success pause, then close + refresh
         setTimeout(() => {
@@ -243,7 +243,7 @@ const InventoryPage = () => {
         }, 1800);
       }
     } catch {
-      setNotifyResult('Failed to send — check email configuration.');
+      setNotifyResult({ ok: false, message: 'Failed to send — check email configuration.' });
     } finally {
       setNotifying(false);
     }
@@ -252,9 +252,9 @@ const InventoryPage = () => {
   // ── Styles ───────────────────────────────────────────────────────────────────
   const card = {
     background: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 4px 12px rgba(193,154,107,0.08)',
+    borderRadius: '8px',
+    padding: '16px',
+    boxShadow: '0 2px 8px rgba(193,154,107,0.08)',
     border: '1px solid #e8d5c4',
   } as const;
 
@@ -285,40 +285,12 @@ const InventoryPage = () => {
   return (
     <DashboardLayout title="Inventory Alerts" description="Monitor out-of-stock and low-stock variants, and notify suppliers.">
 
-      {/* ── Summary stat cards ── */}
-      {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'Out of Stock',      value: summary.outOfStockCount,  color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   tab: 'out-of-stock' as Tab },
-            { label: 'No Supplier',       value: summary.noSupplierCount,  color: '#6b7280', bg: 'rgba(107,114,128,0.08)', tab: 'no-supplier'  as Tab },
-            { label: `Low Stock (≤${summary.threshold})`, value: summary.lowStockCount, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', tab: 'low-stock' as Tab },
-          ].map(s => (
-            <button
-              key={s.tab}
-              onClick={() => handleTabChange(s.tab)}
-              style={{
-                ...card,
-                padding: '20px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                outline: activeTab === s.tab ? `2px solid ${s.color}` : '2px solid transparent',
-                transition: 'outline 0.15s',
-                background: s.bg,
-              }}
-            >
-              <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{s.label}</div>
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* ── Main table card ── */}
       <div style={card}>
 
         {/* Header row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {([
               { t: 'out-of-stock' as Tab, label: 'Out of Stock', count: outOfStock.length },
               { t: 'low-stock'    as Tab, label: 'Low Stock',    count: lowStock.length },
@@ -329,10 +301,10 @@ const InventoryPage = () => {
                 key={t}
                 onClick={() => handleTabChange(t)}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
                   border: t === 'all' ? '2px solid #c19a6b' : 'none',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
                   background: activeTab === t ? '#c19a6b' : t === 'all' ? 'white' : '#f5f0eb',
@@ -342,8 +314,8 @@ const InventoryPage = () => {
                 {label}
                 {count !== null && (
                   <span style={{
-                    marginLeft: 6, padding: '2px 7px',
-                    borderRadius: 10, fontSize: 11,
+                    marginLeft: 4, padding: '1px 6px',
+                    borderRadius: 8, fontSize: 10,
                     background: activeTab === t ? 'rgba(255,255,255,0.25)' : '#e8d5c4',
                     color: activeTab === t ? 'white' : '#c19a6b',
                   }}>
@@ -359,30 +331,30 @@ const InventoryPage = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search product, variant, SKU, supplier…"
-            style={{ padding: '9px 14px', border: '1px solid #e8d5c4', borderRadius: 8, fontSize: 13, minWidth: 260 }}
+            style={{ padding: '6px 10px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, minWidth: 200 }}
           />
         </div>
 
         {/* Table */}
         {activeTab === 'all' && allLoading ? (
-          <div style={{ textAlign: 'center', padding: '48px 24px', color: '#888' }}>
-            <div style={{ width: 36, height: 36, border: '3px solid #f0f0f0', borderTop: '3px solid #c19a6b', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-            <p style={{ margin: 0, fontSize: 14 }}>Loading all variants…</p>
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#888' }}>
+            <div style={{ width: 28, height: 28, border: '3px solid #f0f0f0', borderTop: '3px solid #c19a6b', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 8px' }} />
+            <p style={{ margin: 0, fontSize: 13 }}>Loading all variants…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 24px', color: '#888' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>{EMPTY_STATE[activeTab].icon}</div>
-            <p style={{ margin: 0, fontSize: 15, color: '#555' }}>
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#888' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>{EMPTY_STATE[activeTab].icon}</div>
+            <p style={{ margin: 0, fontSize: 14, color: '#555' }}>
               {search ? 'No items match your search.' : EMPTY_STATE[activeTab].text}
             </p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #f0ebe5' }}>
                   {['Product / Variant', 'SKU', 'Stock', 'Supplier(s)', 'Last Updated', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#999', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#999', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
                   ))}
@@ -395,31 +367,31 @@ const InventoryPage = () => {
                     <tr key={v.variant_id} style={{ borderBottom: '1px solid #f9f6f3' }}>
 
                       {/* Product / Variant */}
-                      <td style={{ padding: '14px 12px' }}>
-                        <div style={{ fontWeight: 600, color: '#1a1a1a' }}>{v.product_name}</div>
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: 13 }}>{v.product_name}</div>
                         {v.variant_name && (
-                          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{v.variant_name}</div>
+                          <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{v.variant_name}</div>
                         )}
                         {v.product_status === 'draft' && (
-                          <span style={{ display: 'inline-block', marginTop: 4, padding: '2px 8px', background: '#f3f4f6', color: '#6b7280', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ display: 'inline-block', marginTop: 2, padding: '1px 6px', background: '#f3f4f6', color: '#6b7280', borderRadius: 3, fontSize: 10, fontWeight: 600 }}>
                             DRAFT
                           </span>
                         )}
                       </td>
 
                       {/* SKU */}
-                      <td style={{ padding: '14px 12px', color: '#666', fontFamily: 'monospace', fontSize: 12 }}>
+                      <td style={{ padding: '10px 8px', color: '#666', fontFamily: 'monospace', fontSize: 11 }}>
                         {v.sku || <span style={{ color: '#ccc' }}>—</span>}
                       </td>
 
                       {/* Stock badge */}
-                      <td style={{ padding: '14px 12px' }}>
+                      <td style={{ padding: '10px 8px' }}>
                         <span style={{
                           display: 'inline-block',
-                          padding: '4px 10px',
-                          borderRadius: 20,
+                          padding: '3px 8px',
+                          borderRadius: 16,
                           fontWeight: 700,
-                          fontSize: 13,
+                          fontSize: 12,
                           background: isZero ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
                           color:      isZero ? '#ef4444'             : '#d97706',
                         }}>
@@ -428,34 +400,34 @@ const InventoryPage = () => {
                       </td>
 
                       {/* Suppliers */}
-                      <td style={{ padding: '14px 12px', maxWidth: 220 }}>
+                      <td style={{ padding: '10px 8px', maxWidth: 180 }}>
                         {v.suppliers.length === 0 ? (
-                          <span style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(107,114,128,0.1)', color: '#6b7280', fontSize: 12, fontWeight: 600 }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 16, background: 'rgba(107,114,128,0.1)', color: '#6b7280', fontSize: 11, fontWeight: 600 }}>
                             ⚠ None assigned
                           </span>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {v.suppliers.map(s => (
-                              <div key={s.supplier_id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 500, color: '#333' }}>{s.company_name}</span>
-                                <span style={{ fontSize: 11, color: s.supplier_stock > 0 ? '#22c55e' : '#ef4444' }}>
+                              <div key={s.supplier_id} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 500, color: '#333', fontSize: 12 }}>{s.company_name}</span>
+                                <span style={{ fontSize: 10, color: s.supplier_stock > 0 ? '#22c55e' : '#ef4444' }}>
                                   ({s.supplier_stock} units)
                                 </span>
                                 {!s.is_active && (
-                                  <span style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>inactive</span>
+                                  <span style={{ fontSize: 10, color: '#9ca3af', fontStyle: 'italic' }}>inactive</span>
                                 )}
                                 <button
                                   onClick={() => openEditStock(v, s)}
                                   title="Edit stock"
                                   style={{
-                                    padding: '2px 6px',
-                                    fontSize: 11,
+                                    padding: '1px 4px',
+                                    fontSize: 10,
                                     background: 'rgba(193,154,107,0.12)',
                                     color: '#c19a6b',
                                     border: '1px solid rgba(193,154,107,0.3)',
-                                    borderRadius: 4,
+                                    borderRadius: 3,
                                     cursor: 'pointer',
-                                    lineHeight: 1.4,
+                                    lineHeight: 1.3,
                                   }}
                                 >
                                   ✏ Edit
@@ -467,13 +439,13 @@ const InventoryPage = () => {
                       </td>
 
                       {/* Last updated */}
-                      <td style={{ padding: '14px 12px', color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '10px 8px', color: '#888', fontSize: 11, whiteSpace: 'nowrap' }}>
                         {timeAgo(v.last_stock_update)}
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: '14px 12px' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {v.suppliers.length === 0 ? (
                             <button
                               onClick={() => router.push('/dashboard/suppliers')}
@@ -666,18 +638,15 @@ const InventoryPage = () => {
             </div>
 
             {/* Result banner */}
-            {notifyResult && (() => {
-              const isError = notifyResult.toLowerCase().includes('fail') || notifyResult.toLowerCase().includes('error');
-              return (
-                <div style={{
-                  padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: 13,
-                  background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
-                  color:      isError ? '#dc2626'              : '#15803d',
-                }}>
-                  {notifyResult}
-                </div>
-              );
-            })()}
+            {notifyResult && (
+              <div style={{
+                padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: 13,
+                background: notifyResult.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                color:      notifyResult.ok ? '#15803d'              : '#dc2626',
+              }}>
+                {notifyResult.message}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <button

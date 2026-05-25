@@ -10,6 +10,13 @@ This documentation directory contains detailed information about the CMS (Color 
 • API.md - API endpoint specifications and authentication requirements
 • DEPLOYMENT.md - Environment setup and deployment procedures
 • CLOUDFLARE.md - Cloudflare CDN configuration, caching issues, and page rules
+• EMAIL_SETUP.md - Email service configuration (Resend)
+• ORDER_MANAGEMENT.md - Order processing and fulfillment workflows
+• PRODUCT_PRICING.md - Product pricing model and display logic
+• PRICING_MODEL.md - Pricing fields and calculation
+• VARIANTS.md - Product variants system (SKUs, options, stock)
+• SUPPLIERS.md - Supplier management and inventory delegation
+• INVENTORY.md - Admin inventory alerts and stock management
 • DECISIONS.md - Technical decisions and their rationales
 • WIREFRAME.md - Page structure and navigation flow
 

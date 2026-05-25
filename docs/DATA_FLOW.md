@@ -31,6 +31,15 @@
 5. Updates inventory and clears user's cart
 6. Returns order confirmation
 
+### Inventory Management Flow
+1. Admin/moderator visits `/dashboard/inventory`
+2. API returns out-of-stock and low-stock variants with supplier info
+3. Admin can edit supplier-specific stock or notify suppliers
+4. Stock updates logged in `inventory_logs` for audit trail
+5. Supplier receives email notification with dashboard link
+6. Supplier updates stock via their dashboard (`/supplier`)
+7. Changes propagate to variant's total stock quantity
+
 ## Data Ownership
 • Database owns: User profiles, product catalog, orders, cart items, appointments
 • Client stores: Session JWT in httpOnly cookie, cart in localStorage

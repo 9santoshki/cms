@@ -163,15 +163,15 @@ export const AboutHero = styled.section`
               url('/api/images/product_images%2F1767928799547-5xb59u8o1aa-about-hero.jpg');
   background-size: cover;
   background-position: center;
-  height: 50vh;
+  height: 30vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: white;
-  margin: 40px 0 20px 0;
+  margin: 40px 0 10px 0;
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -192,45 +192,45 @@ export const AboutHero = styled.section`
   }
 
   h1 {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
+    font-size: 2rem;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
-    height: 40vh;
-    
+    height: 25vh;
+
     h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
-    
+
     p {
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
   }
 `;
 
 // About content with elegant styling
 export const AboutContent = styled.section`
-  padding: 40px 0 80px;
+  padding: 20px 0 40px;
   background-color: white;
 
   .content-wrapper {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 20px;
   }
 `;
 
@@ -238,50 +238,48 @@ export const AboutContent = styled.section`
 export const AboutIntro = styled.div`
   text-align: center;
   max-width: 800px;
-  margin: 0 auto 60px;
-  
+  margin: 0 auto 20px;
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
-  
+
   p {
-    font-size: 1.1rem;
-    line-height: 1.8;
+    font-size: 0.9rem;
+    line-height: 1.5;
     color: #555;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    margin-bottom: 20px;
+    margin: 0;
   }
 `;
 
 // Founder section with elegant layout
 export const FounderSection = styled.div`
-  margin: 60px 0;
-  
+  margin: 30px 0;
+
   .founder-content {
     max-width: 1200px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 50px;
+    gap: 30px;
     align-items: center;
-    
+
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
     }
@@ -290,148 +288,145 @@ export const FounderSection = styled.div`
 
 export const FounderImage = styled.div`
   text-align: center;
-  
+
   .image-placeholder {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    height: 450px;
+    height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #999;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     border: 1px solid #eee;
-    border-radius: 0;
-    box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    
+
     &:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px -8px rgba(0, 0, 0, 0.15);
     }
   }
 `;
 
 export const FounderInfo = styled.div`
   text-align: left;
-  
+
   h3 {
-    font-size: 2.2rem;
-    margin-bottom: 15px;
+    font-size: 1.3rem;
+    margin-bottom: 4px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   h4 {
-    font-size: 1.4rem;
+    font-size: 0.95rem;
     color: #c19a6b;
-    margin-bottom: 30px;
+    margin-bottom: 12px;
     font-weight: 500;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   }
-  
+
   p {
     color: #555;
-    margin-bottom: 25px;
-    line-height: 1.9;
+    margin-bottom: 10px;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
   }
-  
+
   .awards {
-    margin-top: 40px;
+    margin-top: 16px;
   }
-  
+
   .awards h5 {
-    font-size: 1.5rem;
-    margin: 40px 0 20px 0;
+    font-size: 1rem;
+    margin: 16px 0 10px 0;
     color: #222;
     font-weight: 500;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     position: relative;
-    padding-bottom: 10px;
+    padding-bottom: 6px;
   }
-  
+
   .awards h5::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 60px;
+    width: 40px;
     height: 2px;
     background: #c19a6b;
   }
-  
+
   .awards ul {
     list-style: none;
     padding: 0;
   }
-  
+
   .awards ul li {
-    padding: 12px 0;
+    padding: 6px 0;
     border-bottom: 1px solid #eee;
     color: #666;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     position: relative;
-    padding-left: 25px;
+    padding-left: 16px;
+    font-size: 12px;
   }
-  
+
   .awards ul li::before {
     content: '•';
     color: #c19a6b;
     position: absolute;
     left: 0;
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 `;
 
 // Philosophy section with elegant grid
 export const PhilosophySection = styled.div`
-  margin: 60px 0;
+  margin: 20px 0;
   text-align: center;
-  
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 50px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 export const PhilosophyGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
   justify-content: center;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 `;
 
 export const PhilosophyCard = styled.div`
   background-color: white;
-  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: none;
   position: relative;
   z-index: 1;
-  padding: 50px 35px;
+  padding: 20px;
   text-align: center;
 
   &::before {
@@ -448,100 +443,98 @@ export const PhilosophyCard = styled.div`
   }
 
   &:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
+
     &::before {
       opacity: 1;
     }
   }
-  
+
   .philosophy-icon {
-    font-size: 3.5rem;
+    font-size: 2rem;
     color: #c19a6b;
-    margin-bottom: 25px;
+    margin-bottom: 10px;
     transition: transform 0.4s ease;
   }
-  
+
   &:hover .philosophy-icon {
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
-  
+
   h3 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
+    font-size: 1rem;
+    margin-bottom: 8px;
     color: #222;
     font-weight: 400;
     letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   p {
     color: #666;
-    line-height: 1.8;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
+    margin: 0;
   }
 `;
 
 // Team section with elegant styling
 export const TeamSection = styled.div`
-  margin: 60px 0;
+  margin: 20px 0;
   text-align: center;
-  
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 50px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 export const TeamGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
   justify-content: center;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 `;
 
 export const TeamMember = styled.div`
   background-color: white;
-  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   border: none;
   text-align: center;
-  padding: 40px 30px;
+  padding: 16px;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   &:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
   }
-  
+
   .member-image {
-    margin-bottom: 30px;
-    
+    margin-bottom: 12px;
+
     .image-placeholder {
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      height: 250px;
+      height: 140px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -549,76 +542,73 @@ export const TeamMember = styled.div`
       font-family: var(--font-montserrat), 'Montserrat', sans-serif;
       border: 1px solid #eee;
       border-radius: 0;
-      box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
     }
   }
-  
+
   h3 {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
     color: #222;
     font-weight: 400;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   h4 {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     color: #c19a6b;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     font-weight: 500;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   }
-  
+
   p {
     color: #666;
-    line-height: 1.8;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 12px;
   }
 `;
 
 // Values section with elegant layout
 export const ValuesSection = styled.div`
-  margin: 60px 0;
+  margin: 20px 0;
   text-align: center;
-  
+
   h2 {
-    font-size: 2.5rem;
-    margin-bottom: 50px;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
     color: #222;
-    position: relative;
     font-weight: 400;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
-  
+
   h2:after {
     content: '';
     display: block;
-    width: 120px;
-    height: 3px;
+    width: 60px;
+    height: 2px;
     background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 15px auto;
-    opacity: 0.7;
+    margin: 8px auto;
   }
 `;
 
 export const ValuesList = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 50px;
-  max-width: 1400px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 `;
 
 export const ValueItem = styled.div`
   text-align: center;
-  padding: 50px 35px;
+  padding: 20px;
   background-color: white;
-  border-radius: 0;
-  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: none;
   position: relative;
@@ -638,28 +628,29 @@ export const ValueItem = styled.div`
   }
 
   &:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
+
     &::before {
       opacity: 1;
     }
   }
-  
+
   h3 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
+    font-size: 1rem;
+    margin-bottom: 8px;
     color: #222;
     font-weight: 400;
     letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
   }
-  
+
   p {
     color: #666;
-    line-height: 1.8;
+    line-height: 1.5;
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
+    margin: 0;
   }
 `;
 

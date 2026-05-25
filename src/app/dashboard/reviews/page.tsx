@@ -165,31 +165,52 @@ export default function ReviewsModerationPage() {
       title="Reviews Moderation"
       description="Approve, reject, or delete user reviews for products"
     >
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+          .review-card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 4px !important;
+          }
+          .review-card {
+            flex-direction: column !important;
+          }
+          .review-actions {
+            width: 100% !important;
+            justify-content: flex-start !important;
+            margin-top: 8px !important;
+          }
+        }
+      `}</style>
       {/* Filters */}
       <div style={{
         background: 'white',
-        borderRadius: '12px',
-        padding: '16px 20px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        marginBottom: '12px',
+        boxShadow: '0 2px 12px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4',
         display: 'flex',
         alignItems: 'center',
-        gap: '16px',
+        gap: '12px',
         flexWrap: 'wrap'
       }}>
-        <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Filter by status:</span>
+        <span style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>Filter by status:</span>
         {['all', 'pending', 'approved', 'rejected'].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
             style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
+              padding: '6px 12px',
+              borderRadius: '6px',
               border: statusFilter === status ? '2px solid #c19a6b' : '1px solid #e8d5c4',
               background: statusFilter === status ? 'rgba(193, 154, 107, 0.1)' : 'white',
               color: statusFilter === status ? '#c19a6b' : '#666',
-              fontSize: '14px',
+              fontSize: '12px',
               fontWeight: statusFilter === status ? '600' : '500',
               cursor: 'pointer',
               textTransform: 'capitalize'
@@ -202,16 +223,16 @@ export default function ReviewsModerationPage() {
           onClick={fetchReviews}
           style={{
             marginLeft: 'auto',
-            padding: '8px 16px',
-            borderRadius: '8px',
+            padding: '6px 12px',
+            borderRadius: '6px',
             border: '1px solid #e8d5c4',
             background: 'white',
             color: '#666',
-            fontSize: '14px',
+            fontSize: '12px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}
         >
           <i className="fas fa-sync-alt"></i>
@@ -224,15 +245,15 @@ export default function ReviewsModerationPage() {
         <div style={{
           background: 'rgba(239, 68, 68, 0.1)',
           border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '12px',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '10px'
         }}>
-          <i className="fas fa-exclamation-circle" style={{ fontSize: '20px', color: '#ef4444' }}></i>
-          <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '600', margin: 0 }}>
+          <i className="fas fa-exclamation-circle" style={{ fontSize: '16px', color: '#ef4444' }}></i>
+          <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: '600', margin: 0 }}>
             {error}
           </p>
           <button
@@ -247,18 +268,18 @@ export default function ReviewsModerationPage() {
       {/* Reviews List */}
       <div style={{
         background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4',
         overflow: 'hidden'
       }}>
         {reviews.length === 0 ? (
-          <div style={{ padding: '64px 32px', textAlign: 'center' }}>
-            <i className="fas fa-comments" style={{ fontSize: '48px', color: '#d1d5db', marginBottom: '16px' }}></i>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+            <i className="fas fa-comments" style={{ fontSize: '32px', color: '#d1d5db', marginBottom: '10px' }}></i>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
               No Reviews Found
             </h3>
-            <p style={{ color: '#666', fontSize: '14px' }}>
+            <p style={{ color: '#666', fontSize: '12px' }}>
               {statusFilter !== 'all'
                 ? `No ${statusFilter} reviews at the moment.`
                 : 'No reviews have been submitted yet.'}
@@ -269,31 +290,33 @@ export default function ReviewsModerationPage() {
             {reviews.map((review, index) => (
               <div
                 key={review.id}
+                className="review-card"
                 style={{
-                  padding: '20px 24px',
+                  padding: '12px 16px',
                   borderBottom: index < reviews.length - 1 ? '1px solid #f0f0f0' : 'none',
                   display: 'flex',
-                  gap: '20px',
-                  alignItems: 'flex-start'
+                  gap: '12px',
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap'
                 }}
               >
                 {/* Review Content */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>
+                  <div className="review-card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
                       {review.user_name || 'Anonymous'}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#999' }}>
+                    <span style={{ fontSize: '10px', color: '#999' }}>
                       on
                     </span>
-                    <span style={{ fontSize: '14px', fontWeight: '500', color: '#c19a6b' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: '#c19a6b' }}>
                       {review.product_name || 'Unknown Product'}
                     </span>
                     <span
                       style={{
-                        padding: '4px 10px',
+                        padding: '2px 8px',
                         borderRadius: '50px',
-                        fontSize: '11px',
+                        fontSize: '10px',
                         fontWeight: '600',
                         textTransform: 'uppercase',
                         ...getStatusBadgeStyle(review.status)
@@ -303,15 +326,15 @@ export default function ReviewsModerationPage() {
                     </span>
                   </div>
 
-                  <div style={{ marginBottom: '8px' }}>
+                  <div style={{ marginBottom: '4px' }}>
                     {renderStars(review.rating)}
                   </div>
 
-                  <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6', margin: '0 0 8px 0' }}>
+                  <p style={{ fontSize: '12px', color: '#4b5563', lineHeight: '1.5', margin: '0 0 4px 0' }}>
                     {review.comment}
                   </p>
 
-                  <span style={{ fontSize: '12px', color: '#999' }}>
+                  <span style={{ fontSize: '10px', color: '#999' }}>
                     {new Date(review.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -323,24 +346,24 @@ export default function ReviewsModerationPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <div className="review-actions" style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   {review.status !== 'approved' && (
                     <button
                       onClick={() => handleUpdateStatus(review.id, 'approved')}
                       disabled={actionLoading === review.id}
                       style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
                         border: '1px solid rgba(34, 197, 94, 0.3)',
                         background: 'rgba(34, 197, 94, 0.1)',
                         color: '#16a34a',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         fontWeight: '600',
                         cursor: actionLoading === review.id ? 'not-allowed' : 'pointer',
                         opacity: actionLoading === review.id ? 0.6 : 1,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '4px'
                       }}
                     >
                       <i className="fas fa-check"></i>
@@ -353,18 +376,18 @@ export default function ReviewsModerationPage() {
                       onClick={() => handleUpdateStatus(review.id, 'rejected')}
                       disabled={actionLoading === review.id}
                       style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
                         border: '1px solid rgba(239, 68, 68, 0.3)',
                         background: 'rgba(239, 68, 68, 0.1)',
                         color: '#dc2626',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         fontWeight: '600',
                         cursor: actionLoading === review.id ? 'not-allowed' : 'pointer',
                         opacity: actionLoading === review.id ? 0.6 : 1,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '4px'
                       }}
                     >
                       <i className="fas fa-times"></i>
@@ -376,12 +399,12 @@ export default function ReviewsModerationPage() {
                     onClick={() => handleDelete(review.id)}
                     disabled={actionLoading === review.id}
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
                       border: '1px solid #e8d5c4',
                       background: 'white',
                       color: '#666',
-                      fontSize: '13px',
+                      fontSize: '12px',
                       cursor: actionLoading === review.id ? 'not-allowed' : 'pointer',
                       opacity: actionLoading === review.id ? 0.6 : 1
                     }}

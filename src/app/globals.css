@@ -331,6 +331,19 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-3px);
 }
 
+/* Product detail page - always white background, override dark mode */
+.product-detail-page {
+  background-color: white !important;
+  min-height: 100vh;
+}
+
+/* Force white background for product detail pages */
+html:has(.product-detail-page),
+html:has(.product-detail-page) body {
+  background: white !important;
+  background-color: white !important;
+}
+
 /* Prevent body scroll when modal is open */
 body.overflow-hidden {
   overflow: hidden;

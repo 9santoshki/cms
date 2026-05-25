@@ -2,18 +2,22 @@
 import styled from 'styled-components';
 
 // Shared header styles
-export const SharedHeader = styled.div`
+export const SharedHeader = styled.header`
   background-color: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 1000;
-  padding: 15px 0;
+  padding: 12px 0;
   font-family: 'Playfair Display', serif;
   transition: all 0.4s ease;
   border-bottom: 1px solid rgba(193, 154, 107, 0.1);
   width: 100%;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 
   @media (max-width: 768px) {
     padding: 10px 0;
@@ -297,38 +301,43 @@ export const NavIcon = styled.button`
 export const MobileMenuToggle = styled.button`
   display: none;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 5px;
+  padding: 8px;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+  touch-action: manipulation;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     display: flex;
   }
 
-  @media (max-width: 480px) {
-    padding: 3px;
+  &:hover {
+    background: rgba(193, 154, 107, 0.1);
+  }
+
+  &:active {
+    background: rgba(193, 154, 107, 0.2);
   }
 
   span {
-    width: 25px;
-    height: 3px;
+    width: 22px;
+    height: 2.5px;
     background-color: #333;
     margin: 3px 0;
-    transition: 0.3s;
+    transition: all 0.3s ease;
     border-radius: 2px;
 
     @media (max-width: 480px) {
       width: 20px;
-      height: 2.5px;
-      margin: 2.5px 0;
-    }
-
-    @media (max-width: 360px) {
-      width: 18px;
       height: 2px;
-      margin: 2px 0;
+      margin: 2.5px 0;
     }
   }
 `;

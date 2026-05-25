@@ -140,3 +140,38 @@ PGPASSWORD=<password> psql -h localhost -U <user> -d cmsdb -f scripts/migrations
 - Each supplier can have multiple variants
 - Remove assignment when supplier no longer handles that product
 - Supplier account can be deactivated without deleting assignments
+
+### Inventory Alerts Dashboard (`/dashboard/inventory`)
+
+Admins and moderators can monitor inventory across all variants:
+
+**Tabs:**
+- **Out of Stock** - Variants with zero stock requiring immediate attention
+- **Low Stock** - Variants below threshold (configurable)
+- **No Supplier** - Out-of-stock variants without assigned supplier
+- **All Stock** - Browse and edit any variant's supplier stock
+
+**Features:**
+- Summary cards showing counts for each category
+- Search by product name, variant name, SKU, or supplier
+- Edit supplier-specific stock directly from the table
+- Send restock request emails to suppliers
+- View last stock update timestamp
+- Links to edit product page
+
+### Editing Supplier Stock
+
+Admins can override supplier stock counts:
+1. Click "Edit" on a supplier in the inventory table
+2. Enter new stock quantity (non-negative integer)
+3. Add optional reason/note for the change
+4. Stock updates are logged in `inventory_logs` with `admin_update` type
+
+### Notifying Suppliers
+
+When variants are out of stock or low:
+1. Click "Notify" button on the variant row
+2. Optionally select specific supplier (or notify all)
+3. Add custom note to include in email
+4. Email sent via configured email service (Resend)
+5. Supplier receives link to their dashboard to update stock

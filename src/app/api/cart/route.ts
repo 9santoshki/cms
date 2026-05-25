@@ -184,6 +184,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Item removed from cart' });
     }
 
+    // ── Soft stock check for quantity updates ─────────────────────────────────────
+    // Unlike POST, we don't need "you already have X in cart" logic — the requested
+    // quantity IS the final quantity, so we just check against available stock.
+    if (validVariantId) {
+      const stockCheck = await checkVariantStock(validVariantId, quantity);
+      if (!stockCheck.available) {
+        if (stockCheck.stock === 0) {
+          return badRequest('This item is currently out of stock');
+        }
+        return badRequest(
+          `Only ${stockCheck.stock} units available. You requested ${quantity}.`
+        );
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // Try to update; if the item isn't in the DB yet (local/server state drift), insert it
     const updated = await updateCartItemQuantity(userId, product_id, quantity, validVariantId);
     if (!updated) {

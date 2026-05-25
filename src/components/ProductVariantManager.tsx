@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface VariantOptionType {
   id: number;
@@ -93,11 +93,8 @@ export default function ProductVariantManager({ productId }: Props) {
   // key = `${variantId}-${supplierId}` to track individual chip removal
   const [unassigningKey, setUnassigningKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [productId]);
-
-  const loadData = async () => {
+  // Full initial load — fetches reference data (option types, options, suppliers) + product-specific data.
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -140,7 +137,28 @@ export default function ProductVariantManager({ productId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  // Lightweight post-mutation refresh — only re-fetches the two product-specific endpoints
+  // (variants and supplier assignments). Reference data doesn't change during mutations.
+  const loadVariantsOnly = useCallback(async () => {
+    try {
+      const [varRes, assignRes] = await Promise.all([
+        fetch(`/api/admin/product-variants?product_id=${productId}`),
+        fetch(`/api/admin/supplier-variants?product_id=${productId}`),
+      ]);
+      const [varData, assignData] = await Promise.all([varRes.json(), assignRes.json()]);
+      if (varData.success) setVariants(varData.data);
+      if (assignData.success)
+        setVariantSupplierMap(assignData.data as Record<number, Array<{ supplier_id: number; company_name: string; stock_quantity: number }>>);
+    } catch {
+      setError('Failed to refresh variants');
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const optionsForType = (typeId: number) =>
     allOptions
@@ -157,8 +175,10 @@ export default function ProductVariantManager({ productId }: Props) {
     setAddError(null);
 
     const selectedOptionIds = Object.values(addSelections);
-    if (selectedOptionIds.length !== optionTypes.length) {
-      setAddError('Please select one option for every type.');
+    // Allow partial dimensions - user can select any combination of options
+    // At least one option is required to define the variant
+    if (selectedOptionIds.length === 0) {
+      setAddError('Please select at least one option to define the variant.');
       return;
     }
     if (!addPrice || parseFloat(addPrice) <= 0) {
@@ -188,7 +208,7 @@ export default function ProductVariantManager({ productId }: Props) {
         setAddPrice('');
         setAddSalePrice('');
         setAddSku('');
-        loadData();
+        loadVariantsOnly();
       } else {
         setAddError(data.error || 'Failed to add variant');
       }
@@ -227,7 +247,7 @@ export default function ProductVariantManager({ productId }: Props) {
       if (data.success) {
         flash('Variant updated!');
         setEditingId(null);
-        loadData();
+        loadVariantsOnly();
       } else {
         setError(data.error || 'Failed to update variant');
       }
@@ -248,10 +268,12 @@ export default function ProductVariantManager({ productId }: Props) {
       });
       const data = await res.json();
       if (data.success) {
-        loadData();
+        setVariants((prev) => prev.map((x) => (x.id === v.id ? { ...x, is_active: !v.is_active } : x)));
+      } else {
+        setError(data.error || 'Failed to toggle variant status');
       }
     } catch {
-      // silent
+      setError('Network error. Please try again.');
     }
   };
 
@@ -266,7 +288,7 @@ export default function ProductVariantManager({ productId }: Props) {
       const data = await res.json();
       if (data.success) {
         flash('Variant deleted.');
-        loadData();
+        loadVariantsOnly();
       } else {
         setError(data.error || 'Failed to delete variant');
       }
@@ -422,7 +444,7 @@ export default function ProductVariantManager({ productId }: Props) {
           marginBottom: '20px',
         }}>
           <p style={{ fontSize: '13px', fontWeight: '600', color: '#555', marginBottom: '16px', margin: '0 0 16px' }}>
-            Select one option per type, then fill in pricing details.
+            Select any combination of options to define this variant. At least one option is required.
           </p>
 
           {/* Option selectors */}
@@ -434,7 +456,7 @@ export default function ProductVariantManager({ productId }: Props) {
           }}>
             {optionTypes.map((type) => (
               <div key={type.id}>
-                <label style={labelStyle}>{type.display_name} *</label>
+                <label style={labelStyle}>{type.display_name}</label>
                 <select
                   value={addSelections[type.id] || ''}
                   onChange={(e) =>
@@ -445,7 +467,7 @@ export default function ProductVariantManager({ productId }: Props) {
                   }
                   style={inputStyle}
                 >
-                  <option value="">Select {type.display_name}</option>
+                  <option value="">Select {type.display_name} (optional)</option>
                   {optionsForType(type.id).map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {opt.display_value}
