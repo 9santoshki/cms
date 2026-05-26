@@ -8,7 +8,7 @@ export const HomepageContainer = styled.div`
   background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
   font-family: var(--font-montserrat), 'Montserrat', sans-serif;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
 `;
 
 // Main hero section with elegant overlay

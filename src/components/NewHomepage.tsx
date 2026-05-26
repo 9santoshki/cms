@@ -325,11 +325,9 @@ const NewHomepage = () => {
   }
 
   return (
-    <HomepageContainer style={{ paddingTop: '130px' }}>
+    <HomepageContainer>
       {/* Navigation Bar - Sticky */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
-        <Header activePage="home" />
-      </div>
+      <Header activePage="home" />
 
       {/* Hero Slider Section */}
       <Slider />
