@@ -8,6 +8,7 @@ import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
 import ProductCardWithVariant from './ProductCardWithVariant';
+import { HomepageSubcategory } from '../lib/db/categories';
 
 // Font Awesome import
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -58,46 +59,13 @@ import {
   CategoryProductsRow
 } from '../styles/NewHomepageStylesElegant';
 
-// Featured subcategories for quick navigation - 3 rows with real category images
-const FEATURED_SUBCATEGORIES = [
-  // Row 1 - Living Room & Dining
-  { category: 'Living Room', subcategory: 'Sofas & Sectionals', image: '/images/categories/sofas.jpg' },
-  { category: 'Living Room', subcategory: 'Coffee Tables', image: '/images/categories/coffee-tables.jpg' },
-  { category: 'Living Room', subcategory: 'TV & Entertainment Units', image: '/images/categories/tv-units.jpg' },
-  { category: 'Living Room', subcategory: 'Accent Chairs', image: '/images/categories/accent-chairs.jpg' },
-  { category: 'Living Room', subcategory: 'Side Tables', image: '/images/categories/side-tables.jpg' },
-  { category: 'Dining Room', subcategory: 'Dining Tables', image: '/images/categories/dining-tables.jpg' },
-  { category: 'Dining Room', subcategory: 'Dining Chairs', image: '/images/categories/dining-chairs.jpg' },
-  { category: 'Dining Room', subcategory: 'Bar Carts & Stools', image: '/images/categories/bar-stools.jpg' },
-
-  // Row 2 - Bedroom & Home Office
-  { category: 'Bedroom', subcategory: 'Beds & Headboards', image: '/images/categories/beds.jpg' },
-  { category: 'Bedroom', subcategory: 'Dressers & Chests', image: '/images/categories/dressers.jpg' },
-  { category: 'Bedroom', subcategory: 'Nightstands', image: '/images/categories/side-tables.jpg' },
-  { category: 'Bedroom', subcategory: 'Wardrobes', image: '/images/categories/dressers.jpg' },
-  { category: 'Bedroom', subcategory: 'Bedding & Throws', image: '/images/categories/bedding.jpg' },
-  { category: 'Home Office', subcategory: 'Desks & Work Tables', image: '/images/categories/desks.jpg' },
-  { category: 'Home Office', subcategory: 'Office Chairs', image: '/images/categories/office-chairs.jpg' },
-  { category: 'Home Office', subcategory: 'Bookcases', image: '/images/categories/bookcases.jpg' },
-
-  // Row 3 - Lighting, Decor & Outdoor
-  { category: 'Lighting', subcategory: 'Chandeliers', image: '/images/categories/chandeliers.jpg' },
-  { category: 'Lighting', subcategory: 'Table Lamps', image: '/images/categories/table-lamps.jpg' },
-  { category: 'Lighting', subcategory: 'Floor Lamps', image: '/images/categories/floor-lamps.jpg' },
-  { category: 'Lighting', subcategory: 'Pendant Lights', image: '/images/categories/pendant-lights.jpg' },
-  { category: 'Decor', subcategory: 'Wall Art & Prints', image: '/images/categories/wall-art.jpg' },
-  { category: 'Decor', subcategory: 'Mirrors', image: '/images/categories/mirrors.jpg' },
-  { category: 'Decor', subcategory: 'Vases & Planters', image: '/images/categories/vases.jpg' },
-  { category: 'Decor', subcategory: 'Candles', image: '/images/categories/candles.jpg' },
-  { category: 'Outdoor', subcategory: 'Patio Furniture', image: '/images/categories/patio.jpg' },
-  { category: 'Outdoor', subcategory: 'Garden Decor', image: '/images/categories/garden.jpg' },
-  { category: 'Outdoor', subcategory: 'Outdoor Dining', image: '/images/categories/outdoor-dining.jpg' },
-];
-
 const NewHomepage = () => {
   const router = useRouter();
   const { products, fetchProducts, loading, error } = useProduct();
   const { t, language } = useLanguage();
+
+  // Homepage subcategories from database
+  const [homepageSubcategories, setHomepageSubcategories] = useState<HomepageSubcategory[]>([]);
 
   // Memoize subcategory translation map (created once per language change)
   const subcategoryTranslationMap = useMemo(() => ({
@@ -149,10 +117,18 @@ const NewHomepage = () => {
 
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Fetch products and homepage categories on mount
   useEffect(() => {
-    // Fetch products when component mounts
     fetchProducts();
-  }, []); // Empty dependency array to run only once on mount
+    fetch('/api/categories/homepage')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setHomepageSubcategories(data.data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch homepage categories:', err));
+  }, []);
 
   const navigate = (path: string) => {
     router.push(path);
@@ -331,10 +307,10 @@ const NewHomepage = () => {
           gap: '10px',
           padding: '0'
         }}>
-          {FEATURED_SUBCATEGORIES.map((item, index) => (
+          {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
             <div
-              key={index}
-              onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category)}&subcategory=${encodeURIComponent(item.subcategory)}`)}
+              key={item.id}
+              onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -368,7 +344,7 @@ const NewHomepage = () => {
                 marginBottom: '8px',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                backgroundImage: `url('${item.image}')`,
+                backgroundImage: item.image ? `url('${item.image}')` : 'linear-gradient(135deg, #f5f5f5, #e8e8e8)',
                 border: '1px solid #f0f0f0'
               }}>
               </div>
@@ -380,7 +356,7 @@ const NewHomepage = () => {
                 lineHeight: '1.3',
                 maxWidth: '110px'
               }}>
-                {translateSubcategory(item.subcategory).split(' ')[0]}
+                {translateSubcategory(item.name).split(' ')[0]}
               </span>
             </div>
           ))}

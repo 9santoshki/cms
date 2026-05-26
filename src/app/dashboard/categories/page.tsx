@@ -13,6 +13,9 @@ interface Category {
   display_order: number;
   is_active: boolean;
   description: string | null;
+  image: string | null;
+  show_on_homepage: boolean;
+  show_in_menu: boolean;
   children?: Category[];
 }
 
@@ -62,6 +65,9 @@ export default function CategoriesPage() {
   const [editSlug, setEditSlug] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editOrder, setEditOrder] = useState('');
+  const [editImage, setEditImage] = useState('');
+  const [editShowOnHomepage, setEditShowOnHomepage] = useState(false);
+  const [editShowInMenu, setEditShowInMenu] = useState(true);
   const [savingCategory, setSavingCategory] = useState(false);
 
   // ── Add subcategory (per parent) ──
@@ -69,6 +75,9 @@ export default function CategoriesPage() {
   const [newSubName, setNewSubName] = useState('');
   const [newSubSlug, setNewSubSlug] = useState('');
   const [newSubOrder, setNewSubOrder] = useState('0');
+  const [newSubImage, setNewSubImage] = useState('');
+  const [newSubShowOnHomepage, setNewSubShowOnHomepage] = useState(false);
+  const [newSubShowInMenu, setNewSubShowInMenu] = useState(true);
   const [addingSub, setAddingSub] = useState(false);
 
   useEffect(() => {
@@ -136,6 +145,9 @@ export default function CategoriesPage() {
     setEditSlug(cat.slug);
     setEditDesc(cat.description || '');
     setEditOrder(cat.display_order.toString());
+    setEditImage(cat.image || '');
+    setEditShowOnHomepage(cat.show_on_homepage || false);
+    setEditShowInMenu(cat.show_in_menu !== false); // default true if undefined
   };
 
   const handleSave = async (id: number) => {
@@ -150,6 +162,9 @@ export default function CategoriesPage() {
           slug: editSlug || undefined,
           description: editDesc || null,
           display_order: parseInt(editOrder, 10) || 0,
+          image: editImage || null,
+          show_on_homepage: editShowOnHomepage,
+          show_in_menu: editShowInMenu,
         }),
       });
       const data = await res.json();
@@ -167,6 +182,15 @@ export default function CategoriesPage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: cat.id, is_active: !cat.is_active }),
+    });
+    loadCategories();
+  };
+
+  const handleToggleShowInMenu = async (cat: Category) => {
+    await fetch('/api/admin/categories', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: cat.id, show_in_menu: !cat.show_in_menu }),
     });
     loadCategories();
   };
@@ -199,13 +223,16 @@ export default function CategoriesPage() {
           slug: newSubSlug.trim() || undefined,
           parent_id: parentId,
           display_order: parseInt(newSubOrder, 10) || subcategoriesOf(parentId).length,
+          image: newSubImage.trim() || null,
+          show_on_homepage: newSubShowOnHomepage,
+          show_in_menu: newSubShowInMenu,
         }),
       });
       const data = await res.json();
       if (data.success) {
         showFlash(`"${newSubName}" added!`);
         setAddingSubParentId(null);
-        setNewSubName(''); setNewSubSlug(''); setNewSubOrder('0');
+        setNewSubName(''); setNewSubSlug(''); setNewSubOrder('0'); setNewSubImage(''); setNewSubShowOnHomepage(false); setNewSubShowInMenu(true);
         loadCategories();
       } else { showFlash(data.error || 'Failed', 'err'); }
     } catch { showFlash('Network error', 'err'); }
@@ -256,6 +283,19 @@ export default function CategoriesPage() {
           </span>
         </div>
       )}
+
+      {/* Legend for toggles */}
+      <div style={{ background: 'white', borderRadius: 8, padding: '8px 16px', marginBottom: 12, border: '1px solid #e8d5c4', display: 'flex', gap: 20, alignItems: 'center', fontSize: 11 }}>
+        <span style={{ color: '#888', fontWeight: 600 }}>Toggle Legend:</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 16, height: 10, borderRadius: 5, background: '#3b82f6' }}></span>
+          <span style={{ color: '#666' }}>Menu (show in nav bar vs "Other")</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 16, height: 10, borderRadius: 5, background: '#22c55e' }}></span>
+          <span style={{ color: '#666' }}>Active (category is visible)</span>
+        </span>
+      </div>
 
       {/* ── Add Category bar ── */}
       <div className="categories-header-bar" style={{
@@ -447,6 +487,14 @@ export default function CategoriesPage() {
                         }}>
                           {cat.slug}
                         </span>
+                        <span style={{
+                          marginLeft: 8, fontSize: 10, fontWeight: 600,
+                          background: cat.show_in_menu ? '#3b82f615' : '#6b728015',
+                          color: cat.show_in_menu ? '#3b82f6' : '#6b7280',
+                          borderRadius: 4, padding: '2px 6px',
+                        }}>
+                          {cat.show_in_menu ? 'MENU' : 'OTHER'}
+                        </span>
                         {cat.description && (
                           <span style={{ marginLeft: 10, fontSize: 12, color: '#888' }}>{cat.description}</span>
                         )}
@@ -465,6 +513,20 @@ export default function CategoriesPage() {
                     <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                       <SmallBtn icon="fa-edit" title="Edit" color="#c19a6b"
                         onClick={() => startEdit(cat)} />
+                      {/* Menu toggle */}
+                      <button onClick={() => handleToggleShowInMenu(cat)} title={cat.show_in_menu ? 'Hide from menu' : 'Show in menu'}
+                        style={{
+                          width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                          background: cat.show_in_menu ? '#3b82f6' : '#d1d5db', position: 'relative',
+                          transition: 'background 0.2s', flexShrink: 0,
+                        }}>
+                        <span style={{
+                          position: 'absolute', top: 3,
+                          left: cat.show_in_menu ? 22 : 3,
+                          width: 18, height: 18, borderRadius: '50%', background: 'white',
+                          transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        }} />
+                      </button>
                       {/* Active toggle */}
                       <button onClick={() => handleToggleActive(cat)} title={cat.is_active ? 'Deactivate' : 'Activate'}
                         style={{
@@ -498,7 +560,7 @@ export default function CategoriesPage() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 16 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid #f0ebe5' }}>
-                            {['Name', 'Slug', 'Order', 'Active', ''].map(h => (
+                            {['Name', 'Slug', 'Order', 'Menu', 'Homepage', 'Active', ''].map(h => (
                               <th key={h} style={{
                                 padding: '6px 10px', textAlign: 'left',
                                 fontSize: 11, fontWeight: 700, color: '#aaa',
@@ -537,6 +599,37 @@ export default function CategoriesPage() {
                                       onChange={e => setEditOrder(e.target.value)} />
                                   ) : (
                                     <span style={{ color: '#aaa' }}>{sub.display_order}</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '8px 10px' }}>
+                                  <button onClick={() => handleToggleShowInMenu(sub)}
+                                    style={{
+                                      width: 28, height: 16, borderRadius: 8, border: 'none', cursor: 'pointer',
+                                      background: sub.show_in_menu ? '#3b82f6' : '#d1d5db', position: 'relative',
+                                    }}>
+                                    <span style={{
+                                      position: 'absolute', top: 2,
+                                      left: sub.show_in_menu ? 14 : 2,
+                                      width: 12, height: 12, borderRadius: '50%', background: 'white',
+                                    }} />
+                                  </button>
+                                </td>
+                                <td style={{ padding: '8px 10px' }}>
+                                  {isEditingSub ? (
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                      <input type="checkbox" checked={editShowOnHomepage}
+                                        onChange={e => setEditShowOnHomepage(e.target.checked)}
+                                        style={{ width: 14, height: 14 }} />
+                                      <span style={{ fontSize: 11, color: '#666' }}>Show</span>
+                                    </label>
+                                  ) : (
+                                    <span style={{
+                                      background: sub.show_on_homepage ? '#22c55e20' : '#f5f5f5',
+                                      color: sub.show_on_homepage ? '#16a34a' : '#aaa',
+                                      padding: '2px 8px', borderRadius: 4, fontSize: 11,
+                                    }}>
+                                      {sub.show_on_homepage ? '✓' : '—'}
+                                    </span>
                                   )}
                                 </td>
                                 <td style={{ padding: '8px 10px' }}>
@@ -614,6 +707,27 @@ export default function CategoriesPage() {
                               value={newSubOrder} onChange={e => setNewSubOrder(e.target.value)} />
                           </div>
                         </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 10 }}>
+                          <div>
+                            <label style={labelStyle}>Image URL <span style={{ fontWeight: 400, color: '#aaa' }}>(for homepage)</span></label>
+                            <input style={inputStyle} placeholder="/images/categories/example.jpg"
+                              value={newSubImage} onChange={e => setNewSubImage(e.target.value)} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
+                            <input type="checkbox" checked={newSubShowOnHomepage}
+                              onChange={e => setNewSubShowOnHomepage(e.target.checked)}
+                              style={{ width: 16, height: 16 }} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>Homepage</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={newSubShowInMenu}
+                              onChange={e => setNewSubShowInMenu(e.target.checked)}
+                              style={{ width: 16, height: 16 }} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>Show in Menu Dropdown</span>
+                          </label>
+                        </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={() => handleAddSubcategory(cat.id)} disabled={addingSub}
                             style={{
@@ -625,7 +739,7 @@ export default function CategoriesPage() {
                             }}>
                             {addingSub ? <Spinner /> : <i className="fas fa-plus"></i>} Add Subcategory
                           </button>
-                          <button onClick={() => { setAddingSubParentId(null); setNewSubName(''); setNewSubSlug(''); setNewSubOrder('0'); }}
+                          <button onClick={() => { setAddingSubParentId(null); setNewSubName(''); setNewSubSlug(''); setNewSubOrder('0'); setNewSubImage(''); setNewSubShowOnHomepage(false); setNewSubShowInMenu(true); }}
                             style={{
                               padding: '7px 14px', background: 'transparent', color: '#888',
                               border: '1px solid #ddd', borderRadius: 7, fontSize: 12,

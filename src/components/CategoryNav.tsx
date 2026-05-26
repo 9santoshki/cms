@@ -38,6 +38,7 @@ interface Category {
   slug: string;
   parent_id: number | null;
   is_active: boolean;
+  show_in_menu: boolean;
   children?: Category[];
 }
 
@@ -53,6 +54,14 @@ const SERVICES_CATEGORY = {
     { id: 'about', name: 'About Us', icon: 'fa-info-circle', path: '/about' },
     { id: 'contact', name: 'Contact', icon: 'fa-envelope', path: '/contact' },
   ]
+};
+
+// Other category for categories not shown in main menu
+const OTHER_CATEGORY = {
+  id: 'other',
+  name: 'Other',
+  slug: 'other',
+  icon: 'fa-ellipsis-h',
 };
 
 interface CategoryNavProps {
@@ -208,38 +217,72 @@ const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory = '' }) => {
               </CategoryButton>
             </CategoryItem>
           ) : (
-            categories.map((category) => (
-              <CategoryItem
-                key={category.id}
-                onMouseEnter={() => handleCategoryHover(category.slug)}
-                onMouseLeave={handleCategoryLeave}
-                ref={(el) => { if (el) dropdownRefs.current[category.slug] = el; }}
-              >
-                <CategoryButton $active={activeCategory === category.slug}>
-                  <i className={`fas ${CATEGORY_ICONS[category.name] || DEFAULT_ICON}`}></i>
-                  {categoryNames[category.name] || category.name}
-                  <i className="fas fa-chevron-down"></i>
-                </CategoryButton>
+            (() => {
+              // Split categories into menu and other
+              const menuCategories = categories.filter(c => c.show_in_menu);
+              const otherCategories = categories.filter(c => !c.show_in_menu);
 
-                <CategoryDropdown
-                  $visible={openDropdown === category.slug}
-                  onMouseEnter={() => handleDropdownEnter(category.slug)}
-                  onMouseLeave={handleDropdownLeave}
-                >
+              return (
+                <>
+                  {/* Main menu categories */}
+                  {menuCategories.map((category) => (
+                    <CategoryItem
+                      key={category.id}
+                      onMouseEnter={() => handleCategoryHover(category.slug)}
+                      onMouseLeave={handleCategoryLeave}
+                      ref={(el) => { if (el) dropdownRefs.current[category.slug] = el; }}
+                    >
+                      <CategoryButton $active={activeCategory === category.slug}>
+                        <i className={`fas ${CATEGORY_ICONS[category.name] || DEFAULT_ICON}`}></i>
+                        {categoryNames[category.name] || category.name}
+                        <i className="fas fa-chevron-down"></i>
+                      </CategoryButton>
+
+                      <CategoryDropdown
+                        $visible={openDropdown === category.slug}
+                        onMouseEnter={() => handleDropdownEnter(category.slug)}
+                        onMouseLeave={handleDropdownLeave}
+                      >
                   <DropdownHeader>
                     <h4>{categoryNames[category.name] || category.name}</h4>
                     <p>{t('exploreCollection')}</p>
                   </DropdownHeader>
 
-                  {(category.children || []).map((sub) => (
-                    <SubcategoryLink
-                      key={sub.id}
-                      onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`)}
-                    >
-                      <i className={`fas ${CATEGORY_ICONS[sub.name] || DEFAULT_ICON}`}></i>
-                      {sub.name}
-                    </SubcategoryLink>
-                  ))}
+                  {/* Split subcategories by show_in_menu */}
+                  {(() => {
+                    const menuSubs = (category.children || []).filter(s => s.show_in_menu);
+                    const otherSubs = (category.children || []).filter(s => !s.show_in_menu);
+                    return (
+                      <>
+                        {menuSubs.map((sub) => (
+                          <SubcategoryLink
+                            key={sub.id}
+                            onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`)}
+                          >
+                            <i className={`fas ${CATEGORY_ICONS[sub.name] || DEFAULT_ICON}`}></i>
+                            {sub.name}
+                          </SubcategoryLink>
+                        ))}
+                        {otherSubs.length > 0 && (
+                          <>
+                            <DropdownDivider />
+                            <span style={{ fontSize: '10px', color: '#888', padding: '4px 12px', fontWeight: 600 }}>
+                              {t('other') || 'Other'}
+                            </span>
+                            {otherSubs.map((sub) => (
+                              <SubcategoryLink
+                                key={sub.id}
+                                onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`)}
+                                style={{ paddingLeft: '24px', fontSize: '12px' }}
+                              >
+                                {sub.name}
+                              </SubcategoryLink>
+                            ))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <ViewAllLink
                     onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}`)}
@@ -249,7 +292,52 @@ const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory = '' }) => {
                   </ViewAllLink>
                 </CategoryDropdown>
               </CategoryItem>
-            ))
+            ))}
+
+                  {/* Other Categories Dropdown */}
+                  {otherCategories.length > 0 && (
+                    <CategoryItem
+                      key={OTHER_CATEGORY.id}
+                      onMouseEnter={() => handleCategoryHover(OTHER_CATEGORY.slug)}
+                      onMouseLeave={handleCategoryLeave}
+                      ref={(el) => { if (el) dropdownRefs.current[OTHER_CATEGORY.slug] = el; }}
+                    >
+                      <CategoryButton $active={activeCategory === OTHER_CATEGORY.slug}>
+                        <i className={`fas ${OTHER_CATEGORY.icon}`}></i>
+                        {t('other') || 'Other'}
+                        <i className="fas fa-chevron-down"></i>
+                      </CategoryButton>
+
+                      <CategoryDropdown
+                        $visible={openDropdown === OTHER_CATEGORY.slug}
+                        onMouseEnter={() => handleDropdownEnter(OTHER_CATEGORY.slug)}
+                        onMouseLeave={handleDropdownLeave}
+                      >
+                        {otherCategories.map((category) => (
+                          <React.Fragment key={category.id}>
+                            <SubcategoryLink
+                              onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}`)}
+                            >
+                              <i className={`fas ${CATEGORY_ICONS[category.name] || DEFAULT_ICON}`}></i>
+                              {categoryNames[category.name] || category.name}
+                            </SubcategoryLink>
+                            {(category.children || []).slice(0, 3).map((sub) => (
+                              <SubcategoryLink
+                                key={sub.id}
+                                onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`)}
+                                style={{ paddingLeft: '24px', fontSize: '12px' }}
+                              >
+                                {sub.name}
+                              </SubcategoryLink>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </CategoryDropdown>
+                    </CategoryItem>
+                  )}
+                </>
+              );
+            })()
           )}
 
           {/* Services Category */}

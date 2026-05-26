@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, slug, parent_id, display_order, description } = body;
+    const { name, slug, parent_id, display_order, description, image, show_on_homepage } = body;
 
     if (!name) {
       return badRequest('name is required');
@@ -64,7 +64,9 @@ export async function POST(request: NextRequest) {
       slug: slug || await generateUniqueCategorySlug(name),
       parent_id: parent_id || null,
       display_order: display_order || 0,
-      description
+      description,
+      image,
+      show_on_homepage
     });
 
     return created(category);
@@ -89,7 +91,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, name, slug, parent_id, display_order, is_active, description } = body;
+    const { id, name, slug, parent_id, display_order, is_active, description, image, show_on_homepage, show_in_menu } = body;
 
     if (!id) {
       return badRequest('id is required');
@@ -121,7 +123,10 @@ export async function PUT(request: NextRequest) {
       parent_id,
       display_order,
       is_active,
-      description
+      description,
+      image,
+      show_on_homepage,
+      show_in_menu
     });
 
     return ok(updated);

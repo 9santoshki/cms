@@ -11,6 +11,9 @@ export interface Category {
   display_order: number;
   is_active: boolean;
   description: string | null;
+  image: string | null;
+  show_on_homepage: boolean;
+  show_in_menu: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -121,19 +124,23 @@ export async function createCategory(data: {
   parent_id?: number | null;
   display_order?: number;
   description?: string;
+  image?: string;
+  show_on_homepage?: boolean;
 }): Promise<Category> {
   const slug = data.slug || await generateUniqueCategorySlug(data.name);
 
   const result = await query(
-    `INSERT INTO categories (name, slug, parent_id, display_order, description)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO categories (name, slug, parent_id, display_order, description, image, show_on_homepage)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       data.name,
       slug,
       data.parent_id || null,
       data.display_order || 0,
-      data.description || null
+      data.description || null,
+      data.image || null,
+      data.show_on_homepage || false
     ]
   );
 
@@ -152,6 +159,9 @@ export async function updateCategory(
     display_order: number;
     is_active: boolean;
     description: string;
+    image: string;
+    show_on_homepage: boolean;
+    show_in_menu: boolean;
   }>
 ): Promise<Category | null> {
   const fields: string[] = [];
@@ -215,6 +225,36 @@ export async function getActiveSubcategories(parentId: number): Promise<Category
   const result = await query(
     'SELECT * FROM categories WHERE parent_id = $1 AND is_active = TRUE ORDER BY display_order, name',
     [parentId]
+  );
+  return result.rows;
+}
+
+/**
+ * Get subcategories for homepage display (show_on_homepage = TRUE).
+ * Returns subcategory with parent category name.
+ */
+export interface HomepageSubcategory {
+  id: number;
+  name: string;
+  slug: string;
+  image: string | null;
+  display_order: number;
+  category_id: number;
+  category_name: string;
+  category_slug: string;
+}
+
+export async function getHomepageSubcategories(): Promise<HomepageSubcategory[]> {
+  const result = await query(
+    `SELECT
+      s.id, s.name, s.slug, s.image, s.display_order,
+      p.id as category_id, p.name as category_name, p.slug as category_slug
+    FROM categories s
+    JOIN categories p ON s.parent_id = p.id
+    WHERE s.is_active = TRUE
+      AND s.show_on_homepage = TRUE
+      AND p.is_active = TRUE
+    ORDER BY s.display_order, s.name`
   );
   return result.rows;
 }
