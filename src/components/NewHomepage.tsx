@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCategories } from '../context/CategoriesContext';
+import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
 import ProductCardWithVariant from './ProductCardWithVariant';
 import { HomepageSubcategory } from '../lib/db/categories';
+import { RecentlyViewedProduct } from '../lib/db/recentlyViewed';
 
 // Font Awesome import
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -35,6 +37,37 @@ interface Service {
   title: string;
   description: string;
 }
+
+// Font Awesome icon for each subcategory name (falls back to parent-category icon or folder)
+const SUBCATEGORY_ICONS: Record<string, string> = {
+  'Sofas & Sectionals':         'fa-couch',
+  'Coffee Tables':               'fa-coffee',
+  'TV & Entertainment Units':    'fa-tv',
+  'Accent Chairs':               'fa-chair',
+  'Side Tables':                 'fa-table',
+  'Dining Tables':               'fa-utensils',
+  'Dining Chairs':               'fa-chair',
+  'Bar Carts & Stools':          'fa-wine-glass-alt',
+  'Beds & Headboards':           'fa-bed',
+  'Dressers & Chests':           'fa-box-open',
+  'Nightstands':                 'fa-moon',
+  'Wardrobes':                   'fa-door-open',
+  'Bedding & Throws':            'fa-wind',
+  'Desks & Work Tables':         'fa-desktop',
+  'Office Chairs':               'fa-chair',
+  'Bookcases':                   'fa-book',
+  'Chandeliers':                 'fa-lightbulb',
+  'Table Lamps':                 'fa-lightbulb',
+  'Floor Lamps':                 'fa-lightbulb',
+  'Pendant Lights':              'fa-lightbulb',
+  'Wall Art & Prints':           'fa-image',
+  'Mirrors':                     'fa-circle',
+  'Vases & Planters':            'fa-seedling',
+  'Candles':                     'fa-fire',
+  'Patio Furniture':             'fa-umbrella-beach',
+  'Garden Decor':                'fa-tree',
+  'Outdoor Dining':              'fa-utensils',
+};
 
 // Import elegant homepage styles
 import {
@@ -65,9 +98,13 @@ const NewHomepage = () => {
   const { products, fetchProducts, loading, error } = useProduct();
   const { t, language } = useLanguage();
   const { categories: parentCategories } = useCategories();
+  const { user } = useAuth();
 
   // Homepage subcategories from database (browse-by-category tiles)
   const [homepageSubcategories, setHomepageSubcategories] = useState<HomepageSubcategory[]>([]);
+
+  // Recently viewed products (logged-in users only)
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedProduct[]>([]);
 
   // Memoize subcategory translation map (created once per language change)
   const subcategoryTranslationMap = useMemo(() => ({
@@ -132,8 +169,21 @@ const NewHomepage = () => {
         }
       })
       .catch(err => console.error('Failed to fetch homepage categories:', err));
-
   }, []);
+
+  // Fetch recently viewed when user logs in / out
+  useEffect(() => {
+    if (!user) {
+      setRecentlyViewed([]);
+      return;
+    }
+    fetch('/api/recently-viewed')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) setRecentlyViewed(data.data);
+      })
+      .catch(err => console.error('Failed to fetch recently viewed:', err));
+  }, [user]);
 
   const navigate = (path: string) => {
     router.push(path);
@@ -284,7 +334,83 @@ const NewHomepage = () => {
       {/* Hero Slider Section */}
       <Slider />
 
-      {/* Quick Navigation - Subcategory Images */}
+      {/* Recently Viewed — only shown to logged-in users with history */}
+      {user && recentlyViewed.length > 0 && (
+        <section style={{
+          width: '88%',
+          maxWidth: '1100px',
+          margin: '15px auto 0 auto',
+          padding: '15px 20px',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 3px 15px rgba(0, 0, 0, 0.06)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '14px',
+          }}>
+            <span style={{ fontSize: '12px', color: '#666', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              <i className="fas fa-history" style={{ marginRight: '6px', color: '#c19a6b' }} />
+              Recently Viewed
+            </span>
+            <span
+              onClick={() => router.push('/shop')}
+              style={{ fontSize: '11px', color: '#c19a6b', cursor: 'pointer', fontWeight: '600' }}
+            >
+              View all →
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+            {recentlyViewed.map(item => (
+              <div
+                key={item.product_id}
+                onClick={() => router.push(`/products/${item.slug || item.product_id}`)}
+                style={{
+                  flex: '0 0 auto',
+                  width: '110px',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  border: '1px solid #eee',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#c19a6b';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = '#eee';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <div style={{
+                  width: '110px',
+                  height: '90px',
+                  backgroundImage: item.primary_image || item.image_url
+                    ? `url('${item.primary_image || item.image_url}')`
+                    : 'linear-gradient(135deg, #f5f5f5, #e8e8e8)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }} />
+                <div style={{ padding: '6px 8px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1a1a1a', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#B12704', fontWeight: '700', marginTop: '2px' }}>
+                    ₹{(item.sale_price && item.sale_price < item.price ? item.sale_price : item.price).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Browse by Category — icon tiles driven by homepage subcategories in DB */}
       <section style={{
         width: '88%',
         maxWidth: '1100px',
@@ -310,7 +436,6 @@ const NewHomepage = () => {
           flexWrap: 'wrap',
           justifyContent: 'center',
           gap: '10px',
-          padding: '0'
         }}>
           {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
             <div
@@ -321,47 +446,53 @@ const NewHomepage = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '12px',
+                padding: '14px 10px 10px',
                 background: '#fff',
                 borderRadius: '10px',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                width: '120px',
+                transition: 'all 0.2s ease',
+                width: '90px',
                 flex: '0 0 auto',
-                border: '1px solid #eee'
+                border: '1px solid #eee',
+                gap: '8px',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#c19a6b';
                 e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.12)';
+                e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.10)';
+                e.currentTarget.style.background = '#fffbf5';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#eee';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.background = '#fff';
               }}
             >
               <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                marginBottom: '8px',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundImage: item.image ? `url('${item.image}')` : 'linear-gradient(135deg, #f5f5f5, #e8e8e8)',
-                border: '1px solid #f0f0f0'
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #fef3e2, #fde8c8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}>
+                <i
+                  className={`fas ${SUBCATEGORY_ICONS[item.name] || 'fa-tag'}`}
+                  style={{ fontSize: '18px', color: '#c19a6b' }}
+                />
               </div>
               <span style={{
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: '600',
                 color: '#333',
                 textAlign: 'center',
                 lineHeight: '1.3',
-                maxWidth: '110px'
+                maxWidth: '80px',
               }}>
-                {translateSubcategory(item.name).split(' ')[0]}
+                {translateSubcategory(item.name)}
               </span>
             </div>
           ))}

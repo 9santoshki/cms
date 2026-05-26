@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProduct } from '@/context/ProductContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { apiClient } from '@/lib/api';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -17,6 +18,7 @@ interface ProductDetailPageClientProps {
 const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
   const { slug } = props.params || {};
   const { language } = useLanguage();
+  const { user } = useAuth();
   const {
     products,
     loading: contextLoading,
@@ -96,6 +98,16 @@ const ProductDetailPageClient = (props: ProductDetailPageClientProps) => {
     // Fetch product from API
     fetchProduct();
   }, [slug]);
+
+  // Record view for logged-in users once the product id is known
+  useEffect(() => {
+    if (!user || !product?.id) return;
+    fetch('/api/recently-viewed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: product.id }),
+    }).catch(() => { /* non-critical, ignore errors */ });
+  }, [user, product?.id]);
 
   // If products haven't been loaded at all, fetch them
   useEffect(() => {

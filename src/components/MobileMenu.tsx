@@ -2,6 +2,18 @@
 
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useCategories } from '@/context/CategoriesContext';
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'Living Room': 'fa-couch',
+  'Dining Room': 'fa-utensils',
+  'Bedroom': 'fa-bed',
+  'Office': 'fa-desktop',
+  'Home Office': 'fa-desktop',
+  'Lighting': 'fa-lightbulb',
+  'Decor': 'fa-palette',
+  'Outdoor': 'fa-tree',
+};
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -17,6 +29,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   onOpenSearch,
 }) => {
   const { user, logout, signInWithGoogle } = useAuth();
+  const { categories } = useCategories();
 
   // Close on escape key and lock body scroll
   useEffect(() => {
@@ -90,16 +103,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     fontSize: '16px',
   };
 
-  // Menu items data
+  // Dynamic shop categories from DB (via CategoriesContext — same data as desktop nav)
   const shopCategories = [
     { path: '/shop', icon: 'fa-th-large', label: 'All Products' },
-    { path: '/shop?category=Living Room', icon: 'fa-couch', label: 'Living Room' },
-    { path: '/shop?category=Dining Room', icon: 'fa-utensils', label: 'Dining Room' },
-    { path: '/shop?category=Bedroom', icon: 'fa-bed', label: 'Bedroom' },
-    { path: '/shop?category=Home Office', icon: 'fa-desktop', label: 'Home Office' },
-    { path: '/shop?category=Lighting', icon: 'fa-lightbulb', label: 'Lighting' },
-    { path: '/shop?category=Decor', icon: 'fa-palette', label: 'Decor & Accessories' },
-    { path: '/shop?category=Outdoor', icon: 'fa-tree', label: 'Outdoor' },
+    ...categories.map(cat => ({
+      path: `/shop?category=${encodeURIComponent(cat.name)}`,
+      icon: CATEGORY_ICONS[cat.name] || 'fa-folder',
+      label: cat.name,
+    })),
   ];
 
   const services = [
