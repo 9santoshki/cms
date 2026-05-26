@@ -29,9 +29,12 @@ export function parsePrice(price: unknown): number {
   return 0;
 }
 
-/** Get the display price (sale price if available, otherwise regular price) */
+/** Get the display price (sale price when valid discount, otherwise regular price) */
 export function getDisplayPrice(product: { price?: unknown; sale_price?: unknown }): number {
-  return parsePrice(product.sale_price) || parsePrice(product.price);
+  const price = parsePrice(product.price);
+  const sale = parsePrice(product.sale_price);
+  // Only use sale_price when it's a positive value strictly less than the regular price
+  return (sale > 0 && sale < price) ? sale : price;
 }
 
 /** Check if product has an active discount */

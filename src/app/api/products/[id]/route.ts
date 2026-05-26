@@ -80,7 +80,7 @@ export async function PUT(
     const { id } = params;
 
     const body = await request.json();
-    const { name, description, price, sale_price, image_url, category, stock_quantity, status } =
+    const { name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status } =
       body;
 
     if (!name || !description || !price || price <= 0) {
@@ -115,6 +115,7 @@ export async function PUT(
       sale_price,
       image_url,
       category,
+      subcategory: subcategory ?? null,
       stock_quantity,
       slug,
     };

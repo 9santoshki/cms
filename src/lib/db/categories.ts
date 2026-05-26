@@ -194,7 +194,12 @@ export async function updateCategory(
  * Returns false if category has children or products using it.
  */
 export async function deleteCategory(id: number): Promise<{ success: boolean; error?: string }> {
-  // Check for children
+  const cat = await getCategoryById(id);
+  if (!cat) {
+    return { success: false, error: 'Category not found.' };
+  }
+
+  // Check for children (sub-categories)
   const childrenCheck = await query(
     'SELECT COUNT(*) as count FROM categories WHERE parent_id = $1',
     [id]
@@ -203,7 +208,23 @@ export async function deleteCategory(id: number): Promise<{ success: boolean; er
     return { success: false, error: 'Category has subcategories. Delete or reassign them first.' };
   }
 
-  // Delete the category
+  // Check for products assigned to this category or subcategory.
+  // Parent categories map to the `category` column; subcategories map to `subcategory`.
+  const productCheck = await query(
+    cat.parent_id === null
+      ? 'SELECT COUNT(*) as count FROM products WHERE category = $1'
+      : 'SELECT COUNT(*) as count FROM products WHERE subcategory = $1',
+    [cat.name]
+  );
+  const productCount = parseInt(productCheck.rows[0].count);
+  if (productCount > 0) {
+    return {
+      success: false,
+      error: `${productCount} product(s) use this category. Reassign them before deleting.`,
+    };
+  }
+
+  // Safe to delete
   const result = await query('DELETE FROM categories WHERE id = $1', [id]);
   return { success: result.rowCount ? result.rowCount > 0 : false };
 }

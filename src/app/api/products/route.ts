@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, price, sale_price, image_url, category, stock_quantity, status } =
+    const { name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status } =
       body;
 
     if (!name || !description || !price || price <= 0) {
@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
       sale_price,
       image_url,
       category,
+      subcategory,
       stock_quantity,
       slug,
       status: productStatus,

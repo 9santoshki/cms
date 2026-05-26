@@ -199,13 +199,14 @@ export async function createProduct(product: {
   sale_price?: number;
   image_url?: string;
   category?: string;
+  subcategory?: string;
   slug: string;
   stock_quantity?: number;
   status?: 'draft' | 'published' | 'archived';
 }): Promise<Product> {
   const result = await query(
-    `INSERT INTO products (name, description, price, sale_price, image_url, category, slug, stock_quantity, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO products (name, description, price, sale_price, image_url, category, subcategory, slug, stock_quantity, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       product.name,
@@ -214,6 +215,7 @@ export async function createProduct(product: {
       product.sale_price || null,
       product.image_url,
       product.category,
+      product.subcategory || null,
       product.slug,
       product.stock_quantity || 0,
       product.status || 'draft',

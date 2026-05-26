@@ -27,7 +27,8 @@ export async function getCartItems(userId: string | number): Promise<CartItem[]>
       ci.quantity,
       p.name,
       p.description,
-      p.price,
+      p.price as product_regular_price,
+      p.sale_price as product_sale_price,
       p.image_url,
       (
         SELECT pi.cloudflare_image_id
@@ -53,10 +54,10 @@ export async function getCartItems(userId: string | number): Promise<CartItem[]>
     [userId]
   );
 
-  // Calculate effective price (variant price if exists, otherwise product price)
+  // Effective price priority: variant sale > variant regular > product sale > product regular
   return result.rows.map((row: Record<string, unknown>) => ({
     ...row,
-    price: row.variant_sale_price ?? row.variant_price ?? row.price
+    price: row.variant_sale_price ?? row.variant_price ?? row.product_sale_price ?? row.product_regular_price,
   })) as CartItem[];
 }
 
@@ -134,7 +135,8 @@ export async function getCartItemWithProduct(
       ci.variant_id,
       ci.quantity,
       p.name,
-      p.price,
+      p.price as product_regular_price,
+      p.sale_price as product_sale_price,
       p.image_url,
       v.price as variant_price,
       v.sale_price as variant_sale_price,
@@ -158,6 +160,7 @@ export async function getCartItemWithProduct(
 
   return {
     ...row,
-    price: row.variant_sale_price ?? row.variant_price ?? row.price
+    // Effective price priority: variant sale > variant regular > product sale > product regular
+    price: row.variant_sale_price ?? row.variant_price ?? row.product_sale_price ?? row.product_regular_price,
   } as CartItem;
 }

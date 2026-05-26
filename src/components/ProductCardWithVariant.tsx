@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import { useAuth } from '../context/AuthContext';
 import MiniVariantSelector from './MiniVariantSelector';
-import { parsePrice, getDisplayPrice, hasDiscount, getDiscountPercentage } from '../lib/utils';
+import { parsePrice, getDisplayPrice, getDiscountPercentage } from '../lib/utils';
 
 // Styles - imported from consuming components' style files
 import { ProductCard, ProductImage, ProductInfo, DiscountBadge } from '../styles/NewShopStyles';
@@ -52,7 +52,14 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
   const removeFromCart = useCartStore(state => state.removeItem);
 
   // Track selected variant for this product
-  const [selectedVariant, setSelectedVariant] = useState<{ id: number | null; name: string; price: number } | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<{
+    id: number | null;
+    name: string;
+    /** Effective (discounted) price */
+    price: number;
+    /** Regular price before discount — equals price when no sale */
+    originalPrice: number;
+  } | null>(null);
 
   // Stock error state
   const [stockError, setStockError] = useState<string | null>(null);
@@ -67,8 +74,8 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
     };
   }, []);
 
-  const handleVariantSelect = useCallback((variantId: number | null, variantName: string, price: number) => {
-    setSelectedVariant({ id: variantId, name: variantName, price });
+  const handleVariantSelect = useCallback((variantId: number | null, variantName: string, price: number, originalPrice: number) => {
+    setSelectedVariant({ id: variantId, name: variantName, price, originalPrice });
   }, []);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -133,7 +140,15 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
     item => item.product_id === product.id && (item.variant_id ?? null) === variantId
   );
 
-  const displayPrice = selectedVariant?.price || getDisplayPrice(product);
+  // When a variant is selected use its prices; otherwise fall back to product-level prices.
+  const displayPrice = selectedVariant?.price ?? getDisplayPrice(product);
+  const regularPrice = selectedVariant
+    ? selectedVariant.originalPrice
+    : parsePrice(product.price);
+  const showDiscount = displayPrice < regularPrice;
+  const discountPct = showDiscount
+    ? getDiscountPercentage(regularPrice, displayPrice)
+    : 0;
 
   return (
     <div
@@ -150,10 +165,8 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
         onClick={handleCardClick}
         style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
       >
-        {hasDiscount(product) && (
-          <DiscountBadge>
-            {getDiscountPercentage(parsePrice(product.price), getDisplayPrice(product))}% OFF
-          </DiscountBadge>
+        {showDiscount && (
+          <DiscountBadge>{discountPct}% OFF</DiscountBadge>
         )}
         <ProductImage imageClass={product.imageClass} imageUrl={product.primary_image || product.image_url} />
         <ProductInfo style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -175,9 +188,9 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
                 <span style={{ fontWeight: '600', color: '#B12704', fontSize: '14px' }}>
                   ₹{displayPrice.toLocaleString()}
                 </span>
-                {hasDiscount(product) && (
+                {showDiscount && (
                   <span style={{ textDecoration: 'line-through', color: '#555', fontSize: '11px' }}>
-                    ₹{parsePrice(product.price).toLocaleString()}
+                    ₹{regularPrice.toLocaleString()}
                   </span>
                 )}
               </div>

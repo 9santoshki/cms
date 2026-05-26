@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import Header from './Header';
 import '../App.css'; // Import the main CSS file
-import { calculateCartTotal, calculateShippingCost, calculateOriginalCartTotal, calculateDiscountSavings } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
 
 const CheckoutPage = () => {
   const router = useRouter();

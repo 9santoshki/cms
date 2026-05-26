@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
 import Footer from './Footer';
-import { calculateCartTotal, calculateShippingCost, calculateOriginalCartTotal, calculateDiscountSavings } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
 import {
   CartContainer,
   CartHeaderSection,

@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getDisplayPrice } from '../lib/utils';
 
 interface MiniVariantSelectorProps {
   productId: number;
-  onVariantSelect: (variantId: number | null, variantName: string, price: number) => void;
+  /** Called when a matching variant is found.
+   *  price = effective price (sale_price when on sale, else price)
+   *  originalPrice = regular price before discount (equals price when no discount) */
+  onVariantSelect: (variantId: number | null, variantName: string, price: number, originalPrice: number) => void;
 }
 
 const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, onVariantSelect }) => {
@@ -18,6 +22,9 @@ const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, on
   // Use ref to store callback - prevents useEffect from re-running when callback identity changes
   const onVariantSelectRef = useRef(onVariantSelect);
   onVariantSelectRef.current = onVariantSelect;
+
+  // Track last dispatched variant ID to avoid no-op parent re-renders
+  const lastVariantIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const fetchVariants = async () => {
@@ -61,9 +68,14 @@ const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, on
     });
 
     if (matchedVariant) {
-      const price = matchedVariant.sale_price || matchedVariant.price;
-      // Use ref to call callback - stable across renders
-      onVariantSelectRef.current(matchedVariant.id, matchedVariant.variant_name || '', price);
+      if (matchedVariant.id === lastVariantIdRef.current) return;
+      lastVariantIdRef.current = matchedVariant.id;
+      const regularPrice = matchedVariant.price;
+      const effectivePrice = getDisplayPrice(matchedVariant);
+      onVariantSelectRef.current(matchedVariant.id, matchedVariant.variant_name || '', effectivePrice, regularPrice);
+    } else {
+      // Reset so re-selecting the same variant after deselection fires the callback
+      lastVariantIdRef.current = undefined;
     }
   }, [selectedOptions, hasVariants, variants]); // Removed handleVariantChange dependency
 

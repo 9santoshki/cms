@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCategories } from '../context/CategoriesContext';
 import Header from './Header';
 import Footer from './Footer';
 import Slider from './Slider';
@@ -63,8 +64,9 @@ const NewHomepage = () => {
   const router = useRouter();
   const { products, fetchProducts, loading, error } = useProduct();
   const { t, language } = useLanguage();
+  const { categories: parentCategories } = useCategories();
 
-  // Homepage subcategories from database
+  // Homepage subcategories from database (browse-by-category tiles)
   const [homepageSubcategories, setHomepageSubcategories] = useState<HomepageSubcategory[]>([]);
 
   // Memoize subcategory translation map (created once per language change)
@@ -120,6 +122,8 @@ const NewHomepage = () => {
   // Fetch products and homepage categories on mount
   useEffect(() => {
     fetchProducts();
+
+    // Fetch subcategories shown on homepage (for the browse-by-category tiles)
     fetch('/api/categories/homepage')
       .then(res => res.json())
       .then(data => {
@@ -128,6 +132,7 @@ const NewHomepage = () => {
         }
       })
       .catch(err => console.error('Failed to fetch homepage categories:', err));
+
   }, []);
 
   const navigate = (path: string) => {
@@ -363,11 +368,14 @@ const NewHomepage = () => {
         </div>
       </section>
 
-      {/* Amazon-style Category Sections */}
-      <CategorySectionBlock categoryKey="Living Room" title={t('livingRoom')} />
-      <CategorySectionBlock categoryKey="Bedroom" title={t('bedroom')} />
-      <CategorySectionBlock categoryKey="Lighting" title={t('lighting')} />
-      <CategorySectionBlock categoryKey="Decor" title={t('decor')} />
+      {/* Dynamic Category Sections — driven by active parent categories in DB */}
+      {parentCategories.map(cat => (
+        <CategorySectionBlock
+          key={cat.id}
+          categoryKey={cat.name}
+          title={translateSubcategory(cat.name) || cat.name}
+        />
+      ))}
 
       {/* Portfolio Section */}
       <PortfolioSection>
