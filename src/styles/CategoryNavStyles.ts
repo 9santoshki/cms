@@ -260,12 +260,7 @@ export const MobileCategoryStrip = styled.nav`
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 
-  @media (max-width: 900px) {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    padding: 0 12px;
-  }
+  /* Hidden: hamburger menu (≤900px) already handles navigation */
 `;
 
 export const MobileCategoryPill = styled.a`

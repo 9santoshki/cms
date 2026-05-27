@@ -181,12 +181,28 @@ const NewShopPage = () => {
     return counts;
   }, [products, filters.category, categories]);
 
-  // Memoize price range counts — scoped to active category + subcategory
+  // Memoize price range counts — scoped to active category + subcategory,
+  // using the same "listed only" logic as categoryCounts / subcategoryCounts
+  // so the "All" row always matches the adjacent filter section's "All" count.
   const priceRangeCounts = useMemo(() => {
     const counts: Record<string, number> = { All: 0, 'Under ₹5,000': 0, '₹5,000 - ₹15,000': 0, 'Over ₹15,000': 0 };
+    const listedCategories = new Set(categories.map(c => c.name));
+    const activeCat = categories.find(c => c.name === filters.category);
+    const listedSubcats = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
+
     for (const product of products) {
-      if (filters.category !== 'All' && product.category !== filters.category) continue;
-      if (filters.subcategory !== 'All' && product.subcategory !== filters.subcategory) continue;
+      if (filters.category === 'All') {
+        // Mirror categoryCounts: only products in listed categories
+        if (!listedCategories.has(product.category ?? '')) continue;
+      } else {
+        if (product.category !== filters.category) continue;
+        if (filters.subcategory !== 'All') {
+          if (product.subcategory !== filters.subcategory) continue;
+        } else if (listedSubcats) {
+          // Mirror subcategoryCounts: only products with listed subcategories
+          if (!product.subcategory || !listedSubcats.has(product.subcategory)) continue;
+        }
+      }
       const price = getDisplayPrice(product);
       if (price < 5000) counts['Under ₹5,000']++;
       else if (price <= 15000) counts['₹5,000 - ₹15,000']++;
@@ -194,7 +210,7 @@ const NewShopPage = () => {
       counts['All']++;
     }
     return counts;
-  }, [products, filters.category, filters.subcategory]);
+  }, [products, filters.category, filters.subcategory, categories]);
 
   // Get product count by category (uses memoized counts)
   const getCategoryCount = (category: string): number => {
@@ -432,7 +448,10 @@ const NewShopPage = () => {
             <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#c19a6b', marginBottom: '10px' }}>
               Department
             </h4>
-            {['All', ...categories.map(c => c.name)].slice(0, showAllCategories ? undefined : INITIAL_CATEGORY_COUNT + 1).map(category => (
+            {['All', ...categories.map(c => c.name)]
+              .filter(category => category === 'All' || getCategoryCount(category) > 0)
+              .slice(0, showAllCategories ? undefined : INITIAL_CATEGORY_COUNT + 1)
+              .map(category => (
               <div
                 key={category}
                 onClick={() => { handleFilterChange('category', category); }}
@@ -479,7 +498,9 @@ const NewShopPage = () => {
               <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#c19a6b', marginBottom: '10px' }}>
                 {filters.category}
               </h4>
-              {getSubcategoriesForCategory(filters.category).map(subcategory => (
+              {getSubcategoriesForCategory(filters.category)
+                .filter(subcategory => subcategory === 'All' || getSubcategoryCount(subcategory) > 0)
+                .map(subcategory => (
                 <div
                   key={subcategory}
                   onClick={() => { handleFilterChange('subcategory', subcategory); }}
@@ -508,7 +529,8 @@ const NewShopPage = () => {
               { value: 'Under ₹5,000', label: 'Under ₹5,000' },
               { value: '₹5,000 - ₹15,000', label: '₹5,000 - ₹15,000' },
               { value: 'Over ₹15,000', label: 'Over ₹15,000' }
-            ].map(({ value, label }) => (
+            ].filter(({ value }) => value === 'All' || getPriceRangeCount(value) > 0)
+            .map(({ value, label }) => (
               <div
                 key={value}
                 onClick={() => { handleFilterChange('priceRange', value); }}
@@ -586,7 +608,9 @@ const NewShopPage = () => {
               <i className="fas fa-chevron-down toggle-icon"></i>
             </FilterHeader>
             <FilterContent $collapsed={collapsedSections.category}>
-              {visibleCategories.map(category => (
+              {visibleCategories
+                .filter(category => category === 'All' || getCategoryCount(category) > 0)
+                .map(category => (
                 <FilterOption
                   key={category}
                   $active={filters.category === category}
@@ -635,7 +659,9 @@ const NewShopPage = () => {
                 <i className="fas fa-chevron-down toggle-icon"></i>
               </FilterHeader>
               <FilterContent $collapsed={collapsedSections.subcategory}>
-                {getSubcategoriesForCategory(filters.category).map(subcategory => (
+                {getSubcategoriesForCategory(filters.category)
+                  .filter(subcategory => subcategory === 'All' || getSubcategoryCount(subcategory) > 0)
+                  .map(subcategory => (
                   <FilterOption
                     key={subcategory}
                     $active={filters.subcategory === subcategory}
@@ -664,7 +690,8 @@ const NewShopPage = () => {
                 { value: 'Under ₹5,000', label: 'Under ₹5,000' },
                 { value: '₹5,000 - ₹15,000', label: '₹5,000 - ₹15,000' },
                 { value: 'Over ₹15,000', label: 'Over ₹15,000' }
-              ].map(({ value, label }) => (
+              ].filter(({ value }) => value === 'All' || getPriceRangeCount(value) > 0)
+              .map(({ value, label }) => (
                 <FilterOption
                   key={value}
                   $active={filters.priceRange === value}
