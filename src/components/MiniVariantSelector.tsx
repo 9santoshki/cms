@@ -182,45 +182,44 @@ const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, on
         const selectedId = selectedOptions[type.name];
 
         return (
-          <div key={type.id} style={{ marginBottom: '4px' }}>
-            {/* Type label */}
-            <div style={{ fontSize: '9px', color: '#888', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>
-              {type.display_name}
-            </div>
-            {/* Option pills */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-              {options.map(opt => {
-                const isSelected = selectedId === opt.id;
-                const isAvailable = available.has(opt.id);
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleOptionChange(type.name, isSelected ? '' : String(opt.id));
-                    }}
-                    title={opt.display_value}
-                    style={{
-                      padding: '2px 7px',
-                      fontSize: '10px',
-                      fontWeight: isSelected ? '700' : '500',
-                      border: isSelected ? '1.5px solid #c19a6b' : '1px solid #ddd',
-                      borderRadius: '4px',
-                      background: isSelected ? '#fff8ed' : '#fafafa',
-                      color: isSelected ? '#c19a6b' : isAvailable ? '#333' : '#bbb',
-                      cursor: isAvailable ? 'pointer' : 'not-allowed',
-                      opacity: isAvailable ? 1 : 0.45,
-                      whiteSpace: 'nowrap',
-                      lineHeight: '1.6',
-                      transition: 'all 0.15s',
-                    }}
-                    disabled={!isAvailable}
-                  >
-                    {opt.display_value}
-                  </button>
-                );
-              })}
-            </div>
+          <div key={type.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            {/* Inline label */}
+            <span style={{ fontSize: '9px', color: '#a0856c', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {type.display_name}:
+            </span>
+            {/* Dropdown */}
+            <select
+              value={selectedId ?? ''}
+              onChange={e => {
+                e.stopPropagation();
+                handleOptionChange(type.name, e.target.value);
+              }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                fontSize: '11px',
+                border: '1.5px solid #e8d5c0',
+                borderRadius: '6px',
+                padding: '4px 6px',
+                background: '#fffaf6',
+                color: '#333',
+                cursor: 'pointer',
+                outline: 'none',
+                fontWeight: '500',
+                appearance: 'auto',
+              }}
+            >
+              <option value=''>Select…</option>
+              {options.map(opt => (
+                <option
+                  key={opt.id}
+                  value={opt.id}
+                  disabled={!available.has(opt.id)}
+                >
+                  {opt.display_value}
+                </option>
+              ))}
+            </select>
           </div>
         );
       })}

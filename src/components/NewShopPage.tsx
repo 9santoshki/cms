@@ -115,30 +115,28 @@ const NewShopPage = () => {
     }
   };
 
-  // Read URL params on mount and update filters - this syncs filters with navigation
+  // Read ALL filter state from URL params — restores state on back navigation
   useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    const subcategoryParam = searchParams.get('subcategory');
-
-    if (categoryParam) {
-      setFilters(prev => ({
-        ...prev,
-        category: categoryParam,
-        subcategory: subcategoryParam || 'All',
-        priceRange: 'All' // Reset price when navigating via menu
-      }));
-    } else {
-      // No category param means user navigated to /shop directly or clicked "All Products"
-      setFilters({
-        category: 'All',
-        subcategory: 'All',
-        priceRange: 'All',
-        sortBy: 'name'
-      });
-    }
-    setCurrentPage(1);
+    setFilters({
+      category:   searchParams.get('category')   || 'All',
+      subcategory: searchParams.get('subcategory') || 'All',
+      priceRange: searchParams.get('priceRange')  || 'All',
+      sortBy:     searchParams.get('sortBy')      || 'name',
+    });
+    setCurrentPage(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
     setShowAllCategories(false);
   }, [searchParams]);
+
+  // Helper: push current filter state into URL so back button restores it
+  const syncToUrl = (next: typeof filters, page = 1) => {
+    const params = new URLSearchParams();
+    if (next.category   !== 'All')  params.set('category',   next.category);
+    if (next.subcategory !== 'All') params.set('subcategory', next.subcategory);
+    if (next.priceRange !== 'All')  params.set('priceRange',  next.priceRange);
+    if (next.sortBy     !== 'name') params.set('sortBy',      next.sortBy);
+    if (page > 1)                   params.set('page',        String(page));
+    router.replace(`/shop${params.toString() ? '?' + params.toString() : ''}`, { scroll: false });
+  };
 
   // Fetch products when component mounts
   useEffect(() => {
@@ -149,41 +147,54 @@ const NewShopPage = () => {
 
   // Memoize counts by category (O(products) once per render, not per call)
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: products.length };
+    const counts: Record<string, number> = {};
     for (const product of products) {
       const cat = product.category;
       if (!cat) continue;
       counts[cat] = (counts[cat] || 0) + 1;
     }
+    // "All" = sum of listed category counts only (keeps All consistent with what's shown)
+    const listed = new Set(categories.map(c => c.name));
+    counts['All'] = Object.entries(counts)
+      .filter(([cat]) => listed.has(cat))
+      .reduce((sum, [, n]) => sum + n, 0);
     return counts;
-  }, [products]);
+  }, [products, categories]);
 
   // Memoize subcategory counts (computed when category is selected)
   const subcategoryCounts = useMemo(() => {
     if (!filters.category || filters.category === 'All') return {};
-    const counts: Record<string, number> = { All: 0 };
+    const counts: Record<string, number> = {};
     for (const product of products) {
       if (product.category === filters.category) {
-        counts['All']++;
         const subcat = product.subcategory;
         if (!subcat) continue;
         counts[subcat] = (counts[subcat] || 0) + 1;
       }
     }
+    // "All" = sum of listed subcategory counts only
+    const cat = categories.find(c => c.name === filters.category);
+    const listed = new Set((cat?.children ?? []).map(c => c.name));
+    counts['All'] = Object.entries(counts)
+      .filter(([subcat]) => listed.has(subcat))
+      .reduce((sum, [, n]) => sum + n, 0);
     return counts;
-  }, [products, filters.category]);
+  }, [products, filters.category, categories]);
 
-  // Memoize price range counts
+  // Memoize price range counts — scoped to active category + subcategory
   const priceRangeCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: products.length };
+    const counts: Record<string, number> = { All: 0, 'Under ₹5,000': 0, '₹5,000 - ₹15,000': 0, 'Over ₹15,000': 0 };
     for (const product of products) {
+      if (filters.category !== 'All' && product.category !== filters.category) continue;
+      if (filters.subcategory !== 'All' && product.subcategory !== filters.subcategory) continue;
       const price = getDisplayPrice(product);
-      if (price < 5000) counts['Under ₹5,000'] = (counts['Under ₹5,000'] || 0) + 1;
-      if (price >= 5000 && price <= 15000) counts['₹5,000 - ₹15,000'] = (counts['₹5,000 - ₹15,000'] || 0) + 1;
-      if (price > 15000) counts['Over ₹15,000'] = (counts['Over ₹15,000'] || 0) + 1;
+      if (price < 5000) counts['Under ₹5,000']++;
+      else if (price <= 15000) counts['₹5,000 - ₹15,000']++;
+      else counts['Over ₹15,000']++;
+      counts['All']++;
     }
     return counts;
-  }, [products]);
+  }, [products, filters.category, filters.subcategory]);
 
   // Get product count by category (uses memoized counts)
   const getCategoryCount = (category: string): number => {
@@ -261,31 +272,21 @@ const NewShopPage = () => {
 
   const handleFilterChange = (filterType: string, value: string | undefined) => {
     setFilters(prev => {
-      if (filterType === 'category') {
-        // Reset subcategory when category changes
-        return {
-          ...prev,
-          category: value || 'All',
-          subcategory: 'All'
-        };
-      }
-      return {
-        ...prev,
-        [filterType]: value || ''
-      };
+      const next = filterType === 'category'
+        ? { ...prev, category: value || 'All', subcategory: 'All' }
+        : { ...prev, [filterType]: value || '' };
+      syncToUrl(next, 1);
+      return next;
     });
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setFilters({
-      category: 'All',
-      subcategory: 'All',
-      priceRange: 'All',
-      sortBy: 'name'
-    });
+    const reset = { category: 'All', subcategory: 'All', priceRange: 'All', sortBy: 'name' };
+    setFilters(reset);
     setCurrentPage(1);
+    syncToUrl(reset, 1);
   };
 
   // Check if any filters are active
@@ -742,7 +743,7 @@ const NewShopPage = () => {
           {totalPages > 1 && (
             <Pagination>
               <PageButton
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => { const p = Math.max(currentPage - 1, 1); setCurrentPage(p); syncToUrl(filters, p); }}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -752,14 +753,14 @@ const NewShopPage = () => {
                 <PageButton
                   key={i}
                   $active={currentPage === i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
+                  onClick={() => { setCurrentPage(i + 1); syncToUrl(filters, i + 1); }}
                 >
                   {i + 1}
                 </PageButton>
               ))}
 
               <PageButton
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() => { const p = Math.min(currentPage + 1, totalPages); setCurrentPage(p); syncToUrl(filters, p); }}
                 disabled={currentPage === totalPages}
               >
                 Next

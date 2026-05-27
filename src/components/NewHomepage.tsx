@@ -301,10 +301,10 @@ const NewHomepage = () => {
 
       {/* Browse by Category — image tiles driven by homepage subcategories in DB */}
       <section style={{
-        width: '88%',
-        maxWidth: '1100px',
+        width: '100%',
+        maxWidth: '1400px',
         margin: '15px auto 0 auto',
-        padding: '15px 20px',
+        padding: '15px 30px',
         background: 'white',
         borderRadius: '12px',
         boxShadow: '0 3px 15px rgba(0, 0, 0, 0.06)'
@@ -324,7 +324,7 @@ const NewHomepage = () => {
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: '10px',
+          gap: '28px',
         }}>
           {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
             <div
@@ -332,8 +332,8 @@ const NewHomepage = () => {
               onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
               style={{
                 position: 'relative',
-                width: '110px',
-                height: '110px',
+                width: '90px',
+                height: '90px',
                 borderRadius: '12px',
                 overflow: 'hidden',
                 cursor: 'pointer',
@@ -352,12 +352,12 @@ const NewHomepage = () => {
                 e.currentTarget.style.borderColor = '#eee';
               }}
             >
-              {/* Photo */}
+              {/* Photo — prefer real product image from R2, fall back to static category image */}
               <div style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: item.image
-                  ? `url('${item.image}')`
+                backgroundImage: item.product_image || item.image
+                  ? `url('${item.product_image || item.image}')`
                   : 'linear-gradient(135deg, #fef3e2, #fde8c8)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
