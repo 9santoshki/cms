@@ -138,6 +138,7 @@ run_migration "$APP_DIR/scripts/migrations/add_inventory_improvements.sql"  "add
 run_migration "$APP_DIR/scripts/migrations/add_subcategory_column.sql"      "add_subcategory_column"
 run_migration "$APP_DIR/scripts/migrations/add_categories_table.sql"        "add_categories_table"
 run_migration "$APP_DIR/scripts/migrations/add_categories_columns.sql"      "add_categories_columns"
+run_migration "$APP_DIR/scripts/migrations/fix_categories_show_in_menu.sql" "fix_categories_show_in_menu"
 run_migration "$APP_DIR/scripts/migrations/add_recently_viewed.sql"         "add_recently_viewed"
 echo "✅ Migrations complete"
 

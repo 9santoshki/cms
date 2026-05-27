@@ -33,7 +33,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       .then(data => {
         if (data.success && data.data) {
           setCategories(
-            (data.data as NavCategory[]).filter(c => c.parent_id === null && c.is_active)
+            (data.data as NavCategory[]).filter(c => c.parent_id === null && c.is_active && c.show_in_menu)
           );
         }
       })
