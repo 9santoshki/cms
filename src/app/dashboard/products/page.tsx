@@ -362,14 +362,30 @@ const DashboardProductsPage = () => {
               <div style={{
                 width: '100%',
                 height: '140px',
-                background: (product.primary_image || product.image_url)
-                  ? `url(${product.primary_image || product.image_url}) center/cover no-repeat`
-                  : 'linear-gradient(135deg, #f8f4f0, #efe9e3)',
+                background: 'linear-gradient(135deg, #f8f4f0, #efe9e3)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                overflow: 'hidden',
+                position: 'relative',
               }}>
-                {!(product.primary_image || product.image_url) && (
+                {(product.primary_image || product.image_url) ? (
+                  <img
+                    src={product.primary_image || product.image_url}
+                    alt={product.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
                   <i className="fas fa-image" style={{ fontSize: '32px', color: '#e8d5c4' }}></i>
                 )}
               </div>
