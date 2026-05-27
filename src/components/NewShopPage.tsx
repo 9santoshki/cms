@@ -287,14 +287,12 @@ const NewShopPage = () => {
   };
 
   const handleFilterChange = (filterType: string, value: string | undefined) => {
-    setFilters(prev => {
-      const next = filterType === 'category'
-        ? { ...prev, category: value || 'All', subcategory: 'All' }
-        : { ...prev, [filterType]: value || '' };
-      syncToUrl(next, 1);
-      return next;
-    });
+    const next = filterType === 'category'
+      ? { ...filters, category: value || 'All', subcategory: 'All' }
+      : { ...filters, [filterType]: value || '' };
+    setFilters(next);
     setCurrentPage(1);
+    syncToUrl(next, 1);
   };
 
   // Clear all filters
