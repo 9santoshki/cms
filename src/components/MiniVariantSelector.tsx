@@ -1,37 +1,59 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getDisplayPrice } from '../lib/utils';
+
+interface VariantOption {
+  id: number;
+  value: string;
+  display_value: string;
+}
+
+interface OptionType {
+  id: number;
+  name: string;
+  display_name: string;
+}
+
+interface Variant {
+  id: number;
+  variant_name: string;
+  price: number;
+  sale_price?: number;
+  stock_quantity: number;
+  options: Array<{ id: number; value: string; display_value: string }>;
+}
 
 interface MiniVariantSelectorProps {
   productId: number;
-  /** Called when a matching variant is found.
-   *  price = effective price (sale_price when on sale, else price)
-   *  originalPrice = regular price before discount (equals price when no discount) */
-  onVariantSelect: (variantId: number | null, variantName: string, price: number, originalPrice: number) => void;
+  onVariantSelect: (
+    variantId: number | null,
+    variantName: string,
+    price: number,
+    originalPrice: number,
+  ) => void;
 }
 
 const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, onVariantSelect }) => {
   const [loading, setLoading] = useState(true);
   const [hasVariants, setHasVariants] = useState(false);
-  const [optionTypes, setOptionTypes] = useState<any[]>([]);
-  const [optionsByType, setOptionsByType] = useState<Record<string, any[]>>({});
-  const [variants, setVariants] = useState<any[]>([]);
+  const [optionTypes, setOptionTypes] = useState<OptionType[]>([]);
+  const [optionsByType, setOptionsByType] = useState<Record<string, VariantOption[]>>({});
+  const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
 
-  // Use ref to store callback - prevents useEffect from re-running when callback identity changes
+  // Stable callback ref — prevents the variant-match effect from re-running
   const onVariantSelectRef = useRef(onVariantSelect);
   onVariantSelectRef.current = onVariantSelect;
 
-  // Track last dispatched variant ID to avoid no-op parent re-renders
+  // Track last dispatched variant id to skip no-op parent updates
   const lastVariantIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const fetchVariants = async () => {
       try {
-        const response = await fetch(`/api/products/${productId}/variants`);
-        const data = await response.json();
-
+        const res = await fetch(`/api/products/${productId}/variants`);
+        const data = await res.json();
         if (data.success) {
           setHasVariants(data.data.hasVariants);
           setOptionTypes(data.data.optionTypes || []);
@@ -44,88 +66,164 @@ const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, on
         setLoading(false);
       }
     };
-
     fetchVariants();
   }, [productId]);
 
-  // Find matching variant - only run when selectedOptions changes
-  useEffect(() => {
-    if (!hasVariants || variants.length === 0) {
-      return;
+  // Reverse map: optionId → typeName (built once when optionsByType loads)
+  const optionIdToType = useMemo<Record<number, string>>(() => {
+    const map: Record<number, string> = {};
+    for (const [typeName, opts] of Object.entries(optionsByType)) {
+      for (const opt of opts) map[opt.id] = typeName;
     }
+    return map;
+  }, [optionsByType]);
 
-    const selectedOptionIds = Object.values(selectedOptions).filter(id => id !== undefined && id !== 0);
-    if (selectedOptionIds.length === 0) {
-      return;
-    }
+  /**
+   * For each option type, compute which option IDs are still reachable given
+   * the currently selected options for all OTHER types.
+   */
+  const availableByType = useMemo<Record<string, Set<number>>>(() => {
+    if (!hasVariants || variants.length === 0) return {};
 
-    // Find variant with exact match
-    const matchedVariant = variants.find(variant => {
-      if (!variant.options) return false;
-      const variantOptionIds = variant.options.map((o: any) => o.id);
-      return variantOptionIds.length === selectedOptionIds.length &&
-             selectedOptionIds.every(id => variantOptionIds.includes(id));
-    });
+    const result: Record<string, Set<number>> = {};
+    for (const type of optionTypes) {
+      const typeName = type.name;
 
-    if (matchedVariant) {
-      if (matchedVariant.id === lastVariantIdRef.current) return;
-      lastVariantIdRef.current = matchedVariant.id;
-      const regularPrice = matchedVariant.price;
-      const effectivePrice = getDisplayPrice(matchedVariant);
-      onVariantSelectRef.current(matchedVariant.id, matchedVariant.variant_name || '', effectivePrice, regularPrice);
-    } else {
-      // Reset so re-selecting the same variant after deselection fires the callback
-      lastVariantIdRef.current = undefined;
-    }
-  }, [selectedOptions, hasVariants, variants]); // Removed handleVariantChange dependency
+      // Other selections (excluding this type)
+      const otherSelected = Object.entries(selectedOptions)
+        .filter(([t]) => t !== typeName)
+        .map(([, id]) => id);
 
-  const handleOptionChange = (typeName: string, optionId: string) => {
-    if (optionId === '') {
-      setSelectedOptions(prev => {
-        const next = { ...prev };
-        delete next[typeName];
-        return next;
+      // Variants compatible with all other selections
+      const compatible = variants.filter(v => {
+        if (!v.options) return false;
+        const ids = v.options.map(o => o.id);
+        return otherSelected.every(id => ids.includes(id));
       });
-    } else {
-      setSelectedOptions(prev => ({
-        ...prev,
-        [typeName]: parseInt(optionId, 10)
-      }));
+
+      // Collect this type's option IDs from compatible variants
+      const available = new Set<number>();
+      for (const v of compatible) {
+        for (const o of v.options) {
+          if (optionIdToType[o.id] === typeName) available.add(o.id);
+        }
+      }
+      result[typeName] = available;
     }
+    return result;
+  }, [selectedOptions, hasVariants, variants, optionTypes, optionIdToType]);
+
+  // When an option selection changes, clear any now-unavailable selections
+  const handleOptionChange = (typeName: string, optionId: string) => {
+    setSelectedOptions(prev => {
+      const next = optionId === ''
+        ? (({ [typeName]: _, ...rest }) => rest)(prev)   // deselect
+        : { ...prev, [typeName]: parseInt(optionId, 10) };
+
+      // Drop any other selected options that are no longer available given `next`
+      const cleaned: Record<string, number> = {};
+      for (const [t, id] of Object.entries(next)) {
+        if (t === typeName) {
+          cleaned[t] = id;
+          continue;
+        }
+        // Re-check availability against the new selection
+        const otherSelected = Object.entries(next)
+          .filter(([ot]) => ot !== t)
+          .map(([, oid]) => oid);
+        const stillAvailable = variants.some(v => {
+          if (!v.options) return false;
+          const ids = v.options.map(o => o.id);
+          return ids.includes(id) && otherSelected.every(oid => ids.includes(oid));
+        });
+        if (stillAvailable) cleaned[t] = id;
+      }
+      return cleaned;
+    });
   };
 
-  if (loading || !hasVariants || optionTypes.length === 0) {
-    return null;
-  }
+  // Fire onVariantSelect when all types are selected and a variant matches
+  useEffect(() => {
+    if (!hasVariants || variants.length === 0) return;
+
+    const selectedIds = Object.values(selectedOptions).filter(Boolean);
+    if (selectedIds.length !== optionTypes.length || optionTypes.length === 0) {
+      lastVariantIdRef.current = undefined;
+      return;
+    }
+
+    const matched = variants.find(v => {
+      if (!v.options) return false;
+      const ids = v.options.map(o => o.id);
+      return ids.length === selectedIds.length && selectedIds.every(id => ids.includes(id));
+    });
+
+    if (matched) {
+      if (matched.id === lastVariantIdRef.current) return;
+      lastVariantIdRef.current = matched.id;
+      onVariantSelectRef.current(
+        matched.id,
+        matched.variant_name || '',
+        getDisplayPrice(matched),
+        matched.price,
+      );
+    } else {
+      lastVariantIdRef.current = undefined;
+    }
+  }, [selectedOptions, hasVariants, variants, optionTypes]);
+
+  if (loading || !hasVariants || optionTypes.length === 0) return null;
 
   return (
-    <div style={{ marginTop: '4px' }} onClick={(e) => e.stopPropagation()}>
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {optionTypes.slice(0, 2).map(type => (
-          <select
-            key={type.id}
-            value={selectedOptions[type.name] || ''}
-            onChange={(e) => handleOptionChange(type.name, e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              padding: '2px 4px',
-              border: '1px solid #ddd',
-              borderRadius: '3px',
-              fontSize: '10px',
-              background: '#fff',
-              cursor: 'pointer',
-              maxWidth: '60px'
-            }}
-          >
-            <option value="">{type.display_name.slice(0, 4)}</option>
-            {optionsByType[type.name]?.slice(0, 3).map(option => (
-              <option key={option.id} value={option.id}>
-                {option.display_value.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-        ))}
-      </div>
+    <div style={{ marginTop: '6px' }} onClick={e => e.stopPropagation()}>
+      {optionTypes.map(type => {
+        const available = availableByType[type.name] ?? new Set();
+        const options = optionsByType[type.name] ?? [];
+        const selectedId = selectedOptions[type.name];
+
+        return (
+          <div key={type.id} style={{ marginBottom: '4px' }}>
+            {/* Type label */}
+            <div style={{ fontSize: '9px', color: '#888', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>
+              {type.display_name}
+            </div>
+            {/* Option pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {options.map(opt => {
+                const isSelected = selectedId === opt.id;
+                const isAvailable = available.has(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleOptionChange(type.name, isSelected ? '' : String(opt.id));
+                    }}
+                    title={opt.display_value}
+                    style={{
+                      padding: '2px 7px',
+                      fontSize: '10px',
+                      fontWeight: isSelected ? '700' : '500',
+                      border: isSelected ? '1.5px solid #c19a6b' : '1px solid #ddd',
+                      borderRadius: '4px',
+                      background: isSelected ? '#fff8ed' : '#fafafa',
+                      color: isSelected ? '#c19a6b' : isAvailable ? '#333' : '#bbb',
+                      cursor: isAvailable ? 'pointer' : 'not-allowed',
+                      opacity: isAvailable ? 1 : 0.45,
+                      whiteSpace: 'nowrap',
+                      lineHeight: '1.6',
+                      transition: 'all 0.15s',
+                    }}
+                    disabled={!isAvailable}
+                  >
+                    {opt.display_value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
