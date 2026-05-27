@@ -1,4 +1,5 @@
 import { query } from './connection';
+import { getCloudflareImageUrl } from '../cloudflare';
 
 /** Maximum recently-viewed entries kept per user. */
 const RECENTLY_VIEWED_LIMIT = 20;
@@ -85,7 +86,7 @@ export async function getRecentlyViewed(
     slug: row.slug as string | undefined,
     image_url: row.image_url as string | undefined,
     primary_image: row.primary_image_id
-      ? `/api/images/${row.primary_image_id}`
+      ? getCloudflareImageUrl(row.primary_image_id as string)
       : undefined,
     category: row.category as string | undefined,
   }));
