@@ -16,6 +16,8 @@ import {
   ViewAllLink,
   ServicesDropdown,
   DropdownDivider,
+  MobileCategoryStrip,
+  MobileCategoryPill,
 } from '../styles/CategoryNavStyles';
 
 // Category icons mapping
@@ -338,6 +340,27 @@ const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory = '' }) => {
           </CategoryItem>
         </CategoryNavContainer>
       </CategoryNavBar>
+
+      {/* Mobile horizontal scroll strip — shown only on ≤900px */}
+      <MobileCategoryStrip>
+        <MobileCategoryPill onClick={() => navigateTo('/shop')}>
+          <i className="fas fa-th-large" />
+          All
+        </MobileCategoryPill>
+        {menuCategories.map(cat => (
+          <MobileCategoryPill
+            key={cat.id}
+            onClick={() => navigateTo(`/shop?category=${encodeURIComponent(cat.name)}`)}
+          >
+            <i className={`fas ${CATEGORY_ICONS[cat.name] || DEFAULT_ICON}`} />
+            {categoryNames[cat.name] || cat.name}
+          </MobileCategoryPill>
+        ))}
+        <MobileCategoryPill onClick={() => navigateTo('/services')}>
+          <i className="fas fa-concierge-bell" />
+          Services
+        </MobileCategoryPill>
+      </MobileCategoryStrip>
     </>
   );
 };

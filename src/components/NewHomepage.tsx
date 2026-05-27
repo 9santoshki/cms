@@ -38,43 +38,10 @@ interface Service {
   description: string;
 }
 
-// Font Awesome icon for each subcategory name (falls back to parent-category icon or folder)
-const SUBCATEGORY_ICONS: Record<string, string> = {
-  'Sofas & Sectionals':         'fa-couch',
-  'Coffee Tables':               'fa-coffee',
-  'TV & Entertainment Units':    'fa-tv',
-  'Accent Chairs':               'fa-chair',
-  'Side Tables':                 'fa-table',
-  'Dining Tables':               'fa-utensils',
-  'Dining Chairs':               'fa-chair',
-  'Bar Carts & Stools':          'fa-wine-glass-alt',
-  'Beds & Headboards':           'fa-bed',
-  'Dressers & Chests':           'fa-box-open',
-  'Nightstands':                 'fa-moon',
-  'Wardrobes':                   'fa-door-open',
-  'Bedding & Throws':            'fa-wind',
-  'Desks & Work Tables':         'fa-desktop',
-  'Office Chairs':               'fa-chair',
-  'Bookcases':                   'fa-book',
-  'Chandeliers':                 'fa-lightbulb',
-  'Table Lamps':                 'fa-lightbulb',
-  'Floor Lamps':                 'fa-lightbulb',
-  'Pendant Lights':              'fa-lightbulb',
-  'Wall Art & Prints':           'fa-image',
-  'Mirrors':                     'fa-circle',
-  'Vases & Planters':            'fa-seedling',
-  'Candles':                     'fa-fire',
-  'Patio Furniture':             'fa-umbrella-beach',
-  'Garden Decor':                'fa-tree',
-  'Outdoor Dining':              'fa-utensils',
-};
 
 // Import elegant homepage styles
 import {
   HomepageContainer,
-  MainHero,
-  SectionHeader,
-  FeaturedSection,
   PortfolioSection,
   PortfolioGrid,
   PortfolioCard,
@@ -332,6 +299,104 @@ const NewHomepage = () => {
       {/* Hero Slider Section */}
       <Slider />
 
+      {/* Browse by Category — image tiles driven by homepage subcategories in DB */}
+      <section style={{
+        width: '88%',
+        maxWidth: '1100px',
+        margin: '15px auto 0 auto',
+        padding: '15px 20px',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 3px 15px rgba(0, 0, 0, 0.06)'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '15px',
+          fontSize: '12px',
+          color: '#666',
+          fontWeight: '600',
+          letterSpacing: '1px',
+          textTransform: 'uppercase'
+        }}>
+          {t('browseByCategory')}
+        </div>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '10px',
+        }}>
+          {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
+              style={{
+                position: 'relative',
+                width: '110px',
+                height: '110px',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                flex: '0 0 auto',
+                border: '1px solid #eee',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+                e.currentTarget.style.borderColor = '#c19a6b';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = '#eee';
+              }}
+            >
+              {/* Photo */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: item.image
+                  ? `url('${item.image}')`
+                  : 'linear-gradient(135deg, #fef3e2, #fde8c8)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }} />
+              {/* Gradient overlay for legible label */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 100%)',
+              }} />
+              {/* Label */}
+              <span style={{
+                position: 'absolute',
+                bottom: '8px',
+                left: '4px',
+                right: '4px',
+                fontSize: '10px',
+                fontWeight: '700',
+                color: 'white',
+                textAlign: 'center',
+                lineHeight: '1.2',
+                textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              }}>
+                {translateSubcategory(item.name)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Dynamic Category Sections — driven by active parent categories in DB */}
+      {parentCategories.map(cat => (
+        <CategorySectionBlock
+          key={cat.id}
+          categoryKey={cat.name}
+          title={translateSubcategory(cat.name) || cat.name}
+        />
+      ))}
+
       {/* Recently Viewed — only shown to logged-in users with history */}
       {user && recentlyViewed.length > 0 && (
         <section style={{
@@ -408,104 +473,6 @@ const NewHomepage = () => {
         </section>
       )}
 
-      {/* Browse by Category — icon tiles driven by homepage subcategories in DB */}
-      <section style={{
-        width: '88%',
-        maxWidth: '1100px',
-        margin: '15px auto 0 auto',
-        padding: '15px 20px',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 3px 15px rgba(0, 0, 0, 0.06)'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '15px',
-          fontSize: '12px',
-          color: '#666',
-          fontWeight: '600',
-          letterSpacing: '1px',
-          textTransform: 'uppercase'
-        }}>
-          {t('browseByCategory')}
-        </div>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          gap: '10px',
-        }}>
-          {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '14px 10px 10px',
-                background: '#fff',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                width: '90px',
-                flex: '0 0 auto',
-                border: '1px solid #eee',
-                gap: '8px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#c19a6b';
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.10)';
-                e.currentTarget.style.background = '#fffbf5';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#eee';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.background = '#fff';
-              }}
-            >
-              <div style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #fef3e2, #fde8c8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <i
-                  className={`fas ${SUBCATEGORY_ICONS[item.name] || 'fa-tag'}`}
-                  style={{ fontSize: '18px', color: '#c19a6b' }}
-                />
-              </div>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: '600',
-                color: '#333',
-                textAlign: 'center',
-                lineHeight: '1.3',
-                maxWidth: '80px',
-              }}>
-                {translateSubcategory(item.name)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Dynamic Category Sections — driven by active parent categories in DB */}
-      {parentCategories.map(cat => (
-        <CategorySectionBlock
-          key={cat.id}
-          categoryKey={cat.name}
-          title={translateSubcategory(cat.name) || cat.name}
-        />
-      ))}
-
       {/* Portfolio Section */}
       <PortfolioSection>
         <div className="section-header">
@@ -533,34 +500,6 @@ const NewHomepage = () => {
           </button>
         </div>
       </PortfolioSection>
-
-      {/* Featured Products Section */}
-      <FeaturedSection>
-        <SectionHeader>
-          <h2 className="section-title">FEATURED COLLECTION</h2>
-          <p className="section-subtitle">
-            Curated masterpieces that exemplify our commitment to quality craftsmanship and design excellence
-          </p>
-        </SectionHeader>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: '16px',
-          padding: '0'
-        }}>
-          {products.slice(0, 6).map((product: any) => (
-            <ProductCardWithVariant
-              key={product.id}
-              product={product}
-            />
-          ))}
-        </div>
-        <div className="section-footer">
-          <button className="btn primary" onClick={() => navigate('/shop')}>
-            Explore Collection
-          </button>
-        </div>
-      </FeaturedSection>
 
       {/* Services Section */}
       <ServicesSection>

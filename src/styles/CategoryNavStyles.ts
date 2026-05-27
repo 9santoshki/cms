@@ -245,3 +245,49 @@ export const DropdownDivider = styled.div`
   background: #f0f0f0;
   margin: 8px 0;
 `;
+
+// Mobile-only horizontal scroll strip (shown ≤900px, hidden on desktop)
+export const MobileCategoryStrip = styled.nav`
+  display: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+  position: -webkit-sticky;
+  position: sticky;
+  top: 65px;
+  z-index: 999;
+  width: 100%;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 900px) {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 12px;
+  }
+`;
+
+export const MobileCategoryPill = styled.a`
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+
+  i { font-size: 13px; color: #c19a6b; }
+
+  &:hover, &:active {
+    color: #fff;
+    border-bottom-color: #c19a6b;
+  }
+`;
