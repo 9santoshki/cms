@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface MobileFilterPanelProps {
   isOpen: boolean;
@@ -27,7 +27,7 @@ const panelStyle = {
   top: 0,
   left: 0,
   bottom: 0,
-  width: '280px',
+  width: 'min(280px, calc(100vw - 40px))',
   background: 'white',
   zIndex: 1001,
   overflowY: 'auto',
@@ -49,7 +49,12 @@ const closeButtonStyle = {
   color: 'white',
   fontSize: '24px',
   cursor: 'pointer',
-  padding: '4px',
+  padding: '10px',
+  minWidth: '44px',
+  minHeight: '44px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 } as const;
 
 const activeFiltersStyle = {
@@ -94,6 +99,27 @@ export const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
   activeFilterSummary,
   children,
 }) => {
+  // Swipe-to-close gesture
+  const touchStartX = useRef(0);
+
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (diff > 80) onClose(); // swipe left to close
+    };
+    if (isOpen) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isOpen, onClose]);
+
   return (
     <>
       {/* Overlay */}

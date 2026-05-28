@@ -268,7 +268,8 @@ export const NavIcon = styled.button`
   padding: 8px;
   border-radius: 4px;
   flex-shrink: 0;
-  min-width: 36px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,20 +282,23 @@ export const NavIcon = styled.button`
 
   @media (max-width: 768px) {
     font-size: 18px;
-    padding: 5px;
-    min-width: 32px;
+    padding: 8px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   @media (max-width: 480px) {
     font-size: 16px;
-    padding: 4px;
-    min-width: 28px;
+    padding: 8px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   @media (max-width: 360px) {
     font-size: 15px;
-    padding: 3px;
-    min-width: 26px;
+    padding: 6px;
+    min-width: 44px;
+    min-height: 44px;
   }
 `;
 

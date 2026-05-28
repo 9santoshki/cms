@@ -68,8 +68,8 @@ export const SocialIcons = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.7);

@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display, Montserrat } from 'next/font/google';
 import { AppProvider } from '@/context/AppContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { PWAProvider } from '@/context/PWAContext';
+import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,6 +23,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#c19a6b',
 };
 
 export const metadata: Metadata = {
@@ -85,10 +88,19 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Colour My Space',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
-    apple: '/logo.svg',
+    apple: '/apple-touch-icon.png',
   },
 };
 
@@ -97,9 +109,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} ${playfair.variable} ${montserrat.variable}`}>
         <LanguageProvider>
-          <AppProvider>
-            {children}
-          </AppProvider>
+          <PWAProvider>
+            <AppProvider>
+              {children}
+            </AppProvider>
+            <PWAInstallBanner />
+          </PWAProvider>
         </LanguageProvider>
         {/* This is the portal root for modals */}
         <div id="modal-root" />

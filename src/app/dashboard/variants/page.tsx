@@ -318,7 +318,7 @@ export default function VariantDictionaryPage() {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#333' }}>
             {optionTypes.length} option type{optionTypes.length !== 1 ? 's' : ''} defined
           </p>
-          <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>
+          <p style={{ margin: '1px 0 0', fontSize: 12, color: '#888' }}>
             Each type appears as a selector on the product page (e.g. Thickness, Size, Color)
           </p>
         </div>
@@ -356,7 +356,7 @@ export default function VariantDictionaryPage() {
                 value={newTypeName}
                 onChange={e => setNewTypeName(e.target.value)}
               />
-              <p style={{ margin: '2px 0 0', fontSize: 10, color: '#aaa' }}>lowercase, underscores only</p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#aaa' }}>lowercase, underscores only</p>
             </div>
             <div>
               <label style={labelStyle}>Display Label *</label>
@@ -474,7 +474,7 @@ export default function VariantDictionaryPage() {
                           {type.display_name}
                         </span>
                         <span style={{
-                          marginLeft: 10, fontSize: 11, color: '#aaa',
+                          marginLeft: 10, fontSize: 12, color: '#aaa',
                           fontFamily: 'monospace', background: '#f5f5f5',
                           borderRadius: 4, padding: '1px 6px',
                         }}>
@@ -532,7 +532,7 @@ export default function VariantDictionaryPage() {
                             {['Display Label', 'Internal Value', 'Price Modifier', 'Order', 'Active', ''].map(h => (
                               <th key={h} style={{
                                 padding: '6px 10px', textAlign: 'left',
-                                fontSize: 11, fontWeight: 700, color: '#aaa',
+                                fontSize: 12, fontWeight: 700, color: '#aaa',
                                 textTransform: 'uppercase', letterSpacing: '0.5px',
                               }}>{h}</th>
                             ))}
@@ -598,18 +598,18 @@ export default function VariantDictionaryPage() {
                                       <>
                                         <button onClick={() => handleSaveOpt(opt.id)} disabled={savingOpt}
                                           style={{
-                                            padding: '4px 12px', background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                                            padding: '6px 12px', background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
                                             color: 'white', border: 'none', borderRadius: 6,
-                                            fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', gap: 4,
+                                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4, minHeight: '44px',
                                           }}>
-                                          {savingOpt ? <Spinner size={10} /> : <i className="fas fa-save"></i>} Save
+                                          {savingOpt ? <Spinner size={12} /> : <i className="fas fa-save"></i>} Save
                                         </button>
                                         <button onClick={() => setEditOptId(null)}
                                           style={{
-                                            padding: '4px 10px', background: 'transparent', color: '#888',
-                                            border: '1px solid #ddd', borderRadius: 6, fontSize: 11,
-                                            fontWeight: 600, cursor: 'pointer',
+                                            padding: '6px 12px', background: 'transparent', color: '#888',
+                                            border: '1px solid #ddd', borderRadius: 6, fontSize: 12,
+                                            fontWeight: 600, cursor: 'pointer', minHeight: '44px',
                                           }}>Cancel</button>
                                       </>
                                     ) : (
@@ -707,12 +707,12 @@ function SmallBtn({ icon, title, color, onClick, loading = false }: {
 }) {
   return (
     <button onClick={onClick} disabled={loading} title={title} style={{
-      width: 28, height: 28, borderRadius: 6, border: `1px solid #e8d5c4`,
+      minWidth: 44, minHeight: 44, borderRadius: 6, border: `1px solid #e8d5c4`,
       background: 'white', color, cursor: loading ? 'wait' : 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 11, transition: 'all 0.15s ease', flexShrink: 0,
+      fontSize: 12, transition: 'all 0.15s ease', flexShrink: 0,
     }}>
-      {loading ? <Spinner size={10} /> : <i className={`fas ${icon}`}></i>}
+      {loading ? <Spinner size={12} /> : <i className={`fas ${icon}`}></i>}
     </button>
   );
 }

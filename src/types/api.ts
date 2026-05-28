@@ -3,12 +3,8 @@
  * These supplement src/types/index.ts with API-layer concerns.
  */
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
+// Re-export from the canonical source to avoid duplication
+export type { ApiResponse } from './index';
 
 export interface PaginatedResponse<T> {
   success: boolean;

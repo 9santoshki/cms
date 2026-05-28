@@ -85,11 +85,18 @@
   }
 }
 
-/* Touch-friendly tap targets */
+/* Touch-friendly tap targets — only on interactive controls, not layout links */
 @media (pointer: coarse) {
   button,
-  a {
-    min-height: 44px !important;
-    min-width: 44px !important;
+  .nav-icon,
+  .mobile-menu-toggle,
+  .close-btn,
+  .quantity-btn,
+  .filter-option,
+  .search-btn,
+  .cart-btn,
+  .menu-item {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

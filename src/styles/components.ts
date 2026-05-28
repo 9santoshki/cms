@@ -261,8 +261,12 @@ export const Section = styled.section<{ variant?: 'featured' | 'transform' | 'se
 // Product components
 export const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 30px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const ProductCard = styled.div`

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useProduct } from '../context/ProductContext';
+import { useCategories } from '../context/CategoriesContext';
 import Header from './Header';
 import Footer from './Footer';
 import ProductCardWithVariant from './ProductCardWithVariant';

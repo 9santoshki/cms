@@ -46,6 +46,16 @@ export const ShopHero = styled.section`
       letter-spacing: 3px;
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
       font-family: var(--font-playfair), 'Playfair Display', serif;
+
+      @media (max-width: 768px) {
+        font-size: 2.2rem;
+        letter-spacing: 2px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+      }
     }
 
     p {
@@ -55,6 +65,14 @@ export const ShopHero = styled.section`
       font-family: var(--font-montserrat), 'Montserrat', sans-serif;
       line-height: 1.7;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+
+      @media (max-width: 768px) {
+        font-size: 1.1rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1rem;
+      }
     }
   }
 `;

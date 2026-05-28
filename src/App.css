@@ -1151,6 +1151,14 @@ body {
   .form-row {
     grid-template-columns: 1fr;
   }
+
+  .checkout-form-section {
+    padding: 20px 16px;
+  }
+
+  .checkout-summary-section {
+    padding: 16px;
+  }
 }
 
 /* Payment Method Styles */

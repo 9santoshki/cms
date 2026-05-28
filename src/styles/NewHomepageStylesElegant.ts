@@ -17,9 +17,13 @@ export const MainHero = styled.section`
     url('/api/images/product_images%2F1767927658910-uprpaph78yh-hero-modern-office.jpg');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: scroll;
   height: 100vh;
-  min-height: 700px;
+  min-height: 500px;
+
+  @media (max-width: 480px) {
+    min-height: 400px;
+  }
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,8 +60,20 @@ export const MainHero = styled.section`
     font-weight: 300;
     line-height: 1.1;
     margin-top: -40px;
+
+    @media (max-width: 768px) {
+      font-size: 2.8rem;
+      letter-spacing: 2px;
+      margin-top: -20px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 2rem;
+      letter-spacing: 1px;
+      margin-top: 0;
+    }
   }
-  
+
   p {
     font-size: 1.4rem;
     margin-bottom: 40px;
@@ -65,6 +81,16 @@ export const MainHero = styled.section`
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     text-transform: uppercase;
     letter-spacing: 1.5px;
+
+    @media (max-width: 768px) {
+      font-size: 1.1rem;
+      margin-bottom: 25px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
   }
   
   .btn {
@@ -649,11 +675,15 @@ export const TestimonialsSection = styled.section`
 // Testimonials grid
 export const TestimonialsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 35px;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 // Testimonial card
@@ -744,8 +774,16 @@ export const ConsultationSection = styled.section`
     font-family: var(--font-playfair), 'Playfair Display', serif;
     font-weight: 300;
     letter-spacing: 1px;
+
+    @media (max-width: 768px) {
+      font-size: 2rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
   }
-  
+
   p {
     font-size: 1.2rem;
     margin-bottom: 40px;
@@ -756,6 +794,15 @@ export const ConsultationSection = styled.section`
     font-weight: 300;
     line-height: 1.8;
     opacity: 0.9;
+
+    @media (max-width: 768px) {
+      font-size: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 0.95rem;
+      margin-bottom: 25px;
+    }
   }
   
   .btn {

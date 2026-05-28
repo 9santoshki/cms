@@ -30,6 +30,8 @@ export const theme = {
     container: '20px',
   },
   breakpoints: {
+    smallPhone: '360px',
+    phone: '480px',
     mobile: '768px',
     tablet: '992px',
     desktop: '1200px',

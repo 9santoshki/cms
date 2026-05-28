@@ -56,17 +56,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           onClick={onClose}
           className=" top-3  text-gray-800 hover:text-gray-900 focus:outline-none z-10 transition-colors duration-200"
           
-          style={{ 
-            width: '20px', 
-            height: '20px',
+          style={{
+            width: '44px',
+            height: '44px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: 'rgba(248, 244, 240, 0.7)',
             borderRadius: '50%',
-            padding: '2px',
+            padding: '0',
             position: 'absolute',
-            right: '10px',
+            right: '8px',
+            top: '8px',
           }}
 
         >

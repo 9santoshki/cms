@@ -352,4 +352,15 @@ body.overflow-hidden {
   overflow: hidden;
 }
 
+/* Shared keyframe animations for UI components */
+@keyframes cms-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Add any other global styles here */

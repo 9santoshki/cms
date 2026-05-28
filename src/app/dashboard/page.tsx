@@ -96,7 +96,7 @@ const DashboardPage = () => {
       description={`Welcome back, ${user.name}. Here's what's happening with your platform.`}
     >
       {/* Stats Grid */}
-      <div style={{
+      <div className="dashboard-stats-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
         gap: '12px',
@@ -165,7 +165,7 @@ const DashboardPage = () => {
         }}>
           Quick Actions
         </h3>
-        <div style={{
+        <div className="dashboard-quick-actions" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
           gap: '8px'
@@ -183,6 +183,17 @@ const DashboardPage = () => {
           )}
         </div>
       </div>
+      <style jsx>{`
+        @media (max-width: 480px) {
+          .dashboard-stats-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+          }
+          .dashboard-quick-actions {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 };

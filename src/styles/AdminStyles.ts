@@ -55,6 +55,31 @@ export const AdminSidebar = styled.aside`
   z-index: 999;
   overflow-y: auto;
 
+  @media (max-width: 768px) {
+    position: relative;
+    top: 0;
+    width: 100%;
+    height: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+
+    .admin-nav ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .admin-nav li {
+      flex: 1 1 auto;
+      min-width: fit-content;
+    }
+
+    .admin-nav-link {
+      padding: 12px 16px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+  }
+
   .admin-nav {
     padding: 20px 0;
   }
@@ -112,6 +137,11 @@ export const AdminContent = styled.main`
   margin-left: 250px;
   padding: 30px 20px;
   margin-top: 80px;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    padding: 20px 10px;
+  }
 
   .admin-header {
     display: flex;

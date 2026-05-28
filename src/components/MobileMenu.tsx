@@ -31,17 +31,30 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   const { user, logout, signInWithGoogle } = useAuth();
   const { categories } = useCategories();
 
-  // Close on escape key and lock body scroll
+  // Close on escape key, swipe-to-close, and lock body scroll
+  const touchStartX = React.useRef(0);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (diff > 80) onClose(); // swipe left to close
+    };
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
       document.body.style.overflow = 'hidden';
     }
     return () => {
       document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
       document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);

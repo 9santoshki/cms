@@ -141,6 +141,7 @@ const renderUserAccountIcon = () => {
               overflow: 'hidden',
               animation: 'slideDown 0.2s ease-out'
             }}
+            className="user-dropdown"
           >
             <style jsx>{`
               @keyframes slideDown {
@@ -151,6 +152,29 @@ const renderUserAccountIcon = () => {
                 to {
                   opacity: 1;
                   transform: translateY(0);
+                }
+              }
+
+              @media (max-width: 480px) {
+                .user-dropdown {
+                  position: fixed !important;
+                  top: auto !important;
+                  bottom: 0 !important;
+                  left: 0 !important;
+                  right: 0 !important;
+                  width: 100% !important;
+                  max-height: 60vh;
+                  border-radius: 16px 16px 0 0;
+                  animation: slideUp 0.3s ease-out !important;
+                }
+
+                @keyframes slideUp {
+                  from {
+                    transform: translateY(100%);
+                  }
+                  to {
+                    transform: translateY(0);
+                  }
                 }
               }
             `}</style>

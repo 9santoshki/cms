@@ -36,9 +36,9 @@ const DashboardOrdersPage = () => {
   return (
     <DashboardLayout title="Orders" description="View and manage customer orders.">
       {/* Filter bar */}
-      <div style={{ background: 'white', borderRadius: 8, padding: '10px 16px', marginBottom: 12, border: '1px solid #e8d5c4', display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div className="orders-filter-bar" style={{ background: 'white', borderRadius: 8, padding: '10px 16px', marginBottom: 12, border: '1px solid #e8d5c4', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          style={{ padding: '6px 10px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12 }}>
+          style={{ padding: '6px 10px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, minHeight: '44px' }}>
           <option value="all">All Orders</option>
           <option value="pending">Pending</option>
           <option value="processing">Processing</option>
@@ -46,15 +46,15 @@ const DashboardOrdersPage = () => {
           <option value="delivered">Delivered</option>
           <option value="cancelled">Cancelled</option>
         </select>
-        <span style={{ fontSize: 12, color: '#666' }}>{filteredOrders.length} orders</span>
-        <button onClick={fetchOrders} style={{ marginLeft: 'auto', padding: '6px 12px', background: '#c19a6b', color: 'white', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
+        <span className="orders-count" style={{ fontSize: 12, color: '#666' }}>{filteredOrders.length} orders</span>
+        <button onClick={fetchOrders} className="orders-refresh-btn" style={{ marginLeft: 'auto', padding: '6px 12px', background: '#c19a6b', color: 'white', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer', minHeight: '44px' }}>
           <i className="fas fa-sync-alt"></i> Refresh
         </button>
       </div>
 
       {/* Table */}
       {filteredOrders.length === 0 ? <EmptyState icon="fa-shopping-bag" title="No Orders" /> : (
-        <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e8d5c4', overflow: 'hidden' }}>
+        <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e8d5c4', overflow: 'hidden', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8f4f0', borderBottom: '1px solid #e8d5c4' }}>
@@ -78,7 +78,7 @@ const DashboardOrdersPage = () => {
                   <td style={{ padding: '10px 12px', color: '#888', fontSize: 12 }}>{new Date(order.created_at).toLocaleDateString()}</td>
                   <td style={{ padding: '10px 12px', textAlign: 'center' }}>{order.items?.length || 0}</td>
                   <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                    <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                    <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
                       background: STATUS_COLORS[order.status]?.bg || '#6b728015', color: STATUS_COLORS[order.status]?.color || '#6b7280' }}>
                       {order.status || 'pending'}
                     </span>
@@ -91,6 +91,26 @@ const DashboardOrdersPage = () => {
           </table>
         </div>
       )}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .orders-filter-bar {
+            padding: 8px 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .orders-filter-bar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .orders-refresh-btn {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+          .orders-count {
+            text-align: center;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 };

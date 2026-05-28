@@ -1,36 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromCookieWithDB } from '@/lib/db/auth';
+import { NextRequest } from 'next/server';
 import { getAllUserProfiles } from '@/lib/db/auth';
+import { ok } from '@/lib/api-response';
+import { withAuth } from '@/lib/middleware-helpers';
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getSessionFromCookieWithDB();
-
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    if (session.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const users = await getAllUserProfiles();
-
-    return NextResponse.json({
-      success: true,
-      data: users
-    });
-  } catch (err: unknown) {
-    console.error('Error fetching users:', err);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
-      { status: 500 }
-    );
-  }
-}
+export const GET = withAuth(async (_request, _context, _session) => {
+  const users = await getAllUserProfiles();
+  return ok(users);
+}, { requiredRole: 'admin' });

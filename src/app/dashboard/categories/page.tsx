@@ -285,7 +285,7 @@ export default function CategoriesPage() {
       )}
 
       {/* Legend for toggles */}
-      <div style={{ background: 'white', borderRadius: 8, padding: '8px 16px', marginBottom: 12, border: '1px solid #e8d5c4', display: 'flex', gap: 20, alignItems: 'center', fontSize: 11 }}>
+      <div style={{ background: 'white', borderRadius: 8, padding: '8px 16px', marginBottom: 12, border: '1px solid #e8d5c4', display: 'flex', gap: 20, alignItems: 'center', fontSize: 12, flexWrap: 'wrap' }}>
         <span style={{ color: '#888', fontWeight: 600 }}>Toggle Legend:</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 16, height: 10, borderRadius: 5, background: '#3b82f6' }}></span>
@@ -308,7 +308,7 @@ export default function CategoriesPage() {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#333' }}>
             {categories.length} parent category{categories.length !== 1 ? 's' : ''}
           </p>
-          <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>
+          <p style={{ margin: '1px 0 0', fontSize: 12, color: '#888' }}>
             Expand each category to manage its subcategories
           </p>
         </div>
@@ -481,14 +481,14 @@ export default function CategoriesPage() {
                           {cat.name}
                         </span>
                         <span style={{
-                          marginLeft: 10, fontSize: 11, color: '#aaa',
+                          marginLeft: 10, fontSize: 12, color: '#aaa',
                           fontFamily: 'monospace', background: '#f5f5f5',
                           borderRadius: 4, padding: '1px 6px',
                         }}>
                           {cat.slug}
                         </span>
                         <span style={{
-                          marginLeft: 8, fontSize: 10, fontWeight: 600,
+                          marginLeft: 8, fontSize: 12, fontWeight: 600,
                           background: cat.show_in_menu ? '#3b82f615' : '#6b728015',
                           color: cat.show_in_menu ? '#3b82f6' : '#6b7280',
                           borderRadius: 4, padding: '2px 6px',
@@ -563,7 +563,7 @@ export default function CategoriesPage() {
                             {['Name', 'Slug', 'Order', 'Menu', 'Homepage', 'Active', ''].map(h => (
                               <th key={h} style={{
                                 padding: '6px 10px', textAlign: 'left',
-                                fontSize: 11, fontWeight: 700, color: '#aaa',
+                                fontSize: 12, fontWeight: 700, color: '#aaa',
                                 textTransform: 'uppercase', letterSpacing: '0.5px',
                               }}>{h}</th>
                             ))}
@@ -620,13 +620,13 @@ export default function CategoriesPage() {
                                       <input type="checkbox" checked={editShowOnHomepage}
                                         onChange={e => setEditShowOnHomepage(e.target.checked)}
                                         style={{ width: 14, height: 14 }} />
-                                      <span style={{ fontSize: 11, color: '#666' }}>Show</span>
+                                      <span style={{ fontSize: 12, color: '#666' }}>Show</span>
                                     </label>
                                   ) : (
                                     <span style={{
                                       background: sub.show_on_homepage ? '#22c55e20' : '#f5f5f5',
                                       color: sub.show_on_homepage ? '#16a34a' : '#aaa',
-                                      padding: '2px 8px', borderRadius: 4, fontSize: 11,
+                                      padding: '2px 8px', borderRadius: 4, fontSize: 12,
                                     }}>
                                       {sub.show_on_homepage ? '✓' : '—'}
                                     </span>
@@ -653,18 +653,18 @@ export default function CategoriesPage() {
                                       <>
                                         <button onClick={() => handleSave(sub.id)} disabled={savingCategory}
                                           style={{
-                                            padding: '4px 12px', background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                                            padding: '6px 12px', background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
                                             color: 'white', border: 'none', borderRadius: 6,
-                                            fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', gap: 4,
+                                            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4, minHeight: '44px',
                                           }}>
-                                          {savingCategory ? <Spinner size={10} /> : <i className="fas fa-save"></i>} Save
+                                          {savingCategory ? <Spinner size={12} /> : <i className="fas fa-save"></i>} Save
                                         </button>
                                         <button onClick={() => setEditId(null)}
                                           style={{
-                                            padding: '4px 10px', background: 'transparent', color: '#888',
-                                            border: '1px solid #ddd', borderRadius: 6, fontSize: 11,
-                                            fontWeight: 600, cursor: 'pointer',
+                                            padding: '6px 12px', background: 'transparent', color: '#888',
+                                            border: '1px solid #ddd', borderRadius: 6, fontSize: 12,
+                                            fontWeight: 600, cursor: 'pointer', minHeight: '44px',
                                           }}>Cancel</button>
                                       </>
                                     ) : (
@@ -777,10 +777,10 @@ function SmallBtn({ icon, title, color, onClick }: {
 }) {
   return (
     <button onClick={onClick} title={title} style={{
-      width: 28, height: 28, borderRadius: 6, border: `1px solid #e8d5c4`,
+      minWidth: 44, minHeight: 44, borderRadius: 6, border: `1px solid #e8d5c4`,
       background: 'white', color, cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 11, transition: 'all 0.15s ease', flexShrink: 0,
+      fontSize: 12, transition: 'all 0.15s ease', flexShrink: 0,
     }}>
       <i className={`fas ${icon}`}></i>
     </button>

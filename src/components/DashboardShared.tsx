@@ -56,7 +56,7 @@ export const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 export function StatusBadge({ status }: { status: string }) {
   const colors = STATUS_COLORS[status] || STATUS_COLORS.pending;
   return (
-    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
       background: colors.bg, color: colors.color }}>
       {status}
     </span>

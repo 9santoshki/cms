@@ -194,17 +194,17 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
               .search-btn {
                 font-size: 18px !important;
                 padding: 6px !important;
-                min-width: 40px !important;
-                min-height: 40px !important;
+                min-width: 44px !important;
+                min-height: 44px !important;
               }
             }
 
             @media (max-width: 480px) {
               .search-btn {
                 font-size: 16px !important;
-                padding: 4px !important;
-                min-width: 36px !important;
-                min-height: 36px !important;
+                padding: 6px !important;
+                min-width: 44px !important;
+                min-height: 44px !important;
               }
             }
           `}</style>

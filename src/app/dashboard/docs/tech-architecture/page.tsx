@@ -345,8 +345,7 @@ function SectionStructure() {
 │   │   │   │   └── [id]/route.ts        # Detail / status update
 │   │   │   ├── checkout/
 │   │   │   │   ├── create/route.ts      # Hard stock check + Razorpay order
-│   │   │   │   ├── verify/route.ts      # Verify signature + deduct stock
-│   │   │   │   └── verify-payment/route.ts  # Alt verify endpoint
+│   │   │   │   └── verify/route.ts      # Verify signature + deduct stock
 │   │   │   ├── admin/
 │   │   │   │   ├── users/route.ts           # List users
 │   │   │   │   ├── update-role/route.ts     # Change user role
@@ -776,7 +775,7 @@ Customer proceeds to checkout (hard check):
     → Only if all items pass: create Razorpay order + save to DB
 
 Payment verified:
-  POST /api/checkout/verify  (or /api/checkout/verify-payment)
+  POST /api/checkout/verify
     → HMAC signature check
     → UPDATE orders SET status = 'completed', payment_id = ...
     → For each variant item in the order:

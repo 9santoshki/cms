@@ -2,49 +2,14 @@ import { query } from './connection';
 import { getProductImages, getProductImagesBatch } from './productImages';
 import { getCloudflareImageUrl } from '../cloudflare';
 import { buildUpdateQueryById } from './query-builder';
-
-// ─── Slug utility ─────────────────────────────────────────────────────────────
+import { generateUniqueSlug as generateSlug } from './slug-utils';
 
 /**
- * Generate a URL-friendly, unique slug from a product name.
- *
- * 1. Normalise to lowercase, strip non-alphanumeric characters, collapse hyphens.
- * 2. Query the DB to check for collisions.
- * 3. Append an incrementing counter (-2, -3 …) until the slug is unique.
- *
- * @param name       - The product name to slugify.
- * @param excludeId  - ID of the product being updated (so it can keep its own slug).
+ * Generate a unique product slug.
+ * Thin wrapper around the shared utility for backward compatibility.
  */
 export async function generateUniqueSlug(name: string, excludeId?: string): Promise<string> {
-  const base = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '') || 'product';
-
-  // Single query: fetch all slugs that start with the base slug
-  const result = excludeId
-    ? await query(
-        `SELECT slug FROM products WHERE (slug = $1 OR slug LIKE $2) AND id != $3`,
-        [base, `${base}-%`, excludeId]
-      )
-    : await query(
-        `SELECT slug FROM products WHERE slug = $1 OR slug LIKE $2`,
-        [base, `${base}-%`]
-      );
-
-  const existing = new Set<string>(result.rows.map((r: { slug: string }) => r.slug));
-  if (!existing.has(base)) return base;
-
-  for (let counter = 2; counter <= 200; counter++) {
-    const candidate = `${base}-${counter}`;
-    if (!existing.has(candidate)) return candidate;
-  }
-
-  // Safety valve — should never be reached
-  return `${base}-${Date.now()}`;
+  return generateSlug(name, 'products', 'slug', excludeId ? Number(excludeId) : undefined);
 }
 
 export interface Product {

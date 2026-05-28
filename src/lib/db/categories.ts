@@ -2,6 +2,7 @@
  * Database helpers for category management.
  */
 import { query } from './connection';
+import { generateUniqueSlug } from './slug-utils';
 
 export interface Category {
   id: number;
@@ -83,36 +84,10 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 }
 
 /**
- * Generate a unique slug from a name.
+ * Generate a unique slug from a name. Delegates to the shared slug utility.
  */
 export async function generateUniqueCategorySlug(name: string, excludeId?: number): Promise<string> {
-  const base = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '') || 'category';
-
-  const result = excludeId
-    ? await query(
-        'SELECT slug FROM categories WHERE slug = $1 OR slug LIKE $2 AND id != $3',
-        [base, `${base}-%`, excludeId]
-      )
-    : await query(
-        'SELECT slug FROM categories WHERE slug = $1 OR slug LIKE $2',
-        [base, `${base}-%`]
-      );
-
-  const existing = new Set(result.rows.map((r: { slug: string }) => r.slug));
-  if (!existing.has(base)) return base;
-
-  for (let counter = 2; counter <= 100; counter++) {
-    const candidate = `${base}-${counter}`;
-    if (!existing.has(candidate)) return candidate;
-  }
-
-  return `${base}-${Date.now()}`;
+  return generateUniqueSlug(name, 'categories', 'slug', excludeId);
 }
 
 /**

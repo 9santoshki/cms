@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { Product, Review, ProductVariant } from '@/types';
 import VariantSelector from '@/components/VariantSelector';
+import { ProductShare } from '@/components/ProductShare';
 import { parsePrice, getDiscountPercentage } from '@/lib/utils';
 import {
   ProductDetailContainer,
@@ -637,7 +638,7 @@ const CollapsibleContent = styled.div<{ $isOpen: boolean }>`
 const CollapsibleChevron = styled.span<{ $isOpen: boolean }>`
   transition: transform 0.3s;
   transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: #6b7280;
 `;
 
@@ -1038,7 +1039,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             <ProductDetailImage
               imageClass={product.imageClass}
               imageUrl={selectedImageUrl}
-              style={{ width: '100%', height: '500px' } as React.CSSProperties}
+              style={{ width: '100%', maxHeight: '500px', height: 'auto', objectFit: 'contain' } as React.CSSProperties}
             />
             <ShippingBadge>✓ {t('freeShipping')}</ShippingBadge>
             {(() => {
@@ -1084,7 +1085,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             <ProductDetailTitle style={{ fontSize: '1.25rem', marginBottom: '0' }}>
               {product.name}
             </ProductDetailTitle>
-            <ProductCategoryTag style={{ fontSize: '0.65rem', padding: '0.2rem 0.4rem' }}>
+            <ProductCategoryTag style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}>
               {product.category || 'Furniture'}
             </ProductCategoryTag>
           </div>
@@ -1137,16 +1138,16 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <QuantitySelector style={{ margin: '0.25rem 0', gap: '0.5rem' }}>
             <span style={{ color: '#374151', fontWeight: '500', fontSize: '0.75rem' }}>{t('quantity')}:</span>
             <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#f9fafb' }}>
-              <QuantityButton style={{ padding: '0.25rem 0.5rem' }}
+              <QuantityButton style={{ padding: '0.5rem 0.75rem', minWidth: '44px', minHeight: '44px' }}
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={quantity <= 1}
               >
-                <svg style={{ width: '0.75rem', height: '0.75rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg style={{ width: '0.875rem', height: '0.875rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
                 </svg>
               </QuantityButton>
-              <QuantityDisplay style={{ minWidth: '2rem', fontSize: '0.875rem' }}>{quantity}</QuantityDisplay>
-              <QuantityButton style={{ padding: '0.25rem 0.5rem' }}
+              <QuantityDisplay style={{ minWidth: '2.5rem', fontSize: '0.875rem' }}>{quantity}</QuantityDisplay>
+              <QuantityButton style={{ padding: '0.5rem 0.75rem', minWidth: '44px', minHeight: '44px' }}
                 onClick={() => handleQuantityChange(quantity + 1)}
               >
                 <svg style={{ width: '0.75rem', height: '0.75rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1181,6 +1182,14 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </WishlistButton>
           </ActionButtons>
 
+          {/* Social Share */}
+          <ProductShare
+            title={product.name}
+            description={product.description}
+            url={`/products/${product.slug || product.id}`}
+            imageUrl={product.image_url}
+          />
+
           {error && (
             <ErrorMessage style={{ padding: '0.5rem 0.75rem', marginBottom: '0.5rem' }}>
               {error}
@@ -1191,15 +1200,15 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           <TrustBadges style={{ padding: '0.35rem 0', marginTop: '0' }}>
             <TrustBadgeItem style={{ padding: '0 0.35rem' }}>
               <TrustBadgeIcon style={{ fontSize: '0.8rem' }}>✓</TrustBadgeIcon>
-              <TrustBadgeText style={{ fontSize: '0.65rem' }}>{t('dayReturns')}</TrustBadgeText>
+              <TrustBadgeText style={{ fontSize: '0.75rem' }}>{t('dayReturns')}</TrustBadgeText>
             </TrustBadgeItem>
             <TrustBadgeItem style={{ padding: '0 0.35rem' }}>
               <TrustBadgeIcon style={{ fontSize: '0.8rem' }}>🔒</TrustBadgeIcon>
-              <TrustBadgeText style={{ fontSize: '0.65rem' }}>{t('securePayment')}</TrustBadgeText>
+              <TrustBadgeText style={{ fontSize: '0.75rem' }}>{t('securePayment')}</TrustBadgeText>
             </TrustBadgeItem>
             <TrustBadgeItem style={{ padding: '0 0.35rem' }}>
               <TrustBadgeIcon style={{ fontSize: '0.8rem' }}>📦</TrustBadgeIcon>
-              <TrustBadgeText style={{ fontSize: '0.65rem' }}>{t('expressDelivery')}</TrustBadgeText>
+              <TrustBadgeText style={{ fontSize: '0.75rem' }}>{t('expressDelivery')}</TrustBadgeText>
             </TrustBadgeItem>
           </TrustBadges>
 

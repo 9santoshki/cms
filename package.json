@@ -15,7 +15,8 @@
     "add-sample-users": "node scripts/addSampleUsers.js",
     "init-db": "node scripts/initDb.js",
     "promote-admin": "node scripts/promote-admin.js",
-    "seed-data": "node scripts/seed-sample-data.js"
+    "seed-data": "node scripts/seed-sample-data.js",
+    "generate-pwa-icons": "node scripts/generate-pwa-icons.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.965.0",
