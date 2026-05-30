@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProductImageManager from '@/components/ProductImageManager';
 import ProductVariantManager from '@/components/ProductVariantManager';
+import { RichTextEditor } from '@/components/RichTextEditor';
 
 interface ProductImage {
   id: string;
@@ -35,6 +36,14 @@ interface Product {
   stock_quantity?: number;
   images: ProductImage[];
   primary_image?: string;
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected' | 'archived';
+  reviewer_comment?: string;
+  brand?: string;
+  delivery_time?: string;
+  highlights?: string;
+  description_html?: string;
+  faqs_html?: string;
+  warranty_policy?: string;
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,9 +63,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     sale_price: '',
     category: '',
     subcategory: '',
+    brand: '',
+    delivery_time: '',
+  });
+  const [richFields, setRichFields] = useState({
+    highlights: '',
+    description_html: '',
+    faqs_html: '',
+    warranty_policy: '',
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Maker-checker workflow state
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
 
   useEffect(() => {
     params.then((p) => setProductId(p.id));
@@ -68,7 +90,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       return;
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'moderator') {
       router.push('/dashboard');
       return;
     }
@@ -118,6 +140,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           sale_price: data.data.sale_price?.toString() || '',
           category: data.data.category || '',
           subcategory: data.data.subcategory || '',
+          brand: data.data.brand || '',
+          delivery_time: data.data.delivery_time || '',
+        });
+        setRichFields({
+          highlights: data.data.highlights || '',
+          description_html: data.data.description_html || '',
+          faqs_html: data.data.faqs_html || '',
+          warranty_policy: data.data.warranty_policy || '',
         });
       } else {
         setError(data.error || 'Failed to load product');
@@ -174,6 +204,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           category: formData.category,
           subcategory: formData.subcategory,
+          brand: formData.brand || null,
+          delivery_time: formData.delivery_time || null,
+          highlights: richFields.highlights || null,
+          description_html: richFields.description_html || null,
+          faqs_html: richFields.faqs_html || null,
+          warranty_policy: richFields.warranty_policy || null,
         }),
       });
 
@@ -227,6 +263,34 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     } catch (err: any) {
       console.error('Error deleting product:', err);
       setError(err.message || 'Failed to delete product');
+    }
+  };
+
+  const handleWorkflow = async (action: 'submit' | 'approve' | 'reject' | 'unpublish', comment?: string) => {
+    if (!productId || productId === 'new') return;
+    setWorkflowLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: comment || '' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMessage(data.message);
+        setRejectModalOpen(false);
+        setRejectComment('');
+        loadProduct();
+        setTimeout(() => setSuccessMessage(null), 4000);
+      } else {
+        setError(data.error || 'Action failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Action failed');
+    } finally {
+      setWorkflowLoading(false);
     }
   };
 
@@ -361,36 +425,115 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         </button>
 
         {productId !== 'new' && (
-          <button
-            onClick={handleDelete}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              background: 'transparent',
-              color: '#ef4444',
-              border: '1px solid #fecaca',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#ef4444';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#ef4444';
-          }}
-        >
-          <i className="fas fa-trash"></i>
-          Delete Product
-        </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Status pill */}
+            {product && (() => {
+              const s = product.status || 'draft';
+              const cfg: Record<string, { bg: string; color: string; label: string }> = {
+                draft:          { bg: '#f3f4f6', color: '#6b7280',  label: 'Draft' },
+                pending_review: { bg: '#fef3c7', color: '#d97706',  label: '⏳ In Review' },
+                published:      { bg: '#dcfce7', color: '#16a34a',  label: '✓ Published' },
+                rejected:       { bg: '#fee2e2', color: '#dc2626',  label: '✕ Rejected' },
+                archived:       { bg: '#f3f4f6', color: '#9ca3af',  label: 'Archived' },
+              };
+              const c = cfg[s] || cfg.draft;
+              return (
+                <span style={{ padding: '4px 12px', background: c.bg, color: c.color, borderRadius: 20, fontSize: '12px', fontWeight: 700 }}>
+                  {c.label}
+                </span>
+              );
+            })()}
+
+            {/* Maker: Submit for Review (draft or rejected) */}
+            {product && (product.status === 'draft' || product.status === 'rejected') && (
+              <button
+                onClick={() => handleWorkflow('submit')}
+                disabled={workflowLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg, #d97706, #b45309)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                <i className="fas fa-paper-plane"></i>
+                Submit for Review
+              </button>
+            )}
+
+            {/* Admin: Approve / Reject (pending_review) */}
+            {product && product.status === 'pending_review' && user?.role === 'admin' && (
+              <>
+                <button
+                  onClick={() => handleWorkflow('approve')}
+                  disabled={workflowLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  <i className="fas fa-check"></i>
+                  Approve & Publish
+                </button>
+                <button
+                  onClick={() => setRejectModalOpen(true)}
+                  disabled={workflowLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'transparent', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  <i className="fas fa-times"></i>
+                  Reject
+                </button>
+              </>
+            )}
+
+            {/* Admin: Unpublish (published → draft) */}
+            {product && product.status === 'published' && user?.role === 'admin' && (
+              <button
+                onClick={() => handleWorkflow('unpublish')}
+                disabled={workflowLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'transparent', color: '#d97706', border: '1px solid #fcd34d', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                <i className="fas fa-eye-slash"></i>
+                Unpublish
+              </button>
+            )}
+
+            {/* Admin: Delete */}
+            {user?.role === 'admin' && (
+              <button
+                onClick={handleDelete}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'transparent', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+              >
+                <i className="fas fa-trash"></i>
+                Delete
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Reject modal */}
+      {rejectModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>Reject Product</h3>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>Provide feedback to the maker explaining what needs to be fixed.</p>
+            <textarea
+              value={rejectComment}
+              onChange={(e) => setRejectComment(e.target.value)}
+              placeholder="e.g. Images are missing, description needs more detail..."
+              rows={4}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '13px', resize: 'vertical', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setRejectModalOpen(false); setRejectComment(''); }} style={{ padding: '8px 16px', background: 'transparent', color: '#6b7280', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button
+                onClick={() => handleWorkflow('reject', rejectComment)}
+                disabled={!rejectComment.trim() || workflowLoading}
+                style={{ padding: '8px 16px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', opacity: !rejectComment.trim() ? 0.5 : 1 }}
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       {successMessage && (
@@ -426,6 +569,29 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '600', margin: 0 }}>
             {error}
           </p>
+        </div>
+      )}
+
+      {/* Reviewer comment banner — shown to maker when rejected or approved with notes */}
+      {product?.reviewer_comment && (
+        <div style={{
+          background: product.status === 'rejected' ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+          border: `1px solid ${product.status === 'rejected' ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'flex-start',
+        }}>
+          <i className={`fas ${product.status === 'rejected' ? 'fa-comment-slash' : 'fa-comment-check'}`}
+             style={{ fontSize: '16px', color: product.status === 'rejected' ? '#dc2626' : '#16a34a', marginTop: '2px' }} />
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: '700', color: product.status === 'rejected' ? '#dc2626' : '#16a34a', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {product.status === 'rejected' ? 'Reviewer Feedback' : 'Reviewer Note'}
+            </p>
+            <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{product.reviewer_comment}</p>
+          </div>
         </div>
       )}
 
@@ -692,6 +858,95 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   </select>
                 </div>
               </div>
+            </div>
+
+            {/* Brand & Delivery */}
+            <div style={{
+              background: 'rgba(193, 154, 107, 0.05)',
+              borderRadius: '8px',
+              padding: '16px',
+              border: '1px solid #e8d5c4'
+            }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-tag" style={{ color: '#c19a6b' }}></i>
+                Brand &amp; Delivery
+              </h4>
+              <div className="product-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Brand</label>
+                  <input
+                    type="text"
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Nilkamal, Godrej"
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid #e8d5c4', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Delivery Time</label>
+                  <input
+                    type="text"
+                    name="delivery_time"
+                    value={formData.delivery_time}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 5–7 business days"
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid #e8d5c4', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Rich Text: Highlights */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
+                Product Highlights <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+              </label>
+              <RichTextEditor
+                value={richFields.highlights}
+                onChange={(html) => setRichFields(f => ({ ...f, highlights: html }))}
+                placeholder="Add key highlights as a bullet list…"
+                minHeight={120}
+              />
+            </div>
+
+            {/* Rich Text: Description (HTML) */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
+                Rich Description <span style={{ fontWeight: 400, color: '#999' }}>(rich text — shown on product page)</span>
+              </label>
+              <RichTextEditor
+                value={richFields.description_html}
+                onChange={(html) => setRichFields(f => ({ ...f, description_html: html }))}
+                placeholder="Detailed product description with formatting…"
+                minHeight={160}
+              />
+            </div>
+
+            {/* Rich Text: FAQs */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
+                FAQs <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+              </label>
+              <RichTextEditor
+                value={richFields.faqs_html}
+                onChange={(html) => setRichFields(f => ({ ...f, faqs_html: html }))}
+                placeholder="Q: How do I assemble? &#10;A: …"
+                minHeight={140}
+              />
+            </div>
+
+            {/* Rich Text: Warranty, Return & Exchange Policy */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
+                Warranty, Return &amp; Exchange Policy <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+              </label>
+              <RichTextEditor
+                value={richFields.warranty_policy}
+                onChange={(html) => setRichFields(f => ({ ...f, warranty_policy: html }))}
+                placeholder="e.g. 2-year warranty. Returns accepted within 7 days…"
+                minHeight={140}
+              />
             </div>
 
             {/* Submit Button */}

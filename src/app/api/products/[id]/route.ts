@@ -80,8 +80,10 @@ export async function PUT(
     const { id } = params;
 
     const body = await request.json();
-    const { name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status } =
-      body;
+    const {
+      name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status,
+      brand, delivery_time, highlights, description_html, faqs_html, warranty_policy,
+    } = body;
 
     if (!name || !description || !price || price <= 0) {
       return NextResponse.json(
@@ -91,7 +93,7 @@ export async function PUT(
     }
 
     // Validate status if provided
-    const validStatuses = ['draft', 'published', 'archived'];
+    const validStatuses = ['draft', 'pending_review', 'published', 'rejected', 'archived'];
     const productStatus = validStatuses.includes(status) ? status : undefined;
 
     const existingProduct = await getProductById(id);
@@ -118,6 +120,12 @@ export async function PUT(
       subcategory: subcategory ?? null,
       stock_quantity,
       slug,
+      brand: brand ?? null,
+      delivery_time: delivery_time ?? null,
+      highlights: highlights ?? null,
+      description_html: description_html ?? null,
+      faqs_html: faqs_html ?? null,
+      warranty_policy: warranty_policy ?? null,
     };
     if (productStatus) {
       updates.status = productStatus;

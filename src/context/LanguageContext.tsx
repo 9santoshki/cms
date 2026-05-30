@@ -104,9 +104,9 @@ const translations: Record<string, Record<string, string>> = {
     youMayAlsoLike: 'You May Also Like',
 
     // Trust badges
-    dayReturns: '30-Day Returns',
-    securePayment: 'Secure Payment',
-    expressDelivery: 'Express Delivery',
+    dayReturns: 'Easy Returns',
+    securePayment: 'Safe Checkout',
+    expressDelivery: 'Fast Delivery',
 
     // Variant selector
     selectOptions: 'Select options to choose your variant. Some variants may use fewer dimensions.',
@@ -237,9 +237,9 @@ const translations: Record<string, Record<string, string>> = {
     youMayAlsoLike: 'आपको ये भी पसंद आएंगे',
 
     // Trust badges
-    dayReturns: '30-दिन की रिटर्न',
-    securePayment: 'सुरक्षित पेमेंट',
-    expressDelivery: 'एक्सप्रेस डिलीवरी',
+    dayReturns: 'आसान रिटर्न',
+    securePayment: 'सुरक्षित चेकआउट',
+    expressDelivery: 'तेज़ डिलीवरी',
 
     // Variant selector
     selectOptions: 'विकल्प चुनें। कुछ वेरिएंट कम डायमेंशन का उपयोग करते हैं।',
@@ -370,9 +370,9 @@ const translations: Record<string, Record<string, string>> = {
     youMayAlsoLike: 'ಇವನ್ನೂ ನೋಡಿ',
 
     // Trust badges
-    dayReturns: '30-ದಿನಗಳ ರಿಟರ್ನ್',
-    securePayment: 'ಸುರಕ್ಷಿತ ಪಾವತಿ',
-    expressDelivery: 'ಎಕ್ಸ್‌ಪ್ರೆಸ್ ಡಿಲಿವರಿ',
+    dayReturns: 'ಸುಲಭ ರಿಟರ್ನ್',
+    securePayment: 'ಸುರಕ್ಷಿತ ಚೆಕ್‌ಔಟ್',
+    expressDelivery: 'ವೇಗದ ಡಿಲಿವರಿ',
 
     // Variant selector
     selectOptions: 'ಆಯ್ಕೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ. ಕೆಲವು ವೇರಿಯಂಟ್‌ಗಳು ಕಡಿಮೆ ಡಿಮೆನ್‌ಶನ್‌ಗಳನ್ನು ಬಳಸುತ್ತವೆ.',

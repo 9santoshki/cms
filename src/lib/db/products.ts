@@ -24,9 +24,18 @@ export interface Product {
   slug?: string;
   stock_quantity?: number;
   /** Lifecycle state — customers only see 'published' products */
-  status?: 'draft' | 'published' | 'archived';
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected' | 'archived';
+  /** Reviewer (admin/checker) comment */
+  reviewer_comment?: string;
   created_at?: string;
   updated_at?: string;
+  // Rich-content fields
+  brand?: string;
+  delivery_time?: string;
+  highlights?: string;
+  description_html?: string;
+  faqs_html?: string;
+  warranty_policy?: string;
 }
 
 export interface ProductImageWithUrl {
@@ -168,10 +177,18 @@ export async function createProduct(product: {
   slug: string;
   stock_quantity?: number;
   status?: 'draft' | 'published' | 'archived';
+  brand?: string;
+  delivery_time?: string;
+  highlights?: string;
+  description_html?: string;
+  faqs_html?: string;
+  warranty_policy?: string;
 }): Promise<Product> {
   const result = await query(
-    `INSERT INTO products (name, description, price, sale_price, image_url, category, subcategory, slug, stock_quantity, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `INSERT INTO products
+       (name, description, price, sale_price, image_url, category, subcategory, slug,
+        stock_quantity, status, brand, delivery_time, highlights, description_html, faqs_html, warranty_policy)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *`,
     [
       product.name,
@@ -184,6 +201,12 @@ export async function createProduct(product: {
       product.slug,
       product.stock_quantity || 0,
       product.status || 'draft',
+      product.brand || null,
+      product.delivery_time || null,
+      product.highlights || null,
+      product.description_html || null,
+      product.faqs_html || null,
+      product.warranty_policy || null,
     ]
   );
   return result.rows[0];

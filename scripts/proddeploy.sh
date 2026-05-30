@@ -140,6 +140,8 @@ run_migration "$APP_DIR/scripts/migrations/add_categories_table.sql"        "add
 run_migration "$APP_DIR/scripts/migrations/add_categories_columns.sql"      "add_categories_columns"
 run_migration "$APP_DIR/scripts/migrations/fix_categories_show_in_menu.sql" "fix_categories_show_in_menu"
 run_migration "$APP_DIR/scripts/migrations/add_recently_viewed.sql"         "add_recently_viewed"
+run_migration "$APP_DIR/scripts/migrations/add_product_rich_fields.sql"     "add_product_rich_fields"
+run_migration "$APP_DIR/scripts/migrations/add_maker_checker_workflow.sql"  "add_maker_checker_workflow"
 echo "✅ Migrations complete"
 
 echo ""
