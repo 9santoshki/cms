@@ -29,7 +29,7 @@ const DashboardProductsPage = () => {
       return;
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'moderator') {
       router.push('/dashboard');
       return;
     }
@@ -407,19 +407,37 @@ const DashboardProductsPage = () => {
                   }}>
                     {product.name}
                   </h3>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '2px 8px',
-                    background: 'rgba(193, 154, 107, 0.1)',
-                    color: '#c19a6b',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.3px'
-                  }}>
-                    {product.category || 'Uncategorized'}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      background: 'rgba(193, 154, 107, 0.1)',
+                      color: '#c19a6b',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      {product.category || 'Uncategorized'}
+                    </span>
+                    {(() => {
+                      const s = product.status || 'draft';
+                      const cfg: Record<string, { bg: string; color: string; label: string }> = {
+                        draft:          { bg: '#f3f4f6', color: '#6b7280', label: 'Draft' },
+                        pending_review: { bg: '#fef3c7', color: '#d97706', label: 'In Review' },
+                        published:      { bg: '#dcfce7', color: '#16a34a', label: 'Published' },
+                        rejected:       { bg: '#fee2e2', color: '#dc2626', label: 'Rejected' },
+                        archived:       { bg: '#f3f4f6', color: '#9ca3af', label: 'Archived' },
+                      };
+                      const c = cfg[s] || cfg.draft;
+                      return (
+                        <span style={{ padding: '2px 8px', background: c.bg, color: c.color, borderRadius: '4px', fontSize: '10px', fontWeight: '600' }}>
+                          {c.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 <p style={{

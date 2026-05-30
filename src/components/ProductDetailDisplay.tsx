@@ -7,7 +7,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { Product, Review, ProductVariant } from '@/types';
 import VariantSelector from '@/components/VariantSelector';
-import { ProductShare } from '@/components/ProductShare';
 import { parsePrice, getDiscountPercentage } from '@/lib/utils';
 import {
   ProductDetailContainer,
@@ -795,6 +794,8 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   // Label when options are selected but no DB-backed variant matches (e.g. "Thin / 12×18 / Black")
   const [selectionLabel, setSelectionLabel] = useState<string>('');
+  // Incremented after add-to-cart to remount VariantSelector and clear its internal selection
+  const [variantResetKey, setVariantResetKey] = useState(0);
   // Overall stock availability from supplier-managed variant inventory.
   // null = variants not yet loaded (fall back to product.stock_quantity).
   const [anyVariantInStock, setAnyVariantInStock] = useState<boolean | null>(null);
@@ -818,6 +819,10 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
   // Related products state
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+
+  // Share popover state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // FAQ accordion state
   const [faqOpenItems, setFaqOpenItems] = useState<Record<number, boolean>>({});
@@ -981,6 +986,11 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
         description: product.description || '',
         image_url: product.image_url || '',
       });
+      // Reset quantity and variant selection after successful add
+      setQuantity(1);
+      setSelectedVariant(null);
+      setSelectionLabel('');
+      setVariantResetKey(k => k + 1);
     } catch (err: unknown) {
       const e = err as Error;
       setError(e.message || 'Failed to add item to cart');
@@ -991,6 +1001,28 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     if (value >= 1) {
       setQuantity(value);
     }
+  };
+
+  // Share helpers
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/products/${product.slug || product.id}`
+    : `/products/${product.slug || product.id}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      setShareCopied(false);
+    }
+  };
+
+  const shareItemStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.4rem 0.6rem', borderRadius: 6, color: '#374151',
+    fontSize: '0.8rem', textDecoration: 'none',
+    transition: 'background 0.15s', cursor: 'pointer',
   };
 
 
@@ -1005,6 +1037,15 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
   return (
     <ProductDetailContainer>
+      <style>{`
+        .rich-content p { margin: 0.25rem 0; font-size: 0.8rem; line-height: 1.6; color: #4b5563; }
+        .rich-content ul, .rich-content ol { padding-left: 1.25rem; margin: 0.25rem 0; }
+        .rich-content li { font-size: 0.8rem; color: #4b5563; margin: 0.1rem 0; }
+        .rich-content h2 { font-size: 0.95rem; font-weight: 600; color: #1f2937; margin: 0.5rem 0 0.25rem; }
+        .rich-content h3 { font-size: 0.875rem; font-weight: 600; color: #1f2937; margin: 0.4rem 0 0.2rem; }
+        .rich-content strong { color: #1f2937; }
+        .rich-content blockquote { border-left: 3px solid #c19a6b; padding-left: 0.75rem; color: #6b7280; margin: 0.5rem 0; }
+      `}</style>
       {/* Force re-render when language changes */}
       <div data-lang={language} style={{ display: 'none' }} />
 
@@ -1036,11 +1077,18 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
         {/* Product Images - Left Column */}
         <div style={{ width: '100%' }}>
           <ProductImageContainer>
-            <ProductDetailImage
-              imageClass={product.imageClass}
-              imageUrl={selectedImageUrl}
-              style={{ width: '100%', maxHeight: '500px', height: 'auto', objectFit: 'contain' } as React.CSSProperties}
-            />
+            {selectedImageUrl ? (
+              <img
+                src={selectedImageUrl}
+                alt={product.name}
+                style={{ width: '100%', maxHeight: '500px', height: 'auto', objectFit: 'contain', display: 'block' }}
+              />
+            ) : (
+              <ProductDetailImage
+                imageClass={product.imageClass}
+                style={{ width: '100%', height: '400px' } as React.CSSProperties}
+              />
+            )}
             <ShippingBadge>✓ {t('freeShipping')}</ShippingBadge>
             {(() => {
               // Use supplier-managed variant stock when available;
@@ -1061,26 +1109,63 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
           {/* Thumbnail Gallery */}
           <ThumbnailGallery>
-            {productImages.slice(0, 4).map((image: any, index: number) => (
-              <ThumbnailButton
-                key={index}
-                active={index === selectedImageIndex}
-                onClick={() => setSelectedImageIndex(index)}
-                style={{ cursor: 'pointer' }}
-              >
-                <ProductDetailImage
-                  imageClass={product.imageClass}
-                  imageUrl={image.url || image}
-                  style={{ width: '100%', height: '100%' } as React.CSSProperties}
-                />
-              </ThumbnailButton>
-            ))}
+            {productImages.slice(0, 4).map((image: any, index: number) => {
+              const thumbUrl = typeof image === 'string' ? image : (image?.url || '');
+              return (
+                <ThumbnailButton
+                  key={index}
+                  active={index === selectedImageIndex}
+                  onClick={() => setSelectedImageIndex(index)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {thumbUrl ? (
+                    <img
+                      src={thumbUrl}
+                      alt={`${product.name} ${index + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <ProductDetailImage
+                      imageClass={product.imageClass}
+                      style={{ width: '100%', height: '100%' } as React.CSSProperties}
+                    />
+                  )}
+                </ThumbnailButton>
+              );
+            })}
           </ThumbnailGallery>
         </div>
 
         {/* Product Info - Right Column */}
         <ProductDetailInfo>
-          {/* Title first, then Category inline */}
+          {/* Brand + Delivery — styled badges above name */}
+          {(product.brand || product.delivery_time) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+              {product.brand && (
+                <span style={{
+                  fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+                  color: '#92400e', background: '#fffbeb', border: '1px solid #fcd34d',
+                  borderRadius: 4, padding: '0.15rem 0.5rem',
+                }}>
+                  {product.brand}
+                </span>
+              )}
+              {product.delivery_time && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                  fontSize: '0.7rem', fontWeight: 600, color: '#15803d',
+                  background: '#f0fdf4', border: '1px solid #86efac',
+                  borderRadius: 20, padding: '0.15rem 0.6rem',
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                  {product.delivery_time}
+                </span>
+              )}
+            </div>
+          )}
+          {/* Title + Category inline */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
             <ProductDetailTitle style={{ fontSize: '1.25rem', marginBottom: '0' }}>
               {product.name}
@@ -1090,7 +1175,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </ProductCategoryTag>
           </div>
 
-          {/* Rating inline */}
+          {/* Rating + Share inline */}
           <RatingContainer style={{ margin: '0.25rem 0', padding: '0.25rem 0' }}>
             <div style={{ display: 'flex', gap: '0.125rem' }}>
               {[...Array(5)].map((_, i) => (
@@ -1103,6 +1188,40 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               <span style={{ fontWeight: '600', color: '#1f2937' }}>{averageRating.toFixed(1)}</span>
               <span style={{ color: '#6b7280' }}> ({reviewCount})</span>
             </ReviewsCount>
+            {/* Share button — next to rating */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShareOpen(o => !o)}
+                style={{ background: shareOpen ? 'linear-gradient(90deg,#d97706,#b45309)' : 'linear-gradient(90deg,#fffbeb,#fef3c7)', border: '1px solid #fbbf24', borderRadius: 20, padding: '0.25rem 0.75rem', cursor: 'pointer', fontSize: '0.72rem', color: shareOpen ? 'white' : '#92400e', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', transition: 'all 0.2s', letterSpacing: '0.01em' }}
+                title="Share this product"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Share
+              </button>
+              {shareOpen && (
+                <div style={{ position: 'absolute', top: '110%', right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', padding: '0.4rem', zIndex: 200, minWidth: 170 }}>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(product.name + ' ' + shareUrl)}`} target="_blank" rel="noopener noreferrer" style={shareItemStyle}>
+                    <span style={{ fontSize: '1rem' }}>💬</span> WhatsApp
+                  </a>
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" style={shareItemStyle}>
+                    <span style={{ fontSize: '1rem' }}>📘</span> Facebook
+                  </a>
+                  <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(product.name)}`} target="_blank" rel="noopener noreferrer" style={shareItemStyle}>
+                    <span style={{ fontSize: '1rem', fontWeight: 700 }}>𝕏</span> Twitter / X
+                  </a>
+                  <a href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(product.name)}&media=${encodeURIComponent(product.image_url || '')}`} target="_blank" rel="noopener noreferrer" style={shareItemStyle}>
+                    <span style={{ fontSize: '1rem' }}>📌</span> Pinterest
+                  </a>
+                  <a href={`mailto:?subject=${encodeURIComponent(product.name)}&body=${encodeURIComponent(shareUrl)}`} style={shareItemStyle}>
+                    <span style={{ fontSize: '1rem' }}>✉️</span> Email
+                  </a>
+                  <button onClick={handleCopyLink} style={{ ...shareItemStyle, background: 'none', border: 'none', width: '100%', textAlign: 'left' }}>
+                    <span style={{ fontSize: '1rem' }}>{shareCopied ? '✅' : '🔗'}</span>
+                    {shareCopied ? 'Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+              )}
+            </div>
           </RatingContainer>
 
           {/* Price inline - label, price, discount, guarantee all on one line */}
@@ -1126,6 +1245,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
           {/* Variant Selector */}
           <VariantSelector
+            key={variantResetKey}
             productId={product.id}
             onVariantChange={(variant, label) => {
               setSelectedVariant(variant);
@@ -1174,21 +1294,10 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               ) : isVariantOutOfStock ? (
                 t('outOfStock')
               ) : (
-                `${t('addToCart')} — ₹${(displayPrice * quantity).toLocaleString()}`
+                t('addToCart')
               )}
             </AddToCartButton>
-            <WishlistButton style={{ padding: '0.5rem 0.75rem', fontSize: '0.9rem' }} title="Add to Wishlist">
-              ♡
-            </WishlistButton>
           </ActionButtons>
-
-          {/* Social Share */}
-          <ProductShare
-            title={product.name}
-            description={product.description}
-            url={`/products/${product.slug || product.id}`}
-            imageUrl={product.image_url}
-          />
 
           {error && (
             <ErrorMessage style={{ padding: '0.5rem 0.75rem', marginBottom: '0.5rem' }}>
@@ -1212,7 +1321,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </TrustBadgeItem>
           </TrustBadges>
 
-          {/* Collapsible Sections - Product Highlights, Description, FAQs, Returns */}
+          {/* Collapsible Sections */}
           {/* Product Highlights */}
           <CollapsibleSection>
             <CollapsibleHeader onClick={() => toggleSection('highlights')}>
@@ -1220,30 +1329,18 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               <CollapsibleChevron $isOpen={sectionsOpen.highlights}>▼</CollapsibleChevron>
             </CollapsibleHeader>
             <CollapsibleContent $isOpen={sectionsOpen.highlights}>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>{product.dimensions || '80cm x 70cm x 45cm'} dimensions</HighlightText>
-              </HighlightItem>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>{product.material || 'Premium Wood & Metal'} construction</HighlightText>
-              </HighlightItem>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>{product.warranty || '2 Years'} warranty</HighlightText>
-              </HighlightItem>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>{product.color || 'Walnut Finish'} finish</HighlightText>
-              </HighlightItem>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>Weight: {product.weight || '15kg'}</HighlightText>
-              </HighlightItem>
-              <HighlightItem>
-                <HighlightIcon>✓</HighlightIcon>
-                <HighlightText>Assembly: {product.assembly_required ? t('required') : t('notRequired')}</HighlightText>
-              </HighlightItem>
+              {product.highlights ? (
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.highlights }} />
+              ) : (
+                <>
+                  {product.dimensions && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.dimensions} dimensions</HighlightText></HighlightItem>}
+                  {product.material && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.material} construction</HighlightText></HighlightItem>}
+                  {product.warranty && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.warranty} warranty</HighlightText></HighlightItem>}
+                  {product.color && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.color} finish</HighlightText></HighlightItem>}
+                  {product.weight && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>Weight: {product.weight}</HighlightText></HighlightItem>}
+                  {product.delivery_time && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>Delivery: {product.delivery_time}</HighlightText></HighlightItem>}
+                </>
+              )}
             </CollapsibleContent>
           </CollapsibleSection>
 
@@ -1254,7 +1351,24 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               <CollapsibleChevron $isOpen={sectionsOpen.description}>▼</CollapsibleChevron>
             </CollapsibleHeader>
             <CollapsibleContent $isOpen={sectionsOpen.description}>
-              {product.description}
+              {product.description_html ? (
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.description_html }} />
+              ) : (
+                product.description
+              )}
+            </CollapsibleContent>
+          </CollapsibleSection>
+
+          {/* Warranty, Return & Exchange Policy */}
+          <CollapsibleSection>
+            <CollapsibleHeader onClick={() => toggleSection('returns')}>
+              <span>Warranty &amp; Returns</span>
+              <CollapsibleChevron $isOpen={sectionsOpen.returns}>▼</CollapsibleChevron>
+            </CollapsibleHeader>
+            <CollapsibleContent $isOpen={sectionsOpen.returns}>
+              {product.warranty_policy ? (
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.warranty_policy }} />
+              ) : null}
             </CollapsibleContent>
           </CollapsibleSection>
 
@@ -1265,54 +1379,16 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               <CollapsibleChevron $isOpen={sectionsOpen.faqs}>▼</CollapsibleChevron>
             </CollapsibleHeader>
             <CollapsibleContent $isOpen={sectionsOpen.faqs}>
-              {(product.faqs && product.faqs.length > 0) ? (
-                product.faqs.map((faq: { question: string; answer: string }, index: number) => (
+              {product.faqs_html ? (
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.faqs_html }} />
+              ) : (product.faqs && product.faqs.length > 0) ? (
+                product.faqs.map((faq, index) => (
                   <div key={index} style={{ marginBottom: '0.75rem' }}>
                     <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{faq.question}</strong>
                     <span>{faq.answer}</span>
                   </div>
                 ))
-              ) : (
-                <>
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{t('shippingInfo')}</strong>
-                    <span>{t('deliveryIn5_7Days')}. {t('freeShippingAbove')}.</span>
-                  </div>
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{t('warrantyInfo')}</strong>
-                    <span>{t('warrantyPeriod')}.</span>
-                  </div>
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{t('cancellationPolicy')}</strong>
-                    <span>{t('cancelBeforeDispatch')}.</span>
-                  </div>
-                </>
-              )}
-            </CollapsibleContent>
-          </CollapsibleSection>
-
-          {/* Returns & Exchange Policy */}
-          <CollapsibleSection>
-            <CollapsibleHeader onClick={() => toggleSection('returns')}>
-              <span>Returns & Exchange Policy</span>
-              <CollapsibleChevron $isOpen={sectionsOpen.returns}>▼</CollapsibleChevron>
-            </CollapsibleHeader>
-            <CollapsibleContent $isOpen={sectionsOpen.returns}>
-              <div style={{ marginBottom: '0.75rem' }}>
-                <strong style={{ color: '#1f2937' }}>
-                  {product.return_policy === 'no_return' ? t('noReturn') :
-                   product.return_policy === 'exchange_only' ? t('exchangeOnly') :
-                   t('standardReturn')}
-                </strong>
-              </div>
-              <p style={{ marginBottom: '0.5rem' }}>
-                {product.return_policy === 'no_return' ? t('noReturnsOnCustom') :
-                 product.return_policy === 'exchange_only' ? t('exchangeOnlyPolicy') :
-                 t('returnsWithin7Days')}
-              </p>
-              <p style={{ marginBottom: '0.5rem' }}>• {t('deliveryIn5_7Days')}</p>
-              <p style={{ marginBottom: '0.5rem' }}>• {t('warrantyPeriod')}</p>
-              <p>• {t('cancelBeforeDispatch')}</p>
+              ) : null}
             </CollapsibleContent>
           </CollapsibleSection>
         </ProductDetailInfo>
@@ -1432,11 +1508,18 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                   onClick={() => router.push(`/products/${relatedProduct.slug || relatedProduct.id}`)}
                 >
                   <RelatedProductImageContainer>
-                    <ProductDetailImage
-                      imageClass={relatedProduct.imageClass}
-                      imageUrl={relatedProduct.primary_image || relatedProduct.image_url || ''}
-                      style={{ width: '100%', height: '100%' } as React.CSSProperties}
-                    />
+                    {(relatedProduct.primary_image || relatedProduct.image_url) ? (
+                      <img
+                        src={relatedProduct.primary_image || relatedProduct.image_url || ''}
+                        alt={relatedProduct.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : (
+                      <ProductDetailImage
+                        imageClass={relatedProduct.imageClass}
+                        style={{ width: '100%', height: '100%' } as React.CSSProperties}
+                      />
+                    )}
                     {rpHasDiscount && (
                       <div style={{
                         position: 'absolute',

@@ -140,7 +140,9 @@ export interface Product {
   slug?: string;
   stock_quantity?: number;
   /** Lifecycle state — only 'published' products are visible to customers */
-  status?: 'draft' | 'published' | 'archived';
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected' | 'archived';
+  /** Reviewer (admin/checker) comment — shown to maker after approval or rejection */
+  reviewer_comment?: string;
   /** CSS class name used for background-image styling */
   imageClass?: string;
   /** Physical dimensions (e.g. "80cm x 70cm x 45cm") */
@@ -158,6 +160,19 @@ export interface Product {
   review_count?: number;
   created_at?: string;
   updated_at?: string;
+  // ── Rich-content fields (added in migration add_product_rich_fields) ──
+  /** Brand / manufacturer name */
+  brand?: string;
+  /** Estimated delivery time (e.g. "5-7 business days") */
+  delivery_time?: string;
+  /** HTML rich text – product highlight bullet points */
+  highlights?: string;
+  /** HTML rich text – long-form product description (replaces plain `description` for display) */
+  description_html?: string;
+  /** HTML rich text – FAQs for this product */
+  faqs_html?: string;
+  /** HTML rich text – warranty, return and exchange policy */
+  warranty_policy?: string;
 }
 
 export interface Review {

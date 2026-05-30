@@ -335,12 +335,6 @@ const NewShopPage = () => {
 
       {/* Main Content */}
       <MainContent style={{ marginTop: '0' }}>
-        {/* Mobile Filter Toggle */}
-        <MobileFilterToggle onClick={() => setMobileFiltersOpen(true)}>
-          <i className="fas fa-filter"></i>
-          Filters {hasActiveFilters && `(${filters.category !== 'All' ? filters.category : ''}${filters.subcategory !== 'All' ? ' › ' + filters.subcategory : ''})`}
-        </MobileFilterToggle>
-
         {/* Mobile Filters Overlay */}
         {mobileFiltersOpen && (
           <div
@@ -706,6 +700,12 @@ const NewShopPage = () => {
 
         {/* Products Grid */}
         <ProductsSection>
+          {/* Mobile Filter Toggle — inside ProductsSection so it stacks above the grid on mobile */}
+          <MobileFilterToggle onClick={() => setMobileFiltersOpen(true)}>
+            <i className="fas fa-filter"></i>
+            Filters {hasActiveFilters && `(${filters.category !== 'All' ? filters.category : ''}${filters.subcategory !== 'All' ? ' › ' + filters.subcategory : ''})`}
+          </MobileFilterToggle>
+
           {/* Results Header with Sort */}
           <div style={{
             display: 'flex',
