@@ -17,6 +17,7 @@ export const ProductDetailOverlay = styled.div`
 export const ProductDetailContainer = styled.div`
   position: relative;
   background-color: white;
+  color: #1f2937;
   border-radius: 0;
   max-width: 1400px;
   width: 100%;

@@ -69,6 +69,7 @@ export default function CategoriesPage() {
   const [editShowOnHomepage, setEditShowOnHomepage] = useState(false);
   const [editShowInMenu, setEditShowInMenu] = useState(true);
   const [savingCategory, setSavingCategory] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // ── Add subcategory (per parent) ──
   const [addingSubParentId, setAddingSubParentId] = useState<number | null>(null);
@@ -79,6 +80,10 @@ export default function CategoriesPage() {
   const [newSubShowOnHomepage, setNewSubShowOnHomepage] = useState(false);
   const [newSubShowInMenu, setNewSubShowInMenu] = useState(true);
   const [addingSub, setAddingSub] = useState(false);
+  const [uploadingSubImage, setUploadingSubImage] = useState(false);
+  // ── Add parent category image ──
+  const [newParentImage, setNewParentImage] = useState('');
+  const [uploadingParentImage, setUploadingParentImage] = useState(false);
 
   useEffect(() => {
     if (!user) { router.push('/auth?redirect=/dashboard/categories'); return; }
@@ -109,6 +114,33 @@ export default function CategoriesPage() {
       .sort((a, b) => a.display_order - b.display_order);
 
   // ─────────────────────────────────────────────────────────────
+  // Image upload helper
+  // ─────────────────────────────────────────────────────────────
+
+  const uploadCategoryImage = async (
+    file: File,
+    setUploading: (v: boolean) => void,
+    setUrl: (v: string) => void
+  ) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/admin/categories/upload-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        setUrl(data.url);
+      } else {
+        showFlash(data.error || 'Image upload failed', 'err');
+      }
+    } catch {
+      showFlash('Image upload failed', 'err');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
   // Parent category actions
   // ─────────────────────────────────────────────────────────────
 
@@ -126,12 +158,13 @@ export default function CategoriesPage() {
           slug: newParentSlug.trim() || undefined,
           description: newParentDesc.trim() || null,
           display_order: parseInt(newParentOrder, 10) || categories.length,
+          image: newParentImage.trim() || null,
         }),
       });
       const data = await res.json();
       if (data.success) {
         showFlash(`"${newParentName}" added!`);
-        setNewParentName(''); setNewParentSlug(''); setNewParentDesc(''); setNewParentOrder('0');
+        setNewParentName(''); setNewParentSlug(''); setNewParentDesc(''); setNewParentOrder('0'); setNewParentImage('');
         setShowAddParent(false);
         loadCategories();
       } else { showFlash(data.error || 'Failed to add category', 'err'); }
@@ -372,6 +405,15 @@ export default function CategoriesPage() {
               />
             </div>
           </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>Image <span style={{ fontWeight: 400, color: '#aaa' }}>(optional)</span></label>
+            <ImageUploadField
+              imageUrl={newParentImage}
+              uploading={uploadingParentImage}
+              onFileChange={file => uploadCategoryImage(file, setUploadingParentImage, setNewParentImage)}
+              onClear={() => setNewParentImage('')}
+            />
+          </div>
           <button
             onClick={handleAddParent} disabled={addingParent}
             style={{
@@ -455,6 +497,16 @@ export default function CategoriesPage() {
                         <label style={labelStyle}>Order</label>
                         <input type="number" min="0" style={{ ...inputStyle, padding: '6px 10px' }} value={editOrder}
                           onChange={e => setEditOrder(e.target.value)} />
+                      </div>
+                      <div style={{ minWidth: 140 }}>
+                        <label style={labelStyle}>Image</label>
+                        <ImageUploadField
+                          imageUrl={editImage}
+                          uploading={uploadingImage}
+                          onFileChange={file => uploadCategoryImage(file, setUploadingImage, setEditImage)}
+                          onClear={() => setEditImage('')}
+                          compact
+                        />
                       </div>
                       <button onClick={() => handleSave(cat.id)} disabled={savingCategory}
                         style={{
@@ -560,7 +612,7 @@ export default function CategoriesPage() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 16 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid #f0ebe5' }}>
-                            {['Name', 'Slug', 'Order', 'Menu', 'Homepage', 'Active', ''].map(h => (
+                            {['Name', 'Slug', 'Order', 'Image', 'Menu', 'Homepage', 'Active', ''].map(h => (
                               <th key={h} style={{
                                 padding: '6px 10px', textAlign: 'left',
                                 fontSize: 12, fontWeight: 700, color: '#aaa',
@@ -599,6 +651,21 @@ export default function CategoriesPage() {
                                       onChange={e => setEditOrder(e.target.value)} />
                                   ) : (
                                     <span style={{ color: '#aaa' }}>{sub.display_order}</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '8px 10px' }}>
+                                  {isEditingSub ? (
+                                    <ImageUploadField
+                                      imageUrl={editImage}
+                                      uploading={uploadingImage}
+                                      onFileChange={file => uploadCategoryImage(file, setUploadingImage, setEditImage)}
+                                      onClear={() => setEditImage('')}
+                                      compact
+                                    />
+                                  ) : sub.image ? (
+                                    <img src={sub.image} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, border: '1px solid #e8d5c4' }} />
+                                  ) : (
+                                    <span style={{ color: '#ddd', fontSize: 11 }}>—</span>
                                   )}
                                 </td>
                                 <td style={{ padding: '8px 10px' }}>
@@ -709,9 +776,13 @@ export default function CategoriesPage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 10 }}>
                           <div>
-                            <label style={labelStyle}>Image URL <span style={{ fontWeight: 400, color: '#aaa' }}>(for homepage)</span></label>
-                            <input style={inputStyle} placeholder="/images/categories/example.jpg"
-                              value={newSubImage} onChange={e => setNewSubImage(e.target.value)} />
+                            <label style={labelStyle}>Image <span style={{ fontWeight: 400, color: '#aaa' }}>(for browse by subcategory)</span></label>
+                            <ImageUploadField
+                              imageUrl={newSubImage}
+                              uploading={uploadingSubImage}
+                              onFileChange={file => uploadCategoryImage(file, setUploadingSubImage, setNewSubImage)}
+                              onClear={() => setNewSubImage('')}
+                            />
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
                             <input type="checkbox" checked={newSubShowOnHomepage}
@@ -795,5 +866,49 @@ function Spinner({ size = 12 }: { size?: number }) {
       borderTop: '2px solid currentColor',
       borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0,
     }} />
+  );
+}
+
+function ImageUploadField({
+  imageUrl, uploading, onFileChange, onClear, compact = false,
+}: {
+  imageUrl: string;
+  uploading: boolean;
+  onFileChange: (file: File) => void;
+  onClear: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {imageUrl ? (
+        <>
+          <img src={imageUrl} alt="preview" style={{ width: compact ? 36 : 48, height: compact ? 36 : 48, objectFit: 'cover', borderRadius: 4, border: '1px solid #e8d5c4', flexShrink: 0 }} />
+          <button
+            type="button"
+            onClick={onClear}
+            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 11, padding: '2px 4px' }}
+            title="Remove image"
+          >✕</button>
+        </>
+      ) : (
+        <label style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '5px 10px', background: uploading ? '#f5f5f5' : 'white',
+          border: '1px dashed #c19a6b', borderRadius: 6,
+          fontSize: 12, color: uploading ? '#aaa' : '#c19a6b',
+          cursor: uploading ? 'not-allowed' : 'pointer', fontWeight: 600,
+        }}>
+          {uploading ? <Spinner size={10} /> : <i className="fas fa-upload" style={{ fontSize: 11 }}></i>}
+          {uploading ? 'Uploading…' : 'Upload'}
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            disabled={uploading}
+            onChange={e => { const f = e.target.files?.[0]; if (f) onFileChange(f); e.target.value = ''; }}
+          />
+        </label>
+      )}
+    </div>
   );
 }
