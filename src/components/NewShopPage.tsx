@@ -66,6 +66,7 @@ const NewShopPage = () => {
   const [filters, setFilters] = useState({
     category: 'All',
     subcategory: 'All',
+    brand: 'All',
     priceRange: 'All',
     sortBy: 'name'
   });
@@ -76,6 +77,7 @@ const NewShopPage = () => {
   const [collapsedSections, setCollapsedSections] = useState({
     category: false,
     subcategory: false,
+    brand: false,
     price: false
   });
 
@@ -121,6 +123,7 @@ const NewShopPage = () => {
     setFilters({
       category:   searchParams.get('category')   || 'All',
       subcategory: searchParams.get('subcategory') || 'All',
+      brand:      searchParams.get('brand')       || 'All',
       priceRange: searchParams.get('priceRange')  || 'All',
       sortBy:     searchParams.get('sortBy')      || 'name',
     });
@@ -133,6 +136,7 @@ const NewShopPage = () => {
     const params = new URLSearchParams();
     if (next.category   !== 'All')  params.set('category',   next.category);
     if (next.subcategory !== 'All') params.set('subcategory', next.subcategory);
+    if (next.brand      !== 'All')  params.set('brand',       next.brand);
     if (next.priceRange !== 'All')  params.set('priceRange',  next.priceRange);
     if (next.sortBy     !== 'name') params.set('sortBy',      next.sortBy);
     if (page > 1)                   params.set('page',        String(page));
@@ -182,6 +186,30 @@ const NewShopPage = () => {
     return counts;
   }, [products, filters.category, categories]);
 
+  // Memoize brand counts — scoped to active category + subcategory
+  const brandCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const listedCategories = new Set(categories.map(c => c.name));
+    const activeCat = categories.find(c => c.name === filters.category);
+    const listedSubcats = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
+
+    for (const product of products) {
+      if (!product.brand) continue;
+      if (filters.category === 'All') {
+        if (!listedCategories.has(product.category ?? '')) continue;
+      } else {
+        if (product.category !== filters.category) continue;
+        if (filters.subcategory !== 'All') {
+          if (product.subcategory !== filters.subcategory) continue;
+        } else if (listedSubcats) {
+          if (!product.subcategory || !listedSubcats.has(product.subcategory)) continue;
+        }
+      }
+      counts[product.brand] = (counts[product.brand] || 0) + 1;
+    }
+    return counts;
+  }, [products, filters.category, filters.subcategory, categories]);
+
   // Memoize price range counts — scoped to active category + subcategory,
   // using the same "listed only" logic as categoryCounts / subcategoryCounts
   // so the "All" row always matches the adjacent filter section's "All" count.
@@ -204,6 +232,7 @@ const NewShopPage = () => {
           if (!product.subcategory || !listedSubcats.has(product.subcategory)) continue;
         }
       }
+      if (filters.brand !== 'All' && product.brand !== filters.brand) continue;
       const price = getDisplayPrice(product);
       if (price < 5000) counts['Under ₹5,000']++;
       else if (price <= 15000) counts['₹5,000 - ₹15,000']++;
@@ -211,7 +240,7 @@ const NewShopPage = () => {
       counts['All']++;
     }
     return counts;
-  }, [products, filters.category, filters.subcategory, categories]);
+  }, [products, filters.category, filters.subcategory, filters.brand, categories]);
 
   // Get product count by category (uses memoized counts)
   const getCategoryCount = (category: string): number => {
@@ -240,6 +269,11 @@ const NewShopPage = () => {
         if (filters.subcategory !== 'All' && product.subcategory !== filters.subcategory) {
           return false;
         }
+      }
+
+      // Brand filter
+      if (filters.brand !== 'All' && product.brand !== filters.brand) {
+        return false;
       }
 
       // Price range filter
@@ -289,7 +323,7 @@ const NewShopPage = () => {
 
   const handleFilterChange = (filterType: string, value: string | undefined) => {
     const next = filterType === 'category'
-      ? { ...filters, category: value || 'All', subcategory: 'All' }
+      ? { ...filters, category: value || 'All', subcategory: 'All', brand: 'All' }
       : { ...filters, [filterType]: value || '' };
     setFilters(next);
     setCurrentPage(1);
@@ -298,7 +332,7 @@ const NewShopPage = () => {
 
   // Clear all filters
   const clearFilters = () => {
-    const reset = { category: 'All', subcategory: 'All', priceRange: 'All', sortBy: 'name' };
+    const reset = { category: 'All', subcategory: 'All', brand: 'All', priceRange: 'All', sortBy: 'name' };
     setFilters(reset);
     setCurrentPage(1);
     syncToUrl(reset, 1);
@@ -307,6 +341,7 @@ const NewShopPage = () => {
   // Check if any filters are active
   const hasActiveFilters = filters.category !== 'All' ||
                            filters.subcategory !== 'All' ||
+                           filters.brand !== 'All' ||
                            filters.priceRange !== 'All';
 
   if (productLoading) {
@@ -412,6 +447,11 @@ const NewShopPage = () => {
                   <strong>Subcategory:</strong> {filters.subcategory}
                 </div>
               )}
+              {filters.brand !== 'All' && (
+                <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                  <strong>Brand:</strong> {filters.brand}
+                </div>
+              )}
               {filters.priceRange !== 'All' && (
                 <div style={{ fontSize: '12px', marginBottom: '4px' }}>
                   <strong>Price:</strong> {filters.priceRange}
@@ -512,6 +552,33 @@ const NewShopPage = () => {
             </div>
           )}
 
+          {/* Mobile Brand Filter */}
+          {Object.keys(brandCounts).length > 0 && (
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#c19a6b', marginBottom: '10px' }}>
+                Brand
+              </h4>
+              {['All', ...Object.keys(brandCounts)].map(brand => (
+                <div
+                  key={brand}
+                  onClick={() => { handleFilterChange('brand', brand); }}
+                  style={{
+                    padding: '10px 8px',
+                    fontSize: '14px',
+                    color: filters.brand === brand ? '#c19a6b' : '#333',
+                    fontWeight: filters.brand === brand ? '600' : '400',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ flex: 1 }}>{brand === 'All' ? 'All Brands' : brand}</span>
+                  {brand !== 'All' && <span style={{ color: '#888', fontSize: '12px' }}>{brandCounts[brand]}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Mobile Price Filter */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
             <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#c19a6b', marginBottom: '10px' }}>
@@ -577,6 +644,9 @@ const NewShopPage = () => {
               )}
               {filters.subcategory !== 'All' && (
                 <span><strong>Subcategory:</strong> {filters.subcategory}</span>
+              )}
+              {filters.brand !== 'All' && (
+                <span><strong>Brand:</strong> {filters.brand}</span>
               )}
               {filters.priceRange !== 'All' && (
                 <span><strong>Price:</strong> {filters.priceRange}</span>
@@ -662,6 +732,37 @@ const NewShopPage = () => {
                   >
                     <span style={{ flex: 1 }}>{subcategory}</span>
                     <span style={{ color: '#888', fontSize: '11px' }}>{getSubcategoryCount(subcategory)}</span>
+                  </FilterOption>
+                ))}
+              </FilterContent>
+            </FilterSection>
+          )}
+
+          {/* Brand Filter — only shows when there are brands */}
+          {Object.keys(brandCounts).length > 0 && (
+            <FilterSection $collapsed={collapsedSections.brand}>
+              <FilterHeader
+                $collapsed={collapsedSections.brand}
+                onClick={() => toggleSection('brand')}
+              >
+                <h3>Brand</h3>
+                <i className="fas fa-chevron-down toggle-icon"></i>
+              </FilterHeader>
+              <FilterContent $collapsed={collapsedSections.brand}>
+                <FilterOption
+                  $active={filters.brand === 'All'}
+                  onClick={() => handleFilterChange('brand', 'All')}
+                >
+                  <span style={{ flex: 1 }}>All Brands</span>
+                </FilterOption>
+                {Object.entries(brandCounts).map(([brand, count]) => (
+                  <FilterOption
+                    key={brand}
+                    $active={filters.brand === brand}
+                    onClick={() => handleFilterChange('brand', brand)}
+                  >
+                    <span style={{ flex: 1 }}>{brand}</span>
+                    <span style={{ color: '#888', fontSize: '11px' }}>{count}</span>
                   </FilterOption>
                 ))}
               </FilterContent>
