@@ -1,4 +1,4 @@
-import { query } from './connection';
+import { query, getClient } from './connection';
 import { getProductImages, getProductImagesBatch } from './productImages';
 import { getCloudflareImageUrl } from '../cloudflare';
 import { buildUpdateQueryById } from './query-builder';
@@ -49,6 +49,7 @@ export interface ProductImageWithUrl {
 export interface ProductWithImages extends Product {
   images: ProductImageWithUrl[];
   primary_image?: string;
+  category_ids?: number[];
 }
 
 /**
@@ -242,15 +243,76 @@ export async function searchProducts(searchTerm: string, limit: number = 10) {
 }
 
 /**
+ * Get all category IDs assigned to a product via the junction table.
+ */
+export async function getProductCategories(productId: string): Promise<number[]> {
+  const result = await query(
+    'SELECT category_id FROM product_categories WHERE product_id = $1',
+    [productId]
+  );
+  return result.rows.map((r: { category_id: number }) => r.category_id);
+}
+
+/**
+ * Replace all category assignments for a product (junction table).
+ * Also syncs products.category / products.subcategory for backward compat.
+ */
+export async function setProductCategories(productId: string, categoryIds: number[]): Promise<void> {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM product_categories WHERE product_id = $1', [productId]);
+
+    if (categoryIds.length > 0) {
+      const placeholders = categoryIds.map((_, i) => `($1, $${i + 2})`).join(', ');
+      await client.query(
+        `INSERT INTO product_categories (product_id, category_id) VALUES ${placeholders} ON CONFLICT DO NOTHING`,
+        [productId, ...categoryIds]
+      );
+    }
+
+    // Sync backward-compat text columns: pick first parent + first subcategory
+    const catResult = await client.query(
+      `SELECT c.name, c.parent_id
+       FROM product_categories pc
+       JOIN categories c ON c.id = pc.category_id
+       WHERE pc.product_id = $1
+       ORDER BY c.parent_id NULLS FIRST, c.name`,
+      [productId]
+    );
+
+    const primaryParent = catResult.rows.find((r: { parent_id: number | null }) => r.parent_id === null);
+    const primarySub = catResult.rows.find((r: { parent_id: number | null }) => r.parent_id !== null);
+
+    await client.query(
+      'UPDATE products SET category = $1, subcategory = $2 WHERE id = $3',
+      [primaryParent?.name ?? null, primarySub?.name ?? null, productId]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Attach images to a product row, fetching them from Cloudflare.
  */
 async function attachImages(product: Product): Promise<ProductWithImages> {
-  const images = await getProductImages(product.id);
+  const [images, categoryIds] = await Promise.all([
+    getProductImages(product.id),
+    getProductCategories(product.id),
+  ]);
   const imagesWithUrls = buildImagesWithUrls(images);
   return {
     ...product,
     images: imagesWithUrls,
     primary_image: findPrimaryImageUrl(imagesWithUrls, product.image_url),
+    category_ids: categoryIds,
   };
 }
 

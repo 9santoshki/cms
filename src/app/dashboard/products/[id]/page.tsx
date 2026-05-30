@@ -61,11 +61,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     description: '',
     price: '',
     sale_price: '',
-    category: '',
-    subcategory: '',
     brand: '',
     delivery_time: '',
   });
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [richFields, setRichFields] = useState({
     highlights: '',
     description_html: '',
@@ -79,6 +78,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    details: true,
+    pricing: true,
+    categories: true,
+    brand: true,
+    highlights: true,
+    richDesc: true,
+    faqs: true,
+    warranty: true,
+    reviewer: true,
+    images: true,
+    variants: true,
+  });
+  const toggleSection = (key: string) =>
+    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     params.then((p) => setProductId(p.id));
@@ -138,11 +153,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: data.data.description,
           price: data.data.price.toString(),
           sale_price: data.data.sale_price?.toString() || '',
-          category: data.data.category || '',
-          subcategory: data.data.subcategory || '',
           brand: data.data.brand || '',
           delivery_time: data.data.delivery_time || '',
         });
+        setSelectedCategoryIds(data.data.category_ids || []);
         setRichFields({
           highlights: data.data.highlights || '',
           description_html: data.data.description_html || '',
@@ -164,19 +178,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    // Clear subcategory when category changes
-    if (name === 'category') {
-      setFormData({
-        ...formData,
-        category: value,
-        subcategory: '',
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const toggleCategory = (id: number) => {
+    setSelectedCategoryIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      const parent = categories.find(c => c.children?.some(s => s.id === id));
+      const toAdd = parent && !prev.includes(parent.id) ? [parent.id, id] : [id];
+      return [...prev, ...toAdd];
+    });
   };
 
   // Returns true on success, false on failure
@@ -200,8 +211,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: formData.description,
           price: parseFloat(formData.price),
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
-          category: formData.category,
-          subcategory: formData.subcategory,
+          category_ids: selectedCategoryIds,
           brand: formData.brand || null,
           delivery_time: formData.delivery_time || null,
           highlights: richFields.highlights || null,
@@ -596,14 +606,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
         border: '1px solid #e8d5c4'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <i className="fas fa-edit" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
-            Product Details
-          </h3>
+        <div
+          onClick={() => toggleSection('details')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: collapsed.details ? 0 : '24px', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <i className="fas fa-edit" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+              Product Details
+            </h3>
+          </div>
+          <i className={`fas fa-chevron-${collapsed.details ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '14px' }}></i>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {!collapsed.details && <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Product Name */}
             <div>
@@ -670,186 +686,173 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               padding: '16px',
               border: '1px solid #e8d5c4'
             }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-tags" style={{ color: '#c19a6b' }}></i>
-                Pricing
-              </h4>
-              <div className="product-form-grid" style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '20px'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Regular Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Base price (shown as strikethrough when on sale)</p>
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Sale Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="sale_price"
-                    value={formData.sale_price}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    placeholder="Discounted price"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                  <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Discounted price (shown if less than regular price)</p>
-                </div>
+              <div onClick={() => toggleSection('pricing')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.pricing ? 0 : '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fas fa-tags" style={{ color: '#c19a6b' }}></i>
+                  Pricing
+                </h4>
+                <i className={`fas fa-chevron-${collapsed.pricing ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
               </div>
-              {formData.price && formData.sale_price && parseFloat(formData.price) > parseFloat(formData.sale_price) && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '8px 12px',
-                  background: 'rgba(231, 76, 60, 0.1)',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+              {!collapsed.pricing && <>
+                <div className="product-form-grid" style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '20px'
                 }}>
-                  <i className="fas fa-percent" style={{ color: '#e74c3c' }}></i>
-                  <span style={{ fontSize: '13px', color: '#e74c3c', fontWeight: '600' }}>
-                    Discount: {Math.round(((parseFloat(formData.price) - parseFloat(formData.sale_price)) / parseFloat(formData.price)) * 100)}% OFF
-                  </span>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#666',
+                      marginBottom: '8px'
+                    }}>
+                      Regular Price (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        border: '1px solid #e8d5c4',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    />
+                    <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Base price (shown as strikethrough when on sale)</p>
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#666',
+                      marginBottom: '8px'
+                    }}>
+                      Sale Price (₹)
+                    </label>
+                    <input
+                      type="number"
+                      name="sale_price"
+                      value={formData.sale_price}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="Discounted price"
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        border: '1px solid #e8d5c4',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    />
+                    <p style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>Discounted price (shown if less than regular price)</p>
+                  </div>
                 </div>
-              )}
+                {formData.price && formData.sale_price && parseFloat(formData.price) > parseFloat(formData.sale_price) && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    background: 'rgba(231, 76, 60, 0.1)',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <i className="fas fa-percent" style={{ color: '#e74c3c' }}></i>
+                    <span style={{ fontSize: '13px', color: '#e74c3c', fontWeight: '600' }}>
+                      Discount: {Math.round(((parseFloat(formData.price) - parseFloat(formData.sale_price)) / parseFloat(formData.price)) * 100)}% OFF
+                    </span>
+                  </div>
+                )}
+              </>}
             </div>
 
-            {/* Category & Subcategory */}
+            {/* Categories — multi-select tree */}
             <div style={{
               background: 'rgba(193, 154, 107, 0.05)',
               borderRadius: '8px',
               padding: '16px',
               border: '1px solid #e8d5c4'
             }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-folder" style={{ color: '#c19a6b' }}></i>
-                Category
-              </h4>
-              <div className="product-form-grid" style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '20px'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Parent Category
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    disabled={loadingCategories}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: loadingCategories ? 'wait' : 'pointer',
-                      background: 'white'
-                    }}
-                  >
-                    <option value="">
-                      {loadingCategories ? 'Loading...' : 'Select category'}
-                    </option>
-                    {categories.filter(c => c.parent_id === null && c.is_active).map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Subcategory
-                  </label>
-                  <select
-                    name="subcategory"
-                    value={formData.subcategory}
-                    onChange={handleInputChange}
-                    disabled={!formData.category || loadingCategories}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: !formData.category || loadingCategories ? 'not-allowed' : 'pointer',
-                      background: 'white',
-                      opacity: !formData.category ? 0.6 : 1
-                    }}
-                  >
-                    <option value="">
-                      {!formData.category ? 'Select category first' : 'Select subcategory (optional)'}
-                    </option>
-                    {(() => {
-                      const selectedParent = categories.find(c => c.name === formData.category && c.parent_id === null);
-                      if (!selectedParent) return null;
-                      return (selectedParent.children || [])
-                        .filter(sub => sub.is_active)
-                        .map(sub => (
-                          <option key={sub.id} value={sub.name}>{sub.name}</option>
-                        ));
-                    })()}
-                  </select>
-                </div>
+              <div onClick={() => toggleSection('categories')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.categories ? 0 : '4px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fas fa-folder" style={{ color: '#c19a6b' }}></i>
+                  Categories
+                  {selectedCategoryIds.length > 0 && (
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', background: '#c19a6b', borderRadius: '10px', padding: '1px 8px' }}>
+                      {selectedCategoryIds.length}
+                    </span>
+                  )}
+                </h4>
+                <i className={`fas fa-chevron-${collapsed.categories ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
               </div>
+              {!collapsed.categories && <><p style={{ fontSize: '12px', color: '#999', marginBottom: '12px' }}>
+                Select all categories and subcategories this product belongs to.
+              </p>
+              {loadingCategories ? (
+                <p style={{ fontSize: '13px', color: '#999' }}>Loading categories…</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {categories.filter(c => c.parent_id === null && c.is_active).map(parent => (
+                    <div key={parent.id}>
+                      {/* Parent category row */}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoryIds.includes(parent.id)}
+                          onChange={() => toggleCategory(parent.id)}
+                          style={{ width: '15px', height: '15px', accentColor: '#c19a6b', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>{parent.name}</span>
+                      </label>
+                      {/* Subcategories */}
+                      {(parent.children || []).filter(sub => sub.is_active).length > 0 && (
+                        <div style={{ marginLeft: '24px', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {(parent.children || []).filter(sub => sub.is_active).map(sub => (
+                            <label
+                              key={sub.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                padding: '4px 10px',
+                                borderRadius: '20px',
+                                border: `1px solid ${selectedCategoryIds.includes(sub.id) ? '#c19a6b' : '#e8d5c4'}`,
+                                background: selectedCategoryIds.includes(sub.id) ? 'rgba(193,154,107,0.12)' : 'white',
+                                fontSize: '12px',
+                                color: selectedCategoryIds.includes(sub.id) ? '#a67c52' : '#555',
+                                fontWeight: selectedCategoryIds.includes(sub.id) ? '600' : '400',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedCategoryIds.includes(sub.id)}
+                                onChange={() => toggleCategory(sub.id)}
+                                style={{ width: '13px', height: '13px', accentColor: '#c19a6b', cursor: 'pointer' }}
+                              />
+                              {sub.name}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}</>}
             </div>
 
             {/* Brand & Delivery */}
@@ -859,11 +862,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               padding: '16px',
               border: '1px solid #e8d5c4'
             }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-tag" style={{ color: '#c19a6b' }}></i>
-                Brand &amp; Delivery
-              </h4>
-              <div className="product-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div onClick={() => toggleSection('brand')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.brand ? 0 : '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fas fa-tag" style={{ color: '#c19a6b' }}></i>
+                  Brand &amp; Delivery
+                </h4>
+                <i className={`fas fa-chevron-${collapsed.brand ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
+              </div>
+              {!collapsed.brand && <div className="product-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Brand</label>
                   <input
@@ -886,59 +892,71 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid #e8d5c4', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
                   />
                 </div>
-              </div>
+              </div>}
             </div>
 
             {/* Rich Text: Highlights */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
-                Product Highlights <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
-              </label>
-              <RichTextEditor
+              <div onClick={() => toggleSection('highlights')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.highlights ? 0 : '8px', padding: '6px 0' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>
+                  Product Highlights <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+                </span>
+                <i className={`fas fa-chevron-${collapsed.highlights ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
+              </div>
+              {!collapsed.highlights && <RichTextEditor
                 value={richFields.highlights}
                 onChange={(html) => setRichFields(f => ({ ...f, highlights: html }))}
                 placeholder="Add key highlights as a bullet list…"
                 minHeight={120}
-              />
+              />}
             </div>
 
             {/* Rich Text: Description (HTML) */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
-                Rich Description <span style={{ fontWeight: 400, color: '#999' }}>(rich text — shown on product page)</span>
-              </label>
-              <RichTextEditor
+              <div onClick={() => toggleSection('richDesc')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.richDesc ? 0 : '8px', padding: '6px 0' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>
+                  Rich Description <span style={{ fontWeight: 400, color: '#999' }}>(rich text — shown on product page)</span>
+                </span>
+                <i className={`fas fa-chevron-${collapsed.richDesc ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
+              </div>
+              {!collapsed.richDesc && <RichTextEditor
                 value={richFields.description_html}
                 onChange={(html) => setRichFields(f => ({ ...f, description_html: html }))}
                 placeholder="Detailed product description with formatting…"
                 minHeight={160}
-              />
+              />}
             </div>
 
             {/* Rich Text: FAQs */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
-                FAQs <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
-              </label>
-              <RichTextEditor
+              <div onClick={() => toggleSection('faqs')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.faqs ? 0 : '8px', padding: '6px 0' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>
+                  FAQs <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+                </span>
+                <i className={`fas fa-chevron-${collapsed.faqs ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
+              </div>
+              {!collapsed.faqs && <RichTextEditor
                 value={richFields.faqs_html}
                 onChange={(html) => setRichFields(f => ({ ...f, faqs_html: html }))}
                 placeholder="Q: How do I assemble? &#10;A: …"
                 minHeight={140}
-              />
+              />}
             </div>
 
             {/* Rich Text: Warranty, Return & Exchange Policy */}
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
-                Warranty, Return &amp; Exchange Policy <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
-              </label>
-              <RichTextEditor
+              <div onClick={() => toggleSection('warranty')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.warranty ? 0 : '8px', padding: '6px 0' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>
+                  Warranty, Return &amp; Exchange Policy <span style={{ fontWeight: 400, color: '#999' }}>(rich text)</span>
+                </span>
+                <i className={`fas fa-chevron-${collapsed.warranty ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '12px' }}></i>
+              </div>
+              {!collapsed.warranty && <RichTextEditor
                 value={richFields.warranty_policy}
                 onChange={(html) => setRichFields(f => ({ ...f, warranty_policy: html }))}
                 placeholder="e.g. 2-year warranty. Returns accepted within 7 days…"
                 minHeight={140}
-              />
+              />}
             </div>
 
             {/* Reviewer Comment — admin writes feedback; maker reads it */}
@@ -949,14 +967,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 borderRadius: '8px',
                 padding: '16px',
               }}>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <i className="fas fa-comment-dots" style={{ color: '#d97706' }}></i>
-                  Reviewer Comment
-                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#b45309' }}>
-                    {user?.role === 'admin' ? '— visible to maker after review' : '— feedback from reviewer'}
-                  </span>
-                </h4>
-                {user?.role === 'admin' ? (
+                <div onClick={() => toggleSection('reviewer')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.reviewer ? 0 : '8px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-comment-dots" style={{ color: '#d97706' }}></i>
+                    Reviewer Comment
+                    <span style={{ fontSize: '11px', fontWeight: 400, color: '#b45309' }}>
+                      {user?.role === 'admin' ? '— visible to maker after review' : '— feedback from reviewer'}
+                    </span>
+                  </h4>
+                  <i className={`fas fa-chevron-${collapsed.reviewer ? 'down' : 'up'}`} style={{ color: '#d97706', fontSize: '12px' }}></i>
+                </div>
+                {!collapsed.reviewer && (user?.role === 'admin' ? (
                   <textarea
                     value={product?.reviewer_comment || ''}
                     onChange={(e) => setProduct(p => p ? { ...p, reviewer_comment: e.target.value } : p)}
@@ -973,7 +994,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <p style={{ fontSize: '13px', color: product?.reviewer_comment ? '#374151' : '#9ca3af', fontStyle: product?.reviewer_comment ? 'normal' : 'italic', margin: 0, lineHeight: 1.6 }}>
                     {product?.reviewer_comment || 'No reviewer comment yet.'}
                   </p>
-                )}
+                ))}
               </div>
             )}
 
@@ -1055,7 +1076,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               </button>
             </div>
           </div>
-        </form>
+        </form>}
       </div>
 
       {/* Product Images */}
@@ -1068,11 +1089,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <ProductImageManager
+          <div
+            onClick={() => toggleSection('images')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.images ? 0 : '20px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <i className="fas fa-images" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>Product Images</h3>
+            </div>
+            <i className={`fas fa-chevron-${collapsed.images ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '14px' }}></i>
+          </div>
+          {!collapsed.images && <ProductImageManager
             productId={product.id}
             images={product.images}
             onImagesChange={loadProduct}
-          />
+          />}
         </div>
       )}
 
@@ -1085,7 +1116,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           boxShadow: '0 4px 12px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <ProductVariantManager productId={product.id} />
+          <div
+            onClick={() => toggleSection('variants')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.variants ? 0 : '20px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <i className="fas fa-layer-group" style={{ fontSize: '20px', color: '#c19a6b' }}></i>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>Product Variants</h3>
+            </div>
+            <i className={`fas fa-chevron-${collapsed.variants ? 'down' : 'up'}`} style={{ color: '#c19a6b', fontSize: '14px' }}></i>
+          </div>
+          {!collapsed.variants && <ProductVariantManager productId={product.id} />}
         </div>
       )}
     </DashboardLayout>

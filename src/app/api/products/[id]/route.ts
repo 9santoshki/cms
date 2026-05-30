@@ -8,6 +8,7 @@ import {
   updateProduct,
   deleteProduct,
   generateUniqueSlug,
+  setProductCategories,
 } from '@/lib/db/products';
 
 export async function GET(
@@ -83,6 +84,7 @@ export async function PUT(
     const {
       name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status,
       brand, delivery_time, highlights, description_html, faqs_html, warranty_policy,
+      category_ids,
     } = body;
 
     if (!name || !description || !price || price <= 0) {
@@ -138,6 +140,10 @@ export async function PUT(
         { success: false, error: 'Product not found' },
         { status: 404 }
       );
+    }
+
+    if (Array.isArray(category_ids)) {
+      await setProductCategories(id, category_ids);
     }
 
     const updatedProduct = await getProductWithImages(id);

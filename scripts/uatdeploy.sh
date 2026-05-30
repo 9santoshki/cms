@@ -130,6 +130,7 @@ run_migration "$APP_DIR/scripts/migrations/fix_categories_show_in_menu.sql" "fix
 run_migration "$APP_DIR/scripts/migrations/add_recently_viewed.sql"         "add_recently_viewed"
 run_migration "$APP_DIR/scripts/migrations/add_product_rich_fields.sql"     "add_product_rich_fields"
 run_migration "$APP_DIR/scripts/migrations/add_maker_checker_workflow.sql"  "add_maker_checker_workflow"
+run_migration "$APP_DIR/scripts/migrations/add_product_categories.sql"      "add_product_categories"
 echo "✅ Migrations complete"
 
 echo ""

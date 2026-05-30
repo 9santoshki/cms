@@ -324,7 +324,7 @@ const NewHomepage = () => {
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: '28px',
+          gap: '40px',
         }}>
           {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
             <div
@@ -332,8 +332,8 @@ const NewHomepage = () => {
               onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
               style={{
                 position: 'relative',
-                width: '90px',
-                height: '90px',
+                width: '130px',
+                height: '130px',
                 borderRadius: '12px',
                 overflow: 'hidden',
                 cursor: 'pointer',

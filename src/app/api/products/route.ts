@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductsWithImages, createProduct, generateUniqueSlug } from '@/lib/db/products';
+import { getProductsWithImages, createProduct, generateUniqueSlug, setProductCategories } from '@/lib/db/products';
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
     const {
       name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status,
       brand, delivery_time, highlights, description_html, faqs_html, warranty_policy,
+      category_ids,
     } = body;
 
     if (!name || !description || !price || price <= 0) {
@@ -111,6 +112,10 @@ export async function POST(request: NextRequest) {
       faqs_html: faqs_html || null,
       warranty_policy: warranty_policy || null,
     });
+
+    if (Array.isArray(category_ids) && category_ids.length > 0) {
+      await setProductCategories(String(product.id), category_ids);
+    }
 
     return NextResponse.json(
       {
