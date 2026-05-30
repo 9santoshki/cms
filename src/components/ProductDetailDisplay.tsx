@@ -1089,7 +1089,6 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                 style={{ width: '100%', height: '400px' } as React.CSSProperties}
               />
             )}
-            <ShippingBadge>✓ {t('freeShipping')}</ShippingBadge>
             {(() => {
               // Use supplier-managed variant stock when available;
               // fall back to product.stock_quantity for non-variant products.
