@@ -20,6 +20,7 @@ const DashboardProductsPage = () => {
   const { products, fetchProducts, loading, error: contextError } = useProduct();
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -55,14 +56,18 @@ const DashboardProductsPage = () => {
     if (products && products.length > 0) {
       let filtered = products;
 
-      // Apply category filter
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter((product: any) =>
+          (product.status || 'draft') === statusFilter
+        );
+      }
+
       if (categoryFilter !== 'all') {
         filtered = filtered.filter((product: any) =>
           product.category?.toLowerCase() === categoryFilter.toLowerCase()
         );
       }
 
-      // Apply search filter
       if (searchTerm) {
         filtered = filtered.filter((product: any) =>
           product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,7 +79,7 @@ const DashboardProductsPage = () => {
     } else {
       setFilteredProducts([]);
     }
-  }, [products, categoryFilter, searchTerm]);
+  }, [products, categoryFilter, statusFilter, searchTerm]);
 
   if (!user || loading) {
     return (
@@ -256,6 +261,49 @@ const DashboardProductsPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Status Filter Tabs */}
+      {products && products.length > 0 && (() => {
+        const counts: Record<string, number> = { all: products.length };
+        products.forEach((p: any) => {
+          const s = p.status || 'draft';
+          counts[s] = (counts[s] || 0) + 1;
+        });
+        const tabs = [
+          { key: 'all',           label: 'All' },
+          { key: 'pending_review',label: 'In Review', color: '#d97706', bg: '#fef3c7' },
+          { key: 'draft',         label: 'Draft',     color: '#6b7280', bg: '#f3f4f6' },
+          { key: 'published',     label: 'Published', color: '#16a34a', bg: '#dcfce7' },
+          { key: 'rejected',      label: 'Rejected',  color: '#dc2626', bg: '#fee2e2' },
+          { key: 'archived',      label: 'Archived',  color: '#9ca3af', bg: '#f3f4f6' },
+        ].filter(t => t.key === 'all' || counts[t.key]);
+        return (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            {tabs.map(tab => {
+              const active = statusFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusFilter(tab.key)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: '12px', fontWeight: 600,
+                    cursor: 'pointer', border: 'none',
+                    background: active ? (tab.bg || 'linear-gradient(135deg,#c19a6b,#a67c52)') : '#f3f4f6',
+                    color: active ? (tab.color || '#7c5c32') : '#6b7280',
+                    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {tab.label}
+                  {counts[tab.key] !== undefined && (
+                    <span style={{ marginLeft: '5px', opacity: 0.75 }}>({counts[tab.key]})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Products List */}
       {contextError ? (

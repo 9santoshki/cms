@@ -179,9 +179,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!productId) return;
+  // Returns true on success, false on failure
+  const saveProduct = async (): Promise<boolean> => {
+    if (!productId) return false;
 
     setSaving(true);
     setError(null);
@@ -194,9 +194,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
@@ -217,24 +215,41 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       if (data.success) {
         if (isNewProduct) {
-          // Redirect to the edit page with the new product ID
           setSuccessMessage('Product created successfully! Redirecting...');
           setTimeout(() => {
             router.push(`/dashboard/products/${data.data.id}`);
           }, 1000);
         } else {
-          setSuccessMessage('Product updated successfully!');
           loadProduct();
-          setTimeout(() => setSuccessMessage(null), 3000);
         }
+        return true;
       } else {
         setError(data.error || `Failed to ${isNewProduct ? 'create' : 'update'} product`);
+        return false;
       }
     } catch (err: any) {
       console.error('Error saving product:', err);
       setError(err.message || 'Failed to save product');
+      return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const ok = await saveProduct();
+    if (ok && productId !== 'new') {
+      setSuccessMessage('Product updated successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    }
+  };
+
+  const handleSaveAndSubmit = async () => {
+    const ok = await saveProduct();
+    if (ok && productId !== 'new') {
+      // Now submit for review
+      await handleWorkflow('submit');
     }
   };
 
@@ -275,7 +290,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const res = await fetch(`/api/products/${productId}/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: comment || '' }),
+        body: JSON.stringify({ comment: comment || product?.reviewer_comment || '' }),
       });
       const data = await res.json();
       if (data.success) {
@@ -569,29 +584,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <p style={{ color: '#ef4444', fontSize: '14px', fontWeight: '600', margin: 0 }}>
             {error}
           </p>
-        </div>
-      )}
-
-      {/* Reviewer comment banner — shown to maker when rejected or approved with notes */}
-      {product?.reviewer_comment && (
-        <div style={{
-          background: product.status === 'rejected' ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
-          border: `1px solid ${product.status === 'rejected' ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'flex-start',
-        }}>
-          <i className={`fas ${product.status === 'rejected' ? 'fa-comment-slash' : 'fa-comment-check'}`}
-             style={{ fontSize: '16px', color: product.status === 'rejected' ? '#dc2626' : '#16a34a', marginTop: '2px' }} />
-          <div>
-            <p style={{ fontSize: '12px', fontWeight: '700', color: product.status === 'rejected' ? '#dc2626' : '#16a34a', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {product.status === 'rejected' ? 'Reviewer Feedback' : 'Reviewer Note'}
-            </p>
-            <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{product.reviewer_comment}</p>
-          </div>
         </div>
       )}
 
@@ -949,8 +941,80 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               />
             </div>
 
+            {/* Reviewer Comment — admin writes feedback; maker reads it */}
+            {productId !== 'new' && (
+              <div style={{
+                background: '#fffbeb',
+                border: '1px solid #fcd34d',
+                borderRadius: '8px',
+                padding: '16px',
+              }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fas fa-comment-dots" style={{ color: '#d97706' }}></i>
+                  Reviewer Comment
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#b45309' }}>
+                    {user?.role === 'admin' ? '— visible to maker after review' : '— feedback from reviewer'}
+                  </span>
+                </h4>
+                {user?.role === 'admin' ? (
+                  <textarea
+                    value={product?.reviewer_comment || ''}
+                    onChange={(e) => setProduct(p => p ? { ...p, reviewer_comment: e.target.value } : p)}
+                    placeholder="Leave feedback for the maker — this is saved when you Approve or Reject."
+                    rows={3}
+                    style={{
+                      width: '100%', padding: '10px 12px', border: '1px solid #fcd34d',
+                      borderRadius: '8px', fontSize: '13px', resize: 'vertical',
+                      fontFamily: 'inherit', outline: 'none', background: 'white',
+                      color: '#374151', boxSizing: 'border-box',
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '13px', color: product?.reviewer_comment ? '#374151' : '#9ca3af', fontStyle: product?.reviewer_comment ? 'normal' : 'italic', margin: 0, lineHeight: 1.6 }}>
+                    {product?.reviewer_comment || 'No reviewer comment yet.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Submit Button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', flexWrap: 'wrap' }}>
+              {/* Save & Submit — shown to any role on draft/rejected products */}
+              {productId !== 'new' && product && (product.status === 'draft' || product.status === 'rejected') && (
+                <button
+                  type="button"
+                  onClick={handleSaveAndSubmit}
+                  disabled={saving || workflowLoading}
+                  style={{
+                    padding: '10px 24px',
+                    background: (saving || workflowLoading) ? '#999' : 'linear-gradient(135deg, #d97706, #b45309)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: (saving || workflowLoading) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(217, 119, 6, 0.25)'
+                  }}
+                >
+                  {(saving || workflowLoading) ? (
+                    <>
+                      <div style={{ width: '16px', height: '16px', border: '2px solid #ffffff', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane"></i>
+                      Save & Submit for Review
+                    </>
+                  )}
+                </button>
+              )}
+
               <button
                 type="submit"
                 disabled={saving}
