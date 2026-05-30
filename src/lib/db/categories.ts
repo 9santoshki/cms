@@ -183,13 +183,10 @@ export async function deleteCategory(id: number): Promise<{ success: boolean; er
     return { success: false, error: 'Category has subcategories. Delete or reassign them first.' };
   }
 
-  // Check for products assigned to this category or subcategory.
-  // Parent categories map to the `category` column; subcategories map to `subcategory`.
+  // Check for products assigned to this category via the junction table
   const productCheck = await query(
-    cat.parent_id === null
-      ? 'SELECT COUNT(*) as count FROM products WHERE category = $1'
-      : 'SELECT COUNT(*) as count FROM products WHERE subcategory = $1',
-    [cat.name]
+    'SELECT COUNT(*) as count FROM product_categories WHERE category_id = $1',
+    [id]
   );
   const productCount = parseInt(productCheck.rows[0].count);
   if (productCount > 0) {

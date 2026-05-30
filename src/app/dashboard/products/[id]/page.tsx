@@ -61,11 +61,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     description: '',
     price: '',
     sale_price: '',
-    category: '',
-    subcategory: '',
     brand: '',
     delivery_time: '',
   });
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [richFields, setRichFields] = useState({
     highlights: '',
     description_html: '',
@@ -138,11 +137,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: data.data.description,
           price: data.data.price.toString(),
           sale_price: data.data.sale_price?.toString() || '',
-          category: data.data.category || '',
-          subcategory: data.data.subcategory || '',
           brand: data.data.brand || '',
           delivery_time: data.data.delivery_time || '',
         });
+        setSelectedCategoryIds(data.data.category_ids || []);
         setRichFields({
           highlights: data.data.highlights || '',
           description_html: data.data.description_html || '',
@@ -164,19 +162,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    // Clear subcategory when category changes
-    if (name === 'category') {
-      setFormData({
-        ...formData,
-        category: value,
-        subcategory: '',
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const toggleCategory = (id: number) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   // Returns true on success, false on failure
@@ -200,8 +192,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: formData.description,
           price: parseFloat(formData.price),
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
-          category: formData.category,
-          subcategory: formData.subcategory,
+          category_ids: selectedCategoryIds,
           brand: formData.brand || null,
           delivery_time: formData.delivery_time || null,
           highlights: richFields.highlights || null,
@@ -757,99 +748,78 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            {/* Category & Subcategory */}
+            {/* Categories — multi-select tree */}
             <div style={{
               background: 'rgba(193, 154, 107, 0.05)',
               borderRadius: '8px',
               padding: '16px',
               border: '1px solid #e8d5c4'
             }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <i className="fas fa-folder" style={{ color: '#c19a6b' }}></i>
-                Category
+                Categories
+                {selectedCategoryIds.length > 0 && (
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', background: '#c19a6b', borderRadius: '10px', padding: '1px 8px' }}>
+                    {selectedCategoryIds.length}
+                  </span>
+                )}
               </h4>
-              <div className="product-form-grid" style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '20px'
-              }}>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Parent Category
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    disabled={loadingCategories}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: loadingCategories ? 'wait' : 'pointer',
-                      background: 'white'
-                    }}
-                  >
-                    <option value="">
-                      {loadingCategories ? 'Loading...' : 'Select category'}
-                    </option>
-                    {categories.filter(c => c.parent_id === null && c.is_active).map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
+              <p style={{ fontSize: '12px', color: '#999', marginBottom: '12px' }}>
+                Select all categories and subcategories this product belongs to.
+              </p>
+              {loadingCategories ? (
+                <p style={{ fontSize: '13px', color: '#999' }}>Loading categories…</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {categories.filter(c => c.parent_id === null && c.is_active).map(parent => (
+                    <div key={parent.id}>
+                      {/* Parent category row */}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoryIds.includes(parent.id)}
+                          onChange={() => toggleCategory(parent.id)}
+                          style={{ width: '15px', height: '15px', accentColor: '#c19a6b', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>{parent.name}</span>
+                      </label>
+                      {/* Subcategories */}
+                      {(parent.children || []).filter(sub => sub.is_active).length > 0 && (
+                        <div style={{ marginLeft: '24px', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {(parent.children || []).filter(sub => sub.is_active).map(sub => (
+                            <label
+                              key={sub.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                padding: '4px 10px',
+                                borderRadius: '20px',
+                                border: `1px solid ${selectedCategoryIds.includes(sub.id) ? '#c19a6b' : '#e8d5c4'}`,
+                                background: selectedCategoryIds.includes(sub.id) ? 'rgba(193,154,107,0.12)' : 'white',
+                                fontSize: '12px',
+                                color: selectedCategoryIds.includes(sub.id) ? '#a67c52' : '#555',
+                                fontWeight: selectedCategoryIds.includes(sub.id) ? '600' : '400',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedCategoryIds.includes(sub.id)}
+                                onChange={() => toggleCategory(sub.id)}
+                                style={{ width: '13px', height: '13px', accentColor: '#c19a6b', cursor: 'pointer' }}
+                              />
+                              {sub.name}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#666',
-                    marginBottom: '8px'
-                  }}>
-                    Subcategory
-                  </label>
-                  <select
-                    name="subcategory"
-                    value={formData.subcategory}
-                    onChange={handleInputChange}
-                    disabled={!formData.category || loadingCategories}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e8d5c4',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: !formData.category || loadingCategories ? 'not-allowed' : 'pointer',
-                      background: 'white',
-                      opacity: !formData.category ? 0.6 : 1
-                    }}
-                  >
-                    <option value="">
-                      {!formData.category ? 'Select category first' : 'Select subcategory (optional)'}
-                    </option>
-                    {(() => {
-                      const selectedParent = categories.find(c => c.name === formData.category && c.parent_id === null);
-                      if (!selectedParent) return null;
-                      return (selectedParent.children || [])
-                        .filter(sub => sub.is_active)
-                        .map(sub => (
-                          <option key={sub.id} value={sub.name}>{sub.name}</option>
-                        ));
-                    })()}
-                  </select>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Brand & Delivery */}
