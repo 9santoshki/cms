@@ -257,7 +257,7 @@ export const MobileCategoryStrip = styled.nav`
     background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
     position: -webkit-sticky;
     position: sticky;
-    top: 75px;
+    top: 79px;
     z-index: 999;
     width: 100%;
     scrollbar-width: none;

@@ -60,7 +60,7 @@ if ! git diff-index --quiet HEAD --; then
     echo "⚠️  Warning: You have uncommitted changes."
     git status --short
     echo ""
-    read -p "Continue anyway? (y/n) " -n 1 -r
+    read -p "Continue anyway? (y/n) " -n 1 -r < /dev/tty
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "❌ Deployment cancelled"
@@ -76,7 +76,7 @@ echo "   URL:       $PROD_URL"
 echo ""
 
 # Final confirmation
-read -p "🚨 Are you ABSOLUTELY SURE you want to deploy to PRODUCTION? (yes/no): " CONFIRM
+read -p "🚨 Are you ABSOLUTELY SURE you want to deploy to PRODUCTION? (yes/no): " CONFIRM < /dev/tty
 if [ "$CONFIRM" != "yes" ]; then
     echo "❌ Deployment cancelled"
     exit 1
@@ -135,7 +135,7 @@ scp $SSH_FLAGS /tmp/cms-deploy-prod.tar.gz root@$DROPLET_IP:/tmp/
 # Capture the remote output so we can decide about health checks
 REMOTE_LOG="/tmp/cms-deploy-remote-$$.log"
 
-ssh $SSH_FLAGS root@$DROPLET_IP bash 2>&1 | tee "$REMOTE_LOG" << ENDSSH
+ssh $SSH_FLAGS root@$DROPLET_IP bash << ENDSSH 2>&1 | tee "$REMOTE_LOG"
 set -e
 PGPASSWORD="$DB_PASSWORD"
 export PGPASSWORD
