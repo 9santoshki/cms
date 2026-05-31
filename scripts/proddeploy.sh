@@ -10,6 +10,7 @@ APP_DIR="/home/cms/app-prod"
 DB_NAME="cms_db_prod"
 DB_USER="cms_user_prod"
 PROD_URL="https://www.colourmyspace.com"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── SSH key detection ──────────────────────────────────────────────
 if [ -n "$SSH_KEY" ]; then
@@ -292,7 +293,7 @@ rm -f /tmp/cms-deploy-prod.tar.gz
 # ── Step 7: Purge Cloudflare cache ────────────────────────────────
 echo ""
 echo "🔄 Purging Cloudflare cache..."
-bash "$(dirname "$0")/purge-cloudflare-cache.sh" production
+bash "$SCRIPT_DIR/purge-cloudflare-cache.sh" production
 
 echo ""
 echo "✅ PRODUCTION DEPLOYMENT COMPLETE!"
