@@ -274,6 +274,11 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     ? ['All', ...categories.map(c => c.name)]
     : ['All', ...categories.slice(0, INITIAL_CATEGORY_COUNT).map(c => c.name)];
 
+  // On pages that show all categories initially (e.g. search), bypass the
+  // zero-count filter so every active category is always visible as a filter option.
+  const categoryVisible = (cat: string) =>
+    cat === 'All' || showAllCategoriesInitially || (categoryCounts[cat] || 0) > 0;
+
   // ── Loading / error states ─────────────────────────────────────────────────
 
   if (loading) {
@@ -353,7 +358,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
           <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#c19a6b', marginBottom: '10px' }}>Department</h4>
           {['All', ...categories.map(c => c.name)]
-            .filter(cat => cat === 'All' || (categoryCounts[cat] || 0) > 0)
+            .filter(categoryVisible)
             .slice(0, showAllCategories ? undefined : INITIAL_CATEGORY_COUNT + 1)
             .map(cat => (
               <div key={cat} onClick={() => handleFilterChange('category', cat)} style={{ padding: '10px 8px', fontSize: '14px', color: filters.category === cat ? '#c19a6b' : '#333', fontWeight: filters.category === cat ? 600 : 400, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -440,7 +445,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
             <i className="fas fa-chevron-down toggle-icon"></i>
           </FilterHeader>
           <FilterContent $collapsed={collapsedSections.category}>
-            {visibleCategories.filter(cat => cat === 'All' || (categoryCounts[cat] || 0) > 0).map(cat => (
+            {visibleCategories.filter(categoryVisible).map(cat => (
               <FilterOption key={cat} $active={filters.category === cat} onClick={() => handleFilterChange('category', cat)}>
                 {cat !== 'All' && CATEGORY_ICONS[cat] && (
                   <i className={`fas ${CATEGORY_ICONS[cat]}`} style={{ fontSize: '11px', color: '#888' }}></i>
