@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCartStore } from '@/store/cartStore';
 import LoginModal from './LoginModal';
+import MiniCartPopup from './MiniCartPopup';
 import { NavIcon, CartCount } from '../styles/HeaderStyles';
 
 interface UserMenuProps {
@@ -21,19 +22,34 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
 
   // Force re-render cart count with local state
   const [cartCount, setCartCount] = useState(0);
+  const [showMiniCart, setShowMiniCart] = useState(false);
+  const miniCartTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Subscribe to cart store changes
+  // Subscribe to cart store changes — drives both the badge count and the mini-cart popup
   useEffect(() => {
+    let prevTotal = useCartStore.getState().items.reduce((s, i) => s + i.quantity, 0);
+
     const unsubscribe = useCartStore.subscribe(
       state => state.items,
       (items) => {
-        const count = items.reduce((total, item) => total + item.quantity, 0);
-        setCartCount(count);
+        const total = items.reduce((s, i) => s + i.quantity, 0);
+        setCartCount(total);
+
+        // Open/reset mini-cart whenever total quantity goes up
+        if (total > prevTotal) {
+          setShowMiniCart(true);
+          if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current);
+          miniCartTimerRef.current = setTimeout(() => setShowMiniCart(false), 5000);
+        }
+        prevTotal = total;
       },
       { fireImmediately: true }
     );
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current);
+    };
   }, []);
 
   const closeAuthModal = () => {
@@ -158,23 +174,16 @@ const renderUserAccountIcon = () => {
               @media (max-width: 480px) {
                 .user-dropdown {
                   position: fixed !important;
-                  top: auto !important;
-                  bottom: 0 !important;
-                  left: 0 !important;
-                  right: 0 !important;
-                  width: 100% !important;
-                  max-height: 60vh;
-                  border-radius: 16px 16px 0 0;
-                  animation: slideUp 0.3s ease-out !important;
-                }
-
-                @keyframes slideUp {
-                  from {
-                    transform: translateY(100%);
-                  }
-                  to {
-                    transform: translateY(0);
-                  }
+                  top: 60px !important;
+                  right: 12px !important;
+                  bottom: auto !important;
+                  left: auto !important;
+                  width: calc(100vw - 24px) !important;
+                  max-width: 280px !important;
+                  max-height: 80vh;
+                  overflow-y: auto;
+                  border-radius: 12px !important;
+                  animation: slideDown 0.2s ease-out !important;
                 }
               }
             `}</style>
@@ -482,6 +491,11 @@ const renderUserAccountIcon = () => {
             <i className="fas fa-shopping-cart"></i>
           </NavIcon>
           {cartCount > 0 && <CartCount>{cartCount}</CartCount>}
+          <MiniCartPopup
+            open={showMiniCart}
+            onClose={() => { setShowMiniCart(false); if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current); }}
+            onGoToCart={() => { setShowMiniCart(false); onNavigate('/cart'); }}
+          />
         </div>
       )}
 

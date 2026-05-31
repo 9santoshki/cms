@@ -60,6 +60,7 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
     /** Regular price before discount — equals price when no sale */
     originalPrice: number;
   } | null>(null);
+  const [productHasVariants, setProductHasVariants] = useState(false);
 
   // Stock error state
   const [stockError, setStockError] = useState<string | null>(null);
@@ -81,6 +82,13 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setStockError(null);
+
+    // Block if product has variants but none is selected yet
+    if (productHasVariants && !selectedVariant) {
+      setStockError('Please select options first');
+      stockErrorTimeoutRef.current = setTimeout(() => setStockError(null), 3000);
+      return;
+    }
 
     const price = selectedVariant?.price || getDisplayPrice(product);
 
@@ -182,6 +190,7 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
             <MiniVariantSelector
               productId={product.id}
               onVariantSelect={handleVariantSelect}
+              onHasVariants={setProductHasVariants}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
@@ -235,13 +244,33 @@ const ProductCardWithVariant: React.FC<ProductCardWithVariantProps> = ({ product
                 <button
                   className="btn secondary"
                   onClick={handleAddToCart}
-                  style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', minWidth: '32px' }}
+                  title={productHasVariants && !selectedVariant ? 'Select options first' : 'Add to cart'}
+                  style={{
+                    width: '32px', height: '32px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', padding: '0', minWidth: '32px',
+                    opacity: productHasVariants && !selectedVariant ? 0.45 : 1,
+                    cursor: productHasVariants && !selectedVariant ? 'not-allowed' : 'pointer',
+                  }}
                   aria-label="Add to cart"
                 >
                   <i className="fas fa-shopping-cart"></i>
                 </button>
               )}
             </div>
+            {stockError && (
+              <div style={{
+                fontSize: '11px',
+                color: '#c0392b',
+                background: '#fdf2f2',
+                border: '1px solid #f5c6c6',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                marginTop: '4px',
+                textAlign: 'center',
+              }}>
+                {stockError}
+              </div>
+            )}
           </div>
         </ProductInfo>
       </ProductCard>

@@ -326,7 +326,7 @@ const NewHomepage = () => {
           justifyContent: 'center',
           gap: '40px',
         }}>
-          {homepageSubcategories.length > 0 && homepageSubcategories.map((item) => (
+          {homepageSubcategories.map((item) => (
             <div
               key={item.id}
               onClick={() => router.push(`/shop?category=${encodeURIComponent(item.category_name)}&subcategory=${encodeURIComponent(item.name)}`)}
@@ -338,8 +338,12 @@ const NewHomepage = () => {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 flex: '0 0 auto',
-                border: '1px solid #eee',
+                border: item.image ? '1px solid #eee' : '2px solid #e8d5c4',
                 transition: 'all 0.2s ease',
+                background: item.image ? 'transparent' : '#fdf8f4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-3px)';
@@ -349,40 +353,54 @@ const NewHomepage = () => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = '#eee';
+                e.currentTarget.style.borderColor = item.image ? '#eee' : '#e8d5c4';
               }}
             >
-              {/* Photo — prefer real product image from R2, fall back to static category image */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: item.product_image || item.image
-                  ? `url('${item.product_image || item.image}')`
-                  : 'linear-gradient(135deg, #fef3e2, #fde8c8)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }} />
-              {/* Gradient overlay for legible label */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 100%)',
-              }} />
-              {/* Label */}
-              <span style={{
-                position: 'absolute',
-                bottom: '8px',
-                left: '4px',
-                right: '4px',
-                fontSize: '10px',
-                fontWeight: '700',
-                color: 'white',
-                textAlign: 'center',
-                lineHeight: '1.2',
-                textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-              }}>
-                {translateSubcategory(item.name)}
-              </span>
+              {item.image ? (
+                <>
+                  {/* Admin-uploaded category image */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage: `url('${item.image}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }} />
+                  {/* Gradient overlay for legible label */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 100%)',
+                  }} />
+                  {/* Label over image */}
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: '4px',
+                    right: '4px',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: 'white',
+                    textAlign: 'center',
+                    lineHeight: '1.2',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                  }}>
+                    {translateSubcategory(item.name)}
+                  </span>
+                </>
+              ) : (
+                /* Text-only tile — no image uploaded */
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: '#8b6343',
+                  textAlign: 'center',
+                  lineHeight: '1.3',
+                  padding: '8px',
+                }}>
+                  {translateSubcategory(item.name)}
+                </span>
+              )}
             </div>
           ))}
         </div>

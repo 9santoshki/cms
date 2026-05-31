@@ -77,6 +77,7 @@ export async function getProducts(filters: {
   search?: string;
   category?: string;
   subcategory?: string;
+  brand?: string;
   minPrice?: number;
   maxPrice?: number;
   page?: number;
@@ -112,6 +113,12 @@ export async function getProducts(filters: {
   if (filters.subcategory) {
     whereConditions.push(`subcategory = $${paramCount}`);
     params.push(filters.subcategory);
+    paramCount++;
+  }
+
+  if (filters.brand) {
+    whereConditions.push(`brand = $${paramCount}`);
+    params.push(filters.brand);
     paramCount++;
   }
 
@@ -229,17 +236,6 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<boolean> {
   const result = await query('DELETE FROM products WHERE id = $1', [id]);
   return result.rowCount ? result.rowCount > 0 : false;
-}
-
-export async function searchProducts(searchTerm: string, limit: number = 10) {
-  const result = await query(
-    `SELECT * FROM products
-     WHERE name ILIKE $1 OR description ILIKE $1
-     ORDER BY created_at DESC
-     LIMIT $2`,
-    [`%${searchTerm}%`, limit]
-  );
-  return result.rows;
 }
 
 /**
