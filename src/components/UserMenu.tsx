@@ -171,10 +171,10 @@ const renderUserAccountIcon = () => {
                 }
               }
 
-              @media (max-width: 480px) {
+              @media (max-width: 768px) {
                 .user-dropdown {
                   position: fixed !important;
-                  top: 60px !important;
+                  top: 65px !important;
                   right: 12px !important;
                   bottom: auto !important;
                   left: auto !important;
@@ -184,6 +184,12 @@ const renderUserAccountIcon = () => {
                   overflow-y: auto;
                   border-radius: 12px !important;
                   animation: slideDown 0.2s ease-out !important;
+                }
+              }
+
+              @media (max-width: 480px) {
+                .user-dropdown {
+                  top: 58px !important;
                 }
               }
             `}</style>

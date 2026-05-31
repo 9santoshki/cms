@@ -111,6 +111,7 @@ const SearchPageInner = () => {
           initialFilters={initialFilters}
           emptyMessage={emptyMessage}
           onRetry={() => performSearch(query)}
+          showAllCategoriesInitially
         />
       </SearchContent>
 

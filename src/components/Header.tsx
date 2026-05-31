@@ -75,8 +75,8 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
 
           {/* Search, Cart, User Icons */}
           <HeaderIcons>
-            {/* Language Selector */}
-            <div ref={langDropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+            {/* Language Selector — hidden on mobile (accessible via hamburger menu) */}
+            <div ref={langDropdownRef} style={{ position: 'relative', flexShrink: 0 }} className="lang-selector">
               <button
                 onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
                 style={{
@@ -190,6 +190,12 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
           </HeaderIcons>
 
           <style jsx>{`
+            @media (max-width: 900px) {
+              .lang-selector {
+                display: none;
+              }
+            }
+
             @media (max-width: 768px) {
               .search-btn {
                 font-size: 18px !important;
