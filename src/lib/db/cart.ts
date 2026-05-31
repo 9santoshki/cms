@@ -79,13 +79,30 @@ export async function addCartItem(
   quantity: number,
   variantId?: number | null
 ): Promise<CartItem> {
+  const vid = variantId || null;
+
+  // ON CONFLICT doesn't match NULL=NULL in PostgreSQL, so do a NULL-safe manual upsert.
+  const existing = await query(
+    `SELECT id, quantity FROM cart
+     WHERE user_id = $1 AND product_id = $2
+       AND (variant_id = $3 OR (variant_id IS NULL AND $3 IS NULL))`,
+    [userId, productId, vid]
+  );
+
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    const updated = await query(
+      `UPDATE cart SET quantity = $1, updated_at = NOW()
+       WHERE id = $2 RETURNING *`,
+      [row.quantity + quantity, row.id]
+    );
+    return updated.rows[0];
+  }
+
   const result = await query(
     `INSERT INTO cart (user_id, product_id, variant_id, quantity)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (user_id, product_id, variant_id)
-     DO UPDATE SET quantity = cart.quantity + $4, updated_at = NOW()
-     RETURNING *`,
-    [userId, productId, variantId || null, quantity]
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [userId, productId, vid, quantity]
   );
   return result.rows[0];
 }

@@ -108,44 +108,16 @@ class ApiClient {
     });
   }
 
-  // Search
-  async searchProducts(params: {
-    q?: string;
-    search?: string;
-    category?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    page?: number;
-    limit?: number;
-  }) {
+  // Search — server handles text search only; all other filtering is client-side
+  async searchProducts(params: { q?: string; limit?: number }) {
     const searchParams = new URLSearchParams();
-
     if (params.q) searchParams.append('q', params.q);
-    if (params.search) searchParams.append('search', params.search);
-    if (params.category) searchParams.append('category', params.category);
-    if (params.minPrice !== undefined) searchParams.append('minPrice', params.minPrice.toString());
-    if (params.maxPrice !== undefined) searchParams.append('maxPrice', params.maxPrice.toString());
-    if (params.page) searchParams.append('page', params.page.toString());
     if (params.limit) searchParams.append('limit', params.limit.toString());
-
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/search/products?${queryString}` : '/search/products';
-
     return this.request<{
       products: Product[];
-      pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        pages: number;
-        hasMore: boolean;
-      };
-      filters: {
-        search: string;
-        category: string;
-        minPrice: number | null;
-        maxPrice: number | null;
-      };
+      pagination: { page: number; limit: number; total: number; pages: number; hasMore: boolean };
     }>(endpoint);
   }
 

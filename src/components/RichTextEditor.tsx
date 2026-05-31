@@ -76,7 +76,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
     editorProps: {
       attributes: {
-        style: `min-height:${minHeight}px; padding:10px 14px; outline:none; font-size:14px; line-height:1.6; font-family:inherit;`,
+        style: `min-height:${minHeight}px; padding:10px 14px; outline:none; font-size:14px; line-height:1.6; font-family:inherit; color:#1a1a1a;`,
         'data-placeholder': placeholder,
       },
     },
@@ -112,6 +112,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         borderRadius: 8,
         overflow: 'hidden',
         background: 'white',
+        color: '#1a1a1a',
       }}
     >
       {/* Toolbar */}

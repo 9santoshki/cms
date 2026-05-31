@@ -32,9 +32,10 @@ interface MiniVariantSelectorProps {
     price: number,
     originalPrice: number,
   ) => void;
+  onHasVariants?: (hasVariants: boolean) => void;
 }
 
-const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, onVariantSelect }) => {
+const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, onVariantSelect, onHasVariants }) => {
   const [loading, setLoading] = useState(true);
   const [hasVariants, setHasVariants] = useState(false);
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([]);
@@ -59,6 +60,7 @@ const MiniVariantSelector: React.FC<MiniVariantSelectorProps> = ({ productId, on
           setOptionTypes(data.data.optionTypes || []);
           setOptionsByType(data.data.optionsByType || {});
           setVariants(data.data.variants || []);
+          onHasVariants?.(data.data.hasVariants);
         }
       } catch (err) {
         console.error('Error fetching variants:', err);

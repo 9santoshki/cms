@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCartStore } from '@/store/cartStore';
 import { useLanguage } from '@/context/LanguageContext';
@@ -307,7 +307,8 @@ const AddToCartButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
+    cursor: not-allowed;
     transform: none;
     box-shadow: none;
   }
@@ -789,6 +790,8 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [variantHighlight, setVariantHighlight] = useState(false);
+  const variantSectionRef = useRef<HTMLDivElement>(null);
 
   // Variant state
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -803,6 +806,10 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   // True when a specific variant is matched AND it has no stock.
   // Undefined/null selected variant means no variant system → don't block.
   const isVariantOutOfStock = selectedVariant !== null && selectedVariant.stock_quantity <= 0;
+  // Track whether this product has a variant system at all
+  const [productHasVariants, setProductHasVariants] = useState(false);
+  // Block add-to-cart when variants exist but none is selected yet
+  const mustSelectVariant = productHasVariants && !selectedVariant && !selectionLabel;
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -953,8 +960,20 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     : baseHasDiscount;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
+  const handleGuideToVariants = () => {
+    variantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setVariantHighlight(true);
+    setTimeout(() => setVariantHighlight(false), 1800);
+  };
+
   const handleAddToCart = async () => {
     if (!product) return;
+
+    // Guide user to variants instead of showing an error
+    if (mustSelectVariant) {
+      handleGuideToVariants();
+      return;
+    }
 
     // Clear any previous errors
     setError(null);
@@ -1141,11 +1160,19 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           {(product.brand || product.delivery_time) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
               {product.brand && (
-                <span style={{
-                  fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-                  color: '#92400e', background: '#fffbeb', border: '1px solid #fcd34d',
-                  borderRadius: 4, padding: '0.15rem 0.5rem',
-                }}>
+                <span
+                  onClick={() => router.push(`/search?brand=${encodeURIComponent(product.brand!)}`)}
+                  title={`Browse all ${product.brand} products`}
+                  style={{
+                    fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+                    color: '#92400e', background: '#fffbeb', border: '1px solid #fcd34d',
+                    borderRadius: 4, padding: '0.15rem 0.5rem',
+                    cursor: 'pointer', textDecoration: 'none',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.color = '#78350f'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fffbeb'; e.currentTarget.style.color = '#92400e'; }}
+                >
                   {product.brand}
                 </span>
               )}
@@ -1243,15 +1270,36 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
           </ProductDetailDescription>
 
           {/* Variant Selector */}
-          <VariantSelector
-            key={variantResetKey}
-            productId={product.id}
-            onVariantChange={(variant, label) => {
-              setSelectedVariant(variant);
-              setSelectionLabel(label || '');
+          <style>{`
+            @keyframes variantPulse {
+              0%   { box-shadow: 0 0 0 0 rgba(217,119,6,0.5); border-color: #d97706; }
+              40%  { box-shadow: 0 0 0 8px rgba(217,119,6,0); border-color: #f59e0b; }
+              60%  { box-shadow: 0 0 0 0 rgba(217,119,6,0); }
+              80%  { box-shadow: 0 0 0 6px rgba(217,119,6,0.3); border-color: #d97706; }
+              100% { box-shadow: 0 0 0 0 rgba(217,119,6,0); border-color: transparent; }
+            }
+          `}</style>
+          <div
+            ref={variantSectionRef}
+            style={{
+              borderRadius: '8px',
+              border: '2px solid transparent',
+              transition: 'border-color 0.3s',
+              animation: variantHighlight ? 'variantPulse 1.8s ease-out' : 'none',
+              padding: variantHighlight ? '6px' : '0',
             }}
-            onStockChange={setAnyVariantInStock}
-          />
+          >
+            <VariantSelector
+              key={variantResetKey}
+              productId={product.id}
+              onVariantChange={(variant, label) => {
+                setSelectedVariant(variant);
+                setSelectionLabel(label || '');
+              }}
+              onStockChange={setAnyVariantInStock}
+              onHasVariants={setProductHasVariants}
+            />
+          </div>
 
           {/* Quantity Selector - inline compact */}
           <QuantitySelector style={{ margin: '0.25rem 0', gap: '0.5rem' }}>
@@ -1278,24 +1326,57 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
           {/* Add to Cart & Actions */}
           <ActionButtons style={{ margin: '0.25rem 0' }}>
-            <AddToCartButton style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
-              onClick={handleAddToCart}
-              disabled={isLoading || isVariantOutOfStock}
-            >
-              {isLoading ? (
-                <>
-                  <svg style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Adding...
-                </>
-              ) : isVariantOutOfStock ? (
-                t('outOfStock')
-              ) : (
-                t('addToCart')
-              )}
-            </AddToCartButton>
+            {mustSelectVariant ? (
+              <button
+                onClick={handleGuideToVariants}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  border: '2px solid #d97706',
+                  background: 'linear-gradient(90deg, #fffbeb, #fef3c7)',
+                  color: '#92400e',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  letterSpacing: '0.02em',
+                  animation: 'ctaPulse 2s ease-in-out infinite',
+                }}
+              >
+                <style>{`
+                  @keyframes ctaPulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,0.35); }
+                    50%       { box-shadow: 0 0 0 6px rgba(217,119,6,0); }
+                  }
+                `}</style>
+                <i className="fas fa-hand-pointer" style={{ fontSize: '0.85rem' }} />
+                Choose Your Options
+                <i className="fas fa-arrow-up" style={{ fontSize: '0.7rem', opacity: 0.7 }} />
+              </button>
+            ) : (
+              <AddToCartButton style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+                onClick={handleAddToCart}
+                disabled={isLoading || isVariantOutOfStock}
+              >
+                {isLoading ? (
+                  <>
+                    <svg style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : isVariantOutOfStock ? (
+                  t('outOfStock')
+                ) : (
+                  t('addToCart')
+                )}
+              </AddToCartButton>
+            )}
           </ActionButtons>
 
           {error && (

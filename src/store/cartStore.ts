@@ -183,10 +183,21 @@ export const useCartStore = create<CartState>()(
           const data = await response.json();
 
           if (data.success && data.data) {
-            // Server response only includes products that still exist in the DB
-            // (getCartItems uses INNER JOIN products), so stale/deleted items
-            // are automatically excluded here.
-            set({ items: data.data as CartItem[], isLoading: false });
+            // Merge any duplicate rows (same product_id + variant_id) that may
+            // exist from before the NULL-safe upsert fix was applied.
+            const merged = (data.data as CartItem[]).reduce<CartItem[]>((acc, item) => {
+              const vid = item.variant_id ?? null;
+              const existing = acc.find(
+                i => i.product_id === item.product_id && (i.variant_id ?? null) === vid
+              );
+              if (existing) {
+                existing.quantity += item.quantity;
+              } else {
+                acc.push({ ...item });
+              }
+              return acc;
+            }, []);
+            set({ items: merged, isLoading: false });
           } else {
             set({ isLoading: false });
           }

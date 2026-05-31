@@ -149,8 +149,8 @@ export const MobileFilterToggle = styled.button`
 // Products section
 export const ProductsSection = styled.div`
   flex: 1;
+  min-width: 0;
   padding: 12px 16px;
-  overflow-y: auto;
 
   @media (max-width: 992px) {
     padding: 10px 12px;

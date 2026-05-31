@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductsWithImages } from '@/lib/db/products';
 
+/**
+ * GET /api/search/products?q=...&limit=...
+ *
+ * Server-side responsibility: text search only.
+ * All other filtering (category, subcategory, brand, price) is done
+ * client-side on the search page, consistent with how the shop page works.
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('q') || searchParams.get('search') || '';
-    const category = searchParams.get('category') || '';
-    const minPrice = searchParams.get('minPrice')
-      ? parseFloat(searchParams.get('minPrice')!)
-      : undefined;
-    const maxPrice = searchParams.get('maxPrice')
-      ? parseFloat(searchParams.get('maxPrice')!)
-      : undefined;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const limit = parseInt(searchParams.get('limit') || '100');
 
     const result = await getProductsWithImages({
       search,
-      category,
-      minPrice,
-      maxPrice,
-      page,
       limit,
+      publishedOnly: true,
     });
 
     return NextResponse.json({
@@ -29,12 +25,6 @@ export async function GET(request: NextRequest) {
       data: {
         products: result.products,
         pagination: result.pagination,
-        filters: {
-          search,
-          category,
-          minPrice: minPrice ?? null,
-          maxPrice: maxPrice ?? null,
-        },
       },
     });
   } catch (err: unknown) {

@@ -9,44 +9,24 @@ export const SearchContainer = styled.div`
 `;
 
 export const SearchHeaderSection = styled.div`
-  padding: 10px 0 15px;
+  padding: 14px 16px 6px;
   text-align: center;
   background: #fff;
-  margin-top: 120px;
-
-  @media (max-width: 900px) {
-    margin-top: 100px;
-  }
-
-  @media (max-width: 768px) {
-    margin-top: 80px;
-    padding: 8px 0 12px;
-  }
 
   h1 {
-    font-size: 1.8rem;
-    margin-bottom: 5px;
+    font-size: 1.2rem;
+    margin-bottom: 0;
     color: #222;
-    font-weight: 400;
-    letter-spacing: 2px;
+    font-weight: 600;
+    letter-spacing: 1px;
     font-family: var(--font-playfair), 'Playfair Display', serif;
     text-transform: uppercase;
   }
 
-  h1::after {
-    content: '';
-    display: block;
-    width: 60px;
-    height: 2px;
-    background: linear-gradient(to right, transparent, #c19a6b, transparent);
-    margin: 10px auto 0;
-    opacity: 0.7;
-  }
-
   .search-query {
     color: #666;
-    font-size: 14px;
-    margin-top: 8px;
+    font-size: 13px;
+    margin-top: 4px;
 
     span {
       color: #c19a6b;
@@ -55,21 +35,92 @@ export const SearchHeaderSection = styled.div`
   }
 
   @media (max-width: 768px) {
-    h1 {
-      font-size: 1.4rem;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
+    padding: 10px 12px 4px;
 
-    h1::after {
-      width: 40px;
-      margin-top: 8px;
+    h1 {
+      font-size: 1rem;
+      letter-spacing: 0.5px;
     }
 
     .search-query {
       font-size: 12px;
-      margin-top: 6px;
+      margin-top: 3px;
     }
+  }
+`;
+
+// Compact single-row search bar: label + input + button all inline, centered
+export const SearchBarRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+
+  form {
+    display: flex;
+    gap: 0;
+    width: 360px;
+    flex-shrink: 0;
+  }
+
+  input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    font-size: 13px;
+    font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+    outline: none;
+    &:focus { border-color: #c19a6b; }
+    &::placeholder { color: #bbb; }
+  }
+
+  button {
+    padding: 8px 14px;
+    background: #c19a6b;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+    &:hover { background: #a8825f; }
+  }
+
+  @media (max-width: 600px) {
+    padding: 8px 12px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    form { width: 100%; }
+  }
+`;
+
+export const SearchBarLabel = styled.div`
+  font-size: 13px;
+  font-weight: 700;
+  color: #222;
+  white-space: nowrap;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+
+  .sub {
+    font-weight: 400;
+    color: #c19a6b;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 600px) {
+    font-size: 12px;
+    width: 100%;
   }
 `;
 
@@ -556,12 +607,12 @@ export const EmptyState = styled.div`
 
 export const SearchInputWrapper = styled.div`
   width: 100%;
-  padding: 0 16px 20px;
+  padding: 8px 16px 12px;
   display: flex;
   gap: 8px;
 
   @media (max-width: 768px) {
-    padding: 0 12px 15px;
+    padding: 6px 12px 10px;
   }
 
   form {

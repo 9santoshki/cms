@@ -231,10 +231,6 @@ export interface HomepageSubcategory {
   name: string;
   slug: string;
   image: string | null;
-  /** Cloudflare image key of a real product in this subcategory (may be null) */
-  product_image_key: string | null;
-  /** Proxied URL of a real product image — added by the API layer */
-  product_image?: string | null;
   display_order: number;
   category_id: number;
   category_name: string;
@@ -247,16 +243,7 @@ export async function getHomepageSubcategories(): Promise<HomepageSubcategory[]>
       s.id, s.name, s.slug, s.image, s.display_order,
       p.id  AS category_id,
       p.name AS category_name,
-      p.slug AS category_slug,
-      (
-        SELECT pi.cloudflare_image_id
-        FROM products prod
-        JOIN product_images pi
-          ON pi.product_id = prod.id AND pi.is_primary = TRUE
-        WHERE prod.subcategory = s.name
-          AND prod.status = 'published'
-        LIMIT 1
-      ) AS product_image_key
+      p.slug AS category_slug
     FROM categories s
     JOIN categories p ON s.parent_id = p.id
     WHERE s.is_active = TRUE

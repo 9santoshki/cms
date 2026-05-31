@@ -61,17 +61,6 @@ export const PRICE_RANGES = [
   { value: 'over15000', label: 'Over ₹15,000' },
 ] as const;
 
-export const SHOP_CATEGORIES = [
-  { id: '', name: 'All Categories' },
-  { id: 'Living Room', name: 'Living Room' },
-  { id: 'Dining Room', name: 'Dining Room' },
-  { id: 'Bedroom', name: 'Bedroom' },
-  { id: 'Home Office', name: 'Home Office' },
-  { id: 'Lighting', name: 'Lighting' },
-  { id: 'Decor', name: 'Decor' },
-  { id: 'Outdoor', name: 'Outdoor' },
-] as const;
-
 /** Get price range bounds from range value */
 export function getPriceRangeBounds(range: string): { min?: number; max?: number } {
   if (range === 'under5000') return { max: 5000 };

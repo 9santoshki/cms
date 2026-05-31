@@ -9,6 +9,7 @@ interface VariantSelectorProps {
   productId: number;
   onVariantChange: (variant: ProductVariant | null, selectionLabel?: string) => void;
   onStockChange?: (anyInStock: boolean) => void;
+  onHasVariants?: (hasVariants: boolean) => void;
 }
 
 // Styled components
@@ -95,7 +96,7 @@ const PartialSelectionHint = styled.div`
   border: 1px solid #fcd34d;
 `;
 
-const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantChange, onStockChange }) => {
+const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantChange, onStockChange, onHasVariants }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [hasVariants, setHasVariants] = useState(false);
@@ -118,6 +119,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
           setOptionsByType(data.data.optionsByType || {});
           setVariants(variantList);
           onStockChange?.(variantList.some(v => v.stock_quantity > 0));
+          onHasVariants?.(data.data.hasVariants);
         }
       } catch (err) {
         console.error('Error fetching variants:', err);
