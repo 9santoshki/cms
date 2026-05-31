@@ -96,6 +96,8 @@ interface ProductBrowserProps {
   initialFilters?: Partial<BrowserFilters>;
   /** Called whenever filter/sort state changes — useful for URL sync */
   onFiltersChange?: (filters: BrowserFilters) => void;
+  /** Start with all categories expanded (no "See more" truncation) */
+  showAllCategoriesInitially?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -109,6 +111,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   onRetry,
   initialFilters,
   onFiltersChange,
+  showAllCategoriesInitially = false,
 }) => {
   const [filters, setFilters] = useState<BrowserFilters>({
     ...DEFAULT_FILTERS,
@@ -116,7 +119,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(showAllCategoriesInitially);
   const [collapsedSections, setCollapsedSections] = useState({
     category: false,
     subcategory: false,
