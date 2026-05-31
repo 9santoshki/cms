@@ -105,13 +105,26 @@ export async function getProducts(filters: {
   }
 
   if (filters.category) {
-    whereConditions.push(`category = $${paramCount}`);
+    // Match via junction table: product has this category directly, or a subcategory whose parent has this name
+    whereConditions.push(`EXISTS (
+      SELECT 1 FROM product_categories pc
+      JOIN categories c ON c.id = pc.category_id
+      LEFT JOIN categories parent ON parent.id = c.parent_id
+      WHERE pc.product_id = p.id
+      AND (c.name = $${paramCount} OR parent.name = $${paramCount})
+    )`);
     params.push(filters.category);
     paramCount++;
   }
 
   if (filters.subcategory) {
-    whereConditions.push(`subcategory = $${paramCount}`);
+    // Match via junction table: product has this subcategory assigned
+    whereConditions.push(`EXISTS (
+      SELECT 1 FROM product_categories pc
+      JOIN categories c ON c.id = pc.category_id
+      WHERE pc.product_id = p.id
+      AND c.name = $${paramCount}
+    )`);
     params.push(filters.subcategory);
     paramCount++;
   }
@@ -138,14 +151,14 @@ export async function getProducts(filters: {
 
   // Get products
   const productsQuery = `
-    SELECT * FROM products
+    SELECT p.* FROM products p
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY p.created_at DESC
     LIMIT $${paramCount} OFFSET $${paramCount + 1}
   `;
   params.push(limit, offset);
 
-  const countQuery = `SELECT COUNT(*) as count FROM products ${whereClause}`;
+  const countQuery = `SELECT COUNT(*) as count FROM products p ${whereClause}`;
   const [productsResult, countResult] = await Promise.all([
     query(productsQuery, params),
     query(countQuery, params.slice(0, paramCount - 1)),
