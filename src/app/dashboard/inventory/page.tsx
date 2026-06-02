@@ -44,6 +44,7 @@ interface EditTarget { variant: InventoryVariant; supplier: SupplierInfo }
 
 type ModalResult = { ok: boolean; message: string };
 
+
 const EMPTY_STATE: Record<Tab, { icon: string; text: string }> = {
   'out-of-stock': { icon: '✅', text: 'All items are in stock!' },
   'low-stock':    { icon: '📦', text: 'No items in low-stock range.' },
@@ -80,6 +81,15 @@ const InventoryPage = () => {
   const [editNote, setEditNote]       = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [editResult, setEditResult]   = useState<ModalResult | null>(null);
+
+  // Filter + inline-edit state
+  const [productFilter, setProductFilter]   = useState('');
+  const [supplierFilter, setSupplierFilter] = useState('');
+  const [editMode, setEditMode]             = useState(false);
+  // keyed `${variantId}-${supplierId}`
+  const [inlineValues, setInlineValues]   = useState<Record<string, string>>({});
+  const [inlineSaving, setInlineSaving]   = useState<Record<string, boolean>>({});
+  const [inlineErrors, setInlineErrors]   = useState<Record<string, string>>({});
 
   // ── Auth guard ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,6 +143,11 @@ const InventoryPage = () => {
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setSearch('');
+    setProductFilter('');
+    setSupplierFilter('');
+    setEditMode(false);
+    setInlineValues({});
+    setInlineErrors({});
     if (tab === 'all') fetchAllVariants();
   };
 
@@ -155,15 +170,72 @@ const InventoryPage = () => {
     : activeTab === 'all'        ? allVariants
     : noSupplierList;
 
+  // Dropdown options — derived from the full active list (before filtering)
+  const productOptions  = [...new Set(activeList.map(v => v.product_name))].sort();
+  const supplierOptions = [...new Set(activeList.flatMap(v => v.suppliers.map(s => s.company_name)))].sort();
+
   const filtered = activeList.filter(v => {
     const q = search.toLowerCase();
-    return (
+    const matchesSearch = !q || (
       v.product_name.toLowerCase().includes(q) ||
       (v.variant_name || '').toLowerCase().includes(q) ||
       (v.sku || '').toLowerCase().includes(q) ||
       v.suppliers.some(s => s.company_name.toLowerCase().includes(q))
     );
+    const matchesProduct  = !productFilter  || v.product_name === productFilter;
+    const matchesSupplier = !supplierFilter || v.suppliers.some(s => s.company_name === supplierFilter);
+    return matchesSearch && matchesProduct && matchesSupplier;
   });
+
+  // ── Inline-edit helpers ──────────────────────────────────────────────────────
+  const ikey = (variantId: number, supplierId: number) => `${variantId}-${supplierId}`;
+
+  const isDirty = (variantId: number, supplierId: number, currentStock: number) => {
+    const v = inlineValues[ikey(variantId, supplierId)];
+    return v !== undefined && v !== String(currentStock);
+  };
+
+  const dirtyCount = filtered.reduce((n, v) =>
+    n + v.suppliers.filter(s => isDirty(v.variant_id, s.supplier_id, s.supplier_stock)).length, 0);
+
+  const saveInline = async (variantId: number, supplierId: number, currentStock: number) => {
+    const k = ikey(variantId, supplierId);
+    const raw = inlineValues[k];
+    if (raw === undefined || raw === String(currentStock)) return;
+    const qty = Number(raw);
+    if (!Number.isInteger(qty) || qty < 0) {
+      setInlineErrors(prev => ({ ...prev, [k]: 'Must be ≥ 0' }));
+      return;
+    }
+    setInlineSaving(prev => ({ ...prev, [k]: true }));
+    setInlineErrors(prev => { const n = { ...prev }; delete n[k]; return n; });
+    try {
+      const res  = await fetch('/api/admin/inventory/supplier-stock', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variant_id: variantId, supplier_id: supplierId, new_quantity: qty }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setInlineValues(prev => { const n = { ...prev }; delete n[k]; return n; });
+        refreshAfterEdit();
+      } else {
+        setInlineErrors(prev => ({ ...prev, [k]: json.error ?? 'Failed' }));
+      }
+    } catch {
+      setInlineErrors(prev => ({ ...prev, [k]: 'Network error' }));
+    } finally {
+      setInlineSaving(prev => { const n = { ...prev }; delete n[k]; return n; });
+    }
+  };
+
+  const saveAllDirty = () =>
+    Promise.all(
+      filtered.flatMap(v =>
+        v.suppliers
+          .filter(s => isDirty(v.variant_id, s.supplier_id, s.supplier_stock))
+          .map(s => saveInline(v.variant_id, s.supplier_id, s.supplier_stock))
+      )
+    );
 
   // ── Edit-stock action ────────────────────────────────────────────────────────
 
@@ -326,14 +398,65 @@ const InventoryPage = () => {
             ))}
           </div>
 
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search product, variant, SKU, supplier…"
-            className="inventory-search"
-            style={{ padding: '6px 10px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, minWidth: 200 }}
-          />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Product filter */}
+            <select
+              value={productFilter}
+              onChange={e => setProductFilter(e.target.value)}
+              style={{ padding: '6px 8px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, color: productFilter ? '#1a1a1a' : '#999', background: productFilter ? '#fdf8f3' : 'white' }}
+            >
+              <option value="">All products</option>
+              {productOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+
+            {/* Supplier filter */}
+            <select
+              value={supplierFilter}
+              onChange={e => setSupplierFilter(e.target.value)}
+              style={{ padding: '6px 8px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, color: supplierFilter ? '#1a1a1a' : '#999', background: supplierFilter ? '#fdf8f3' : 'white' }}
+            >
+              <option value="">All suppliers</option>
+              {supplierOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="inventory-search"
+              style={{ padding: '6px 10px', border: '1px solid #e8d5c4', borderRadius: 6, fontSize: 12, minWidth: 140 }}
+            />
+
+            {/* Edit Mode toggle */}
+            <button
+              onClick={() => { setEditMode(m => !m); setInlineValues({}); setInlineErrors({}); }}
+              style={{
+                padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                background: editMode ? '#c19a6b' : 'white',
+                color:      editMode ? 'white'   : '#c19a6b',
+                border: '1px solid #c19a6b',
+              }}
+            >
+              {editMode ? '✕ Exit Edit' : '✏ Edit Mode'}
+            </button>
+
+            {/* Save-all button — only visible when there are dirty changes */}
+            {editMode && dirtyCount > 0 && (
+              <button
+                onClick={saveAllDirty}
+                style={{
+                  padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                  background: 'linear-gradient(135deg,#c19a6b,#a67c52)',
+                  color: 'white', border: 'none',
+                }}
+              >
+                Save {dirtyCount} change{dirtyCount !== 1 ? 's' : ''}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -401,41 +524,77 @@ const InventoryPage = () => {
                       </td>
 
                       {/* Suppliers */}
-                      <td style={{ padding: '10px 8px', maxWidth: 180 }}>
+                      <td style={{ padding: '10px 8px', maxWidth: 220 }}>
                         {v.suppliers.length === 0 ? (
                           <span style={{ padding: '2px 8px', borderRadius: 16, background: 'rgba(107,114,128,0.1)', color: '#6b7280', fontSize: 12, fontWeight: 600 }}>
                             ⚠ None assigned
                           </span>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {v.suppliers.map(s => (
-                              <div key={s.supplier_id} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 500, color: '#333', fontSize: 12 }}>{s.company_name}</span>
-                                <span style={{ fontSize: 12, color: s.supplier_stock > 0 ? '#22c55e' : '#ef4444' }}>
-                                  ({s.supplier_stock} units)
-                                </span>
-                                {!s.is_active && (
-                                  <span style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>inactive</span>
-                                )}
-                                <button
-                                  onClick={() => openEditStock(v, s)}
-                                  title="Edit stock"
-                                  style={{
-                                    padding: '2px 6px',
-                                    fontSize: 12,
-                                    minHeight: '44px',
-                                    background: 'rgba(193,154,107,0.12)',
-                                    color: '#c19a6b',
-                                    border: '1px solid rgba(193,154,107,0.3)',
-                                    borderRadius: 3,
-                                    cursor: 'pointer',
-                                    lineHeight: 1.3,
-                                  }}
-                                >
-                                  ✏ Edit
-                                </button>
-                              </div>
-                            ))}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {v.suppliers.map(s => {
+                              const k    = ikey(v.variant_id, s.supplier_id);
+                              const dirty = isDirty(v.variant_id, s.supplier_id, s.supplier_stock);
+                              const saving = inlineSaving[k];
+                              const err   = inlineErrors[k];
+                              return (
+                                <div key={s.supplier_id}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 500, color: '#333', fontSize: 12 }}>{s.company_name}</span>
+                                    {!s.is_active && (
+                                      <span style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>inactive</span>
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                    {editMode ? (
+                                      <>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          value={inlineValues[k] ?? String(s.supplier_stock)}
+                                          onChange={e => setInlineValues(prev => ({ ...prev, [k]: e.target.value }))}
+                                          onKeyDown={e => e.key === 'Enter' && saveInline(v.variant_id, s.supplier_id, s.supplier_stock)}
+                                          onBlur={() => saveInline(v.variant_id, s.supplier_id, s.supplier_stock)}
+                                          disabled={saving}
+                                          style={{
+                                            width: 70, padding: '3px 6px', fontSize: 12, borderRadius: 4,
+                                            border: `1px solid ${dirty ? '#c19a6b' : '#ddd'}`,
+                                            background: dirty ? '#fdf8f3' : 'white',
+                                            fontWeight: dirty ? 700 : 400,
+                                          }}
+                                        />
+                                        {saving && <span style={{ fontSize: 11, color: '#aaa' }}>saving…</span>}
+                                        {dirty && !saving && (
+                                          <button
+                                            onMouseDown={e => { e.preventDefault(); saveInline(v.variant_id, s.supplier_id, s.supplier_stock); }}
+                                            style={{ padding: '2px 6px', fontSize: 11, background: '#c19a6b', color: 'white', border: 'none', borderRadius: 3, cursor: 'pointer' }}
+                                          >
+                                            ✓
+                                          </button>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span style={{ fontSize: 12, color: s.supplier_stock > 0 ? '#22c55e' : '#ef4444' }}>
+                                          {s.supplier_stock} units
+                                        </span>
+                                        <button
+                                          onClick={() => openEditStock(v, s)}
+                                          title="Edit stock"
+                                          style={{
+                                            padding: '2px 6px', fontSize: 11,
+                                            background: 'rgba(193,154,107,0.12)', color: '#c19a6b',
+                                            border: '1px solid rgba(193,154,107,0.3)', borderRadius: 3, cursor: 'pointer',
+                                          }}
+                                        >
+                                          ✏
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                  {err && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>{err}</div>}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </td>

@@ -10,10 +10,10 @@ export const FooterContainer = styled.footer`
 export const FooterContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px 40px 30px;
+  padding: 28px 40px 16px;
 
   @media (max-width: 768px) {
-    padding: 50px 20px 25px;
+    padding: 24px 20px 14px;
   }
 `;
 
@@ -21,13 +21,13 @@ export const FooterMain = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 60px;
-  padding-bottom: 40px;
+  gap: 32px;
+  padding-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 40px;
+    gap: 20px;
     text-align: center;
     align-items: center;
   }
@@ -43,17 +43,17 @@ export const FooterBrand = styled.div`
 
 export const FooterLogo = styled.h3`
   font-family: var(--font-playfair), 'Playfair Display', serif;
-  font-size: 24px;
-  margin-bottom: 15px;
+  font-size: 18px;
+  margin-bottom: 8px;
   color: #fff;
   letter-spacing: 0.5px;
 `;
 
 export const FooterTagline = styled.p`
   color: rgba(255, 255, 255, 0.6);
-  line-height: 1.7;
-  font-size: 14px;
-  margin-bottom: 20px;
+  line-height: 1.5;
+  font-size: 13px;
+  margin-bottom: 12px;
 `;
 
 export const SocialIcons = styled.div`
@@ -68,12 +68,12 @@ export const SocialIcons = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.7);
-    font-size: 14px;
+    font-size: 12px;
     transition: all 0.3s ease;
 
     &:hover {
@@ -86,10 +86,10 @@ export const SocialIcons = styled.div`
 
 export const FooterNav = styled.nav`
   display: flex;
-  gap: 50px;
+  gap: 32px;
 
   @media (max-width: 768px) {
-    gap: 30px;
+    gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -98,7 +98,7 @@ export const FooterNav = styled.nav`
 export const FooterLinks = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 7px;
 
   a {
     color: rgba(255, 255, 255, 0.6);
@@ -121,17 +121,17 @@ export const FooterCTA = styled.div`
 
   p {
     color: rgba(255, 255, 255, 0.5);
-    font-size: 13px;
-    margin-bottom: 12px;
+    font-size: 12px;
+    margin-bottom: 8px;
   }
 
   button {
     background: linear-gradient(135deg, #c19a6b, #a8825f);
     color: white;
     border: none;
-    padding: 12px 28px;
+    padding: 8px 20px;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -149,11 +149,11 @@ export const FooterBottom = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 25px;
+  padding-top: 12px;
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
     text-align: center;
   }
 

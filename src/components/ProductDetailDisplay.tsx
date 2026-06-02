@@ -626,9 +626,9 @@ const CollapsibleHeader = styled.button`
 
 const CollapsibleContent = styled.div<{ $isOpen: boolean }>`
   padding: ${props => props.$isOpen ? '0.75rem' : '0 0.75rem'};
-  max-height: ${props => props.$isOpen ? '1000px' : '0'};
+  max-height: ${props => props.$isOpen ? 'none' : '0'};
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: padding 0.3s ease;
   background-color: white;
   color: #4b5563;
   line-height: 1.5;
@@ -708,9 +708,9 @@ const FAQQuestion = styled.button`
 
 const FAQAnswer = styled.div<{ $isOpen: boolean }>`
   padding: ${props => props.$isOpen ? '1rem 1.25rem' : '0 1.25rem'};
-  max-height: ${props => props.$isOpen ? '500px' : '0'};
+  max-height: ${props => props.$isOpen ? 'none' : '0'};
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: padding 0.3s ease;
   background-color: white;
   color: #4b5563;
   line-height: 1.6;
