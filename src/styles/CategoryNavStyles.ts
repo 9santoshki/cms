@@ -12,12 +12,8 @@ export const CategoryNavBar = styled.nav`
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     display: none;
-  }
-
-  @media (max-width: 768px) {
-    top: 65px;
   }
 `;
 
@@ -249,29 +245,6 @@ export const DropdownDivider = styled.div`
 // Mobile-only horizontal scroll strip (shown ≤900px, hidden on desktop)
 export const MobileCategoryStrip = styled.nav`
   display: none;
-
-  @media (max-width: 900px) {
-    display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
-    position: -webkit-sticky;
-    position: sticky;
-    top: 79px;
-    z-index: 999;
-    width: 100%;
-    scrollbar-width: none;
-    padding: 0 4px;
-    &::-webkit-scrollbar { display: none; }
-  }
-
-  @media (max-width: 768px) {
-    top: 65px;
-  }
-
-  @media (max-width: 480px) {
-    top: 58px;
-  }
 `;
 
 export const MobileCategoryPill = styled.a`

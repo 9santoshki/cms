@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 interface VariantOptionType {
   id: number;
@@ -28,6 +29,8 @@ interface ProductVariant {
   sale_price?: number;
   stock_quantity: number;
   is_active: boolean;
+  hsn_code?: string;
+  supplier_price?: number;
   variant_name?: string;
   options?: VariantOption[];
 }
@@ -61,6 +64,9 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function ProductVariantManager({ productId }: Props) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [optionTypes, setOptionTypes] = useState<VariantOptionType[]>([]);
   const [allOptions, setAllOptions] = useState<VariantOption[]>([]);
@@ -74,6 +80,8 @@ export default function ProductVariantManager({ productId }: Props) {
   const [addPrice, setAddPrice] = useState('');
   const [addSalePrice, setAddSalePrice] = useState('');
   const [addSku, setAddSku] = useState('');
+  const [addHsnCode, setAddHsnCode] = useState('');
+  const [addSupplierPrice, setAddSupplierPrice] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -82,6 +90,8 @@ export default function ProductVariantManager({ productId }: Props) {
   const [editSku, setEditSku] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editSalePrice, setEditSalePrice] = useState('');
+  const [editHsnCode, setEditHsnCode] = useState('');
+  const [editSupplierPrice, setEditSupplierPrice] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -198,6 +208,10 @@ export default function ProductVariantManager({ productId }: Props) {
           sku: addSku || null,
           stock_quantity: 0,
           option_ids: selectedOptionIds,
+          ...(isAdmin ? {
+            hsn_code: addHsnCode || null,
+            supplier_price: addSupplierPrice ? parseFloat(addSupplierPrice) : null,
+          } : {}),
         }),
       });
       const data = await res.json();
@@ -208,6 +222,8 @@ export default function ProductVariantManager({ productId }: Props) {
         setAddPrice('');
         setAddSalePrice('');
         setAddSku('');
+        setAddHsnCode('');
+        setAddSupplierPrice('');
         loadVariantsOnly();
       } else {
         setAddError(data.error || 'Failed to add variant');
@@ -225,6 +241,8 @@ export default function ProductVariantManager({ productId }: Props) {
     setEditSku(v.sku || '');
     setEditPrice(v.price.toString());
     setEditSalePrice(v.sale_price?.toString() || '');
+    setEditHsnCode(v.hsn_code || '');
+    setEditSupplierPrice(v.supplier_price?.toString() || '');
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -241,6 +259,10 @@ export default function ProductVariantManager({ productId }: Props) {
           sku: editSku || null,
           price: parseFloat(editPrice),
           sale_price: editSalePrice ? parseFloat(editSalePrice) : null,
+          ...(isAdmin ? {
+            hsn_code: editHsnCode || null,
+            supplier_price: editSupplierPrice ? parseFloat(editSupplierPrice) : null,
+          } : {}),
         }),
       });
       const data = await res.json();
@@ -480,7 +502,7 @@ export default function ProductVariantManager({ productId }: Props) {
           </div>
 
           {/* Pricing + meta */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 5 : 3}, 1fr)`, gap: '12px', marginBottom: '16px' }}>
             <div>
               <label style={labelStyle}>Price (₹) *</label>
               <input
@@ -515,6 +537,38 @@ export default function ProductVariantManager({ productId }: Props) {
                 style={inputStyle}
               />
             </div>
+            {isAdmin && (
+              <div>
+                <label style={labelStyle}>
+                  HSN Code{' '}
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#aaa' }}>admin only</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 44219090"
+                  value={addHsnCode}
+                  onChange={(e) => setAddHsnCode(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+            )}
+            {isAdmin && (
+              <div>
+                <label style={labelStyle}>
+                  Supplier Price (₹){' '}
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#aaa' }}>admin only</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Cost price"
+                  value={addSupplierPrice}
+                  onChange={(e) => setAddSupplierPrice(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+            )}
           </div>
 
           <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -583,7 +637,11 @@ export default function ProductVariantManager({ productId }: Props) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
               <tr style={{ background: 'rgba(193, 154, 107, 0.06)', borderBottom: '2px solid #e8d5c4' }}>
-                {['Options', 'SKU', 'Price (₹)', 'Sale Price (₹)', 'Stock (supplier)', 'Supplier', 'Active', 'Actions'].map((h) => (
+                {[
+                  'Options', 'SKU', 'Price (₹)', 'Sale Price (₹)',
+                  ...(isAdmin ? ['HSN Code', 'Supplier Price (₹)'] : []),
+                  'Stock (supplier)', 'Supplier', 'Active', 'Actions',
+                ].map((h) => (
                   <th key={h} style={{
                     padding: '10px 12px',
                     textAlign: 'left',
@@ -637,6 +695,18 @@ export default function ProductVariantManager({ productId }: Props) {
                     <td style={{ padding: '10px 12px', color: v.sale_price ? '#e74c3c' : '#bbb' }}>
                       {v.sale_price ? `₹${Number(v.sale_price).toLocaleString()}` : '—'}
                     </td>
+                    {/* Admin-only: HSN Code */}
+                    {isAdmin && (
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: '12px', color: v.hsn_code ? '#444' : '#bbb' }}>
+                        {v.hsn_code || '—'}
+                      </td>
+                    )}
+                    {/* Admin-only: Supplier Price */}
+                    {isAdmin && (
+                      <td style={{ padding: '10px 12px', color: v.supplier_price ? '#7c3aed' : '#bbb' }}>
+                        {v.supplier_price ? `₹${Number(v.supplier_price).toLocaleString()}` : '—'}
+                      </td>
+                    )}
                     {/* Stock */}
                     <td style={{ padding: '10px 12px' }}>
                       <StockBadge qty={v.stock_quantity} />
@@ -798,8 +868,8 @@ export default function ProductVariantManager({ productId }: Props) {
                   {/* Inline edit row */}
                   {editingId === v.id && (
                     <tr style={{ borderBottom: '1px solid #f0ebe5', background: 'rgba(193, 154, 107, 0.04)' }}>
-                      <td colSpan={8} style={{ padding: '12px 12px 16px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <td colSpan={isAdmin ? 10 : 8} style={{ padding: '12px 12px 16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 5 : 3}, 1fr)`, gap: '12px', marginBottom: '12px' }}>
                           <div>
                             <label style={labelStyle}>Price (₹) *</label>
                             <input type="number" min="0" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={inputStyle} />
@@ -812,6 +882,32 @@ export default function ProductVariantManager({ productId }: Props) {
                             <label style={labelStyle}>SKU</label>
                             <input type="text" value={editSku} onChange={(e) => setEditSku(e.target.value)} style={inputStyle} />
                           </div>
+                          {isAdmin && (
+                            <div>
+                              <label style={labelStyle}>HSN Code</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 44219090"
+                                value={editHsnCode}
+                                onChange={(e) => setEditHsnCode(e.target.value)}
+                                style={inputStyle}
+                              />
+                            </div>
+                          )}
+                          {isAdmin && (
+                            <div>
+                              <label style={labelStyle}>Supplier Price (₹)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Cost price"
+                                value={editSupplierPrice}
+                                onChange={(e) => setEditSupplierPrice(e.target.value)}
+                                style={inputStyle}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button

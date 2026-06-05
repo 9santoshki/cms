@@ -626,9 +626,9 @@ const CollapsibleHeader = styled.button`
 
 const CollapsibleContent = styled.div<{ $isOpen: boolean }>`
   padding: ${props => props.$isOpen ? '0.75rem' : '0 0.75rem'};
-  max-height: ${props => props.$isOpen ? '1000px' : '0'};
+  max-height: ${props => props.$isOpen ? 'none' : '0'};
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: padding 0.3s ease;
   background-color: white;
   color: #4b5563;
   line-height: 1.5;
@@ -640,6 +640,24 @@ const CollapsibleChevron = styled.span<{ $isOpen: boolean }>`
   transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
   font-size: 0.75rem;
   color: #6b7280;
+`;
+
+const InfoAccordionGrid = styled.div`
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: start;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const HighlightItem = styled.div`
@@ -708,9 +726,9 @@ const FAQQuestion = styled.button`
 
 const FAQAnswer = styled.div<{ $isOpen: boolean }>`
   padding: ${props => props.$isOpen ? '1rem 1.25rem' : '0 1.25rem'};
-  max-height: ${props => props.$isOpen ? '500px' : '0'};
+  max-height: ${props => props.$isOpen ? 'none' : '0'};
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: padding 0.3s ease;
   background-color: white;
   color: #4b5563;
   line-height: 1.6;
@@ -1094,7 +1112,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
       {/* Main Product Section */}
       <ProductDetailContent>
         {/* Product Images - Left Column */}
-        <div style={{ width: '100%' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <ProductImageContainer>
             {selectedImageUrl ? (
               <img
@@ -1424,55 +1442,56 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </CollapsibleContent>
           </CollapsibleSection>
 
-          {/* Product Description */}
-          <CollapsibleSection>
-            <CollapsibleHeader onClick={() => toggleSection('description')}>
-              <span>{t('description')}</span>
-              <CollapsibleChevron $isOpen={sectionsOpen.description}>▼</CollapsibleChevron>
-            </CollapsibleHeader>
-            <CollapsibleContent $isOpen={sectionsOpen.description}>
-              {product.description_html ? (
-                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.description_html }} />
-              ) : (
-                product.description
-              )}
-            </CollapsibleContent>
-          </CollapsibleSection>
-
-          {/* Warranty, Return & Exchange Policy */}
-          <CollapsibleSection>
-            <CollapsibleHeader onClick={() => toggleSection('returns')}>
-              <span>Warranty &amp; Returns</span>
-              <CollapsibleChevron $isOpen={sectionsOpen.returns}>▼</CollapsibleChevron>
-            </CollapsibleHeader>
-            <CollapsibleContent $isOpen={sectionsOpen.returns}>
-              {product.warranty_policy ? (
-                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.warranty_policy }} />
-              ) : null}
-            </CollapsibleContent>
-          </CollapsibleSection>
-
-          {/* FAQs */}
-          <CollapsibleSection>
-            <CollapsibleHeader onClick={() => toggleSection('faqs')}>
-              <span>FAQs</span>
-              <CollapsibleChevron $isOpen={sectionsOpen.faqs}>▼</CollapsibleChevron>
-            </CollapsibleHeader>
-            <CollapsibleContent $isOpen={sectionsOpen.faqs}>
-              {product.faqs_html ? (
-                <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.faqs_html }} />
-              ) : (product.faqs && product.faqs.length > 0) ? (
-                product.faqs.map((faq, index) => (
-                  <div key={index} style={{ marginBottom: '0.75rem' }}>
-                    <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{faq.question}</strong>
-                    <span>{faq.answer}</span>
-                  </div>
-                ))
-              ) : null}
-            </CollapsibleContent>
-          </CollapsibleSection>
         </ProductDetailInfo>
       </ProductDetailContent>
+
+      {/* Description, Warranty & Returns, FAQs — responsive grid below main content */}
+      <InfoAccordionGrid>
+        <CollapsibleSection>
+          <CollapsibleHeader onClick={() => toggleSection('description')}>
+            <span>{t('description')}</span>
+            <CollapsibleChevron $isOpen={sectionsOpen.description}>▼</CollapsibleChevron>
+          </CollapsibleHeader>
+          <CollapsibleContent $isOpen={sectionsOpen.description}>
+            {product.description_html ? (
+              <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.description_html }} />
+            ) : (
+              product.description
+            )}
+          </CollapsibleContent>
+        </CollapsibleSection>
+
+        <CollapsibleSection>
+          <CollapsibleHeader onClick={() => toggleSection('returns')}>
+            <span>Warranty &amp; Returns</span>
+            <CollapsibleChevron $isOpen={sectionsOpen.returns}>▼</CollapsibleChevron>
+          </CollapsibleHeader>
+          <CollapsibleContent $isOpen={sectionsOpen.returns}>
+            {product.warranty_policy ? (
+              <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.warranty_policy }} />
+            ) : null}
+          </CollapsibleContent>
+        </CollapsibleSection>
+
+        <CollapsibleSection>
+          <CollapsibleHeader onClick={() => toggleSection('faqs')}>
+            <span>FAQs</span>
+            <CollapsibleChevron $isOpen={sectionsOpen.faqs}>▼</CollapsibleChevron>
+          </CollapsibleHeader>
+          <CollapsibleContent $isOpen={sectionsOpen.faqs}>
+            {product.faqs_html ? (
+              <div className="rich-content" dangerouslySetInnerHTML={{ __html: product.faqs_html }} />
+            ) : (product.faqs && product.faqs.length > 0) ? (
+              product.faqs.map((faq, index) => (
+                <div key={index} style={{ marginBottom: '0.75rem' }}>
+                  <strong style={{ color: '#1f2937', display: 'block', marginBottom: '0.25rem' }}>{faq.question}</strong>
+                  <span>{faq.answer}</span>
+                </div>
+              ))
+            ) : null}
+          </CollapsibleContent>
+        </CollapsibleSection>
+      </InfoAccordionGrid>
 
       {/* Customer Reviews - compact */}
       <ReviewsSection>

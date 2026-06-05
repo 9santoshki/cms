@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { product_id, price, sale_price, sku, stock_quantity, option_ids } = body;
+    const { product_id, price, sale_price, sku, stock_quantity, option_ids, hsn_code, supplier_price } = body;
 
     if (!product_id || !price || !option_ids || !Array.isArray(option_ids)) {
       return badRequest('product_id, price, and option_ids array are required');
@@ -75,13 +75,18 @@ export async function POST(request: NextRequest) {
       return badRequest('Variant with these options already exists');
     }
 
+    // hsn_code and supplier_price are admin-only fields
+    const isAdmin = session.role === 'admin';
+
     const variant = await createProductVariant(
       product_id,
       price,
       option_ids,
       sku,
       sale_price,
-      stock_quantity || 0
+      stock_quantity || 0,
+      isAdmin ? (hsn_code || undefined) : undefined,
+      isAdmin ? (supplier_price ?? undefined) : undefined
     );
 
     return created(variant);
@@ -106,7 +111,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, sku, price, sale_price, stock_quantity, is_active } = body;
+    const { id, sku, price, sale_price, stock_quantity, is_active, hsn_code, supplier_price } = body;
 
     if (!id) {
       return badRequest('id is required');
@@ -117,12 +122,17 @@ export async function PUT(request: NextRequest) {
       return notFound('Variant not found');
     }
 
+    // hsn_code and supplier_price are admin-only fields
+    const isAdmin = session.role === 'admin';
+
     const updated = await updateProductVariant(id, {
       sku,
       price,
       sale_price,
       stock_quantity,
-      is_active
+      is_active,
+      ...(isAdmin && hsn_code !== undefined ? { hsn_code } : {}),
+      ...(isAdmin && supplier_price !== undefined ? { supplier_price } : {}),
     });
 
     return ok(updated);

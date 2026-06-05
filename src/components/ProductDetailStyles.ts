@@ -24,6 +24,11 @@ export const ProductDetailContainer = styled.div`
   margin: 0 auto;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 0 1rem;
+
+  @media (min-width: ${theme.breakpoints.mobile}) {
+    padding: 0 1.5rem;
+  }
 `;
 
 export const CloseButton = styled.button`
@@ -46,10 +51,12 @@ export const CloseButton = styled.button`
 export const ProductDetailContent = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 0;
 
   @media (min-width: ${theme.breakpoints.mobile}) {
     flex-direction: row;
     align-items: flex-start;
+    gap: 2rem;
   }
 `;
 
@@ -92,11 +99,11 @@ export const ProductDetailImage = styled.div.withConfig({
 `;
 
 export const ProductDetailInfo = styled.div`
-  padding: 12px 16px;
+  padding: 12px 0;
 
   @media (min-width: ${theme.breakpoints.mobile}) {
     width: 50%;
-    padding: 16px 20px;
+    padding: 16px 0;
   }
 `;
 

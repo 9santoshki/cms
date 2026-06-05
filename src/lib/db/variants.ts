@@ -307,7 +307,9 @@ export async function createProductVariant(
   optionIds: number[],
   sku?: string,
   salePrice?: number,
-  stockQuantity: number = 0
+  stockQuantity: number = 0,
+  hsnCode?: string,
+  supplierPrice?: number
 ): Promise<ProductVariant> {
   const client = await getClient();
 
@@ -316,10 +318,10 @@ export async function createProductVariant(
 
     // Insert variant
     const variantResult = await client.query(
-      `INSERT INTO product_variants (product_id, sku, price, sale_price, stock_quantity)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO product_variants (product_id, sku, price, sale_price, stock_quantity, hsn_code, supplier_price)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [productId, sku || null, price, salePrice || null, stockQuantity]
+      [productId, sku || null, price, salePrice || null, stockQuantity, hsnCode || null, supplierPrice ?? null]
     );
 
     const variant = variantResult.rows[0] as ProductVariant;
@@ -351,7 +353,7 @@ export async function createProductVariant(
 /** Update variant */
 export async function updateProductVariant(
   variantId: number,
-  updates: Partial<Pick<ProductVariant, 'sku' | 'price' | 'sale_price' | 'stock_quantity' | 'is_active'>>
+  updates: Partial<Pick<ProductVariant, 'sku' | 'price' | 'sale_price' | 'stock_quantity' | 'is_active' | 'hsn_code' | 'supplier_price'>>
 ): Promise<ProductVariant | null> {
   const result = buildUpdateQuery('product_variants', updates, 'id = $1', [variantId]);
   if (!result) return null;
