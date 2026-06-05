@@ -189,6 +189,7 @@ run_migration "$APP_DIR/scripts/migrations/add_recently_viewed.sql"         "add
 run_migration "$APP_DIR/scripts/migrations/add_product_rich_fields.sql"     "add_product_rich_fields"
 run_migration "$APP_DIR/scripts/migrations/add_maker_checker_workflow.sql"  "add_maker_checker_workflow"
 run_migration "$APP_DIR/scripts/migrations/add_product_categories.sql"      "add_product_categories"
+run_migration "$APP_DIR/scripts/migrations/add_hsn_supplier_price_to_variants.sql" "add_hsn_supplier_price_to_variants"
 echo "✅ Migrations complete"
 
 echo ""

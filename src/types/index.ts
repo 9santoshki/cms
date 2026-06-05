@@ -48,6 +48,10 @@ export interface ProductVariant {
   sale_price?: number;
   stock_quantity: number;
   is_active: boolean;
+  /** HSN (Harmonized System of Nomenclature) code for tax classification — admin-only */
+  hsn_code?: string;
+  /** Cost price from supplier — admin-only, never shown to customers */
+  supplier_price?: number;
   /** The options that define this variant (populated on fetch) */
   options?: VariantOption[];
   /** Human-readable variant description (e.g., 'Thick / 24×36 inches / Black') */
