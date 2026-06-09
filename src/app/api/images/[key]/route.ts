@@ -21,6 +21,11 @@ export async function GET(
       return new NextResponse('Image key is required', { status: 400 });
     }
 
+    // Validate key format to prevent path traversal — allow only safe characters
+    if (imageKey.includes('..') || !/^[\w\-./]+$/.test(imageKey)) {
+      return new NextResponse('Invalid image key', { status: 400 });
+    }
+
     // Fetch image from R2 with authentication
     const { stream, contentType, contentLength } = await fetchImageFromR2(imageKey);
 

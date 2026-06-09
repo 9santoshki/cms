@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('q') || searchParams.get('search') || '';
-    const limit = parseInt(searchParams.get('limit') || '100');
+    // Cap limit to prevent DB overload — max 200, default 100
+    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 200);
 
     const result = await getProductsWithImages({
       search,

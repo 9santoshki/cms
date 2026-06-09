@@ -8,7 +8,17 @@ DROPLET_IP="68.183.53.217"
 APP_DIR="/home/cms/app"
 DB_NAME="cms_db"
 DB_USER="cms_user"
-DB_PASSWORD="cS70IwDpQOBQuDX7D39VVYtjbUVci8rT5LSZujQuxbo="
+
+# Read DB password from .env.uat — never hardcode credentials in scripts
+if [ ! -f ".env.uat" ]; then
+    echo "❌ ERROR: .env.uat not found"
+    exit 1
+fi
+DB_PASSWORD=$(grep -E '^DB_PASSWORD=' .env.uat | head -1 | cut -d '=' -f2-)
+if [ -z "$DB_PASSWORD" ]; then
+    echo "❌ ERROR: DB_PASSWORD not found in .env.uat"
+    exit 1
+fi
 
 echo "🚀 Deploying to UAT..."
 echo ""
@@ -103,6 +113,13 @@ cd $APP_DIR
 tar -xzf /tmp/cms-deploy.tar.gz
 rm /tmp/cms-deploy.tar.gz
 echo "✅ Extracted"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 1b: Prune old backups (keep last 3)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf
+echo "✅ Old backups pruned"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
