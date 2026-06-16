@@ -12,7 +12,7 @@ export const CategoryNavBar = styled.nav`
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) {
     display: none;
   }
 `;
@@ -242,9 +242,28 @@ export const DropdownDivider = styled.div`
   margin: 8px 0;
 `;
 
-// Mobile-only horizontal scroll strip (shown ≤900px, hidden on desktop)
+// Mobile-only horizontal scroll strip (shown ≤1200px, hidden on desktop)
 export const MobileCategoryStrip = styled.nav`
   display: none;
+
+  @media (max-width: 1200px) {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 4px;
+    position: sticky;
+    top: 75px;
+    z-index: 998;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 `;
 
 export const MobileCategoryPill = styled.a`

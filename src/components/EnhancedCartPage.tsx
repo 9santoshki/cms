@@ -169,7 +169,10 @@ const EnhancedCartPage = () => {
 
               return (
                 <CartItem key={uniqueKey}>
-                  <ItemProduct>
+                  <ItemProduct
+                    onClick={() => navigate(`/products/${productId}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <ItemImage
                       $imageUrl={item.image_url}
                       $imageClass={item.imageClass || 'modern'}
@@ -260,7 +263,10 @@ const EnhancedCartPage = () => {
                       <div className="item-details">
                         <span className="qty">Qty: {item.quantity}</span>
                         <span className="price">
-                          ₹{(typeof item.price === 'number' ? item.price : parseFloat(item.price || '0')).toLocaleString()}
+                          ₹{(typeof item.price === 'number'
+                            ? item.price * item.quantity
+                            : parseFloat(item.price || '0') * item.quantity
+                          ).toLocaleString()}
                         </span>
                       </div>
                     </div>

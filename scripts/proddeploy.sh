@@ -164,6 +164,13 @@ echo "✅ Extracted (clean)"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 2b: Prune old backups (keep last 3)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf
+echo "✅ Old backups pruned"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 3: Run DB migrations (idempotent)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 run_migration() {

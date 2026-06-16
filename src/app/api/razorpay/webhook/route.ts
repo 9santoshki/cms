@@ -14,22 +14,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify webhook signature (requires RAZORPAY_WEBHOOK_SECRET)
+    // Verify webhook signature — RAZORPAY_WEBHOOK_SECRET is required
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!secret) {
-      // In production, this should be properly verified
-    } else {
-      const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(body)
-        .digest('hex');
+      console.error('[razorpay/webhook] RAZORPAY_WEBHOOK_SECRET is not set — rejecting all webhooks');
+      return NextResponse.json(
+        { success: false, error: 'Webhook not configured' },
+        { status: 500 }
+      );
+    }
 
-      if (expectedSignature !== signature) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid signature' },
-          { status: 400 }
-        );
-      }
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    if (expectedSignature !== signature) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid signature' },
+        { status: 400 }
+      );
     }
 
     // Parse the webhook payload
