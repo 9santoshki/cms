@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCartStore } from '@/store/cartStore';
 import { useLanguage } from '@/context/LanguageContext';
@@ -995,6 +995,13 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     : baseHasDiscount;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
+  const handleVariantChange = useCallback((variant: ProductVariant | null, label?: string) => {
+    setSelectedVariant(variant);
+    setSelectionLabel(label || '');
+    setQuantity(1);
+    setStockMessage(null);
+  }, []);
+
   const handleGuideToVariants = () => {
     variantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setVariantHighlight(true);
@@ -1363,12 +1370,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             <VariantSelector
               key={variantResetKey}
               productId={product.id}
-              onVariantChange={(variant, label) => {
-                setSelectedVariant(variant);
-                setSelectionLabel(label || '');
-                setQuantity(1);
-                setStockMessage(null);
-              }}
+              onVariantChange={handleVariantChange}
               onStockChange={setAnyVariantInStock}
               onHasVariants={setProductHasVariants}
             />
