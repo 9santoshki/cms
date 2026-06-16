@@ -5,6 +5,7 @@ import { AppProvider } from '@/context/AppContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { PWAProvider } from '@/context/PWAContext';
 import { PWAInstallBanner } from '@/components/PWAInstallBanner';
+import StyledComponentsRegistry from './registry';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -108,14 +109,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} ${playfair.variable} ${montserrat.variable}`}>
-        <LanguageProvider>
-          <PWAProvider>
-            <AppProvider>
-              {children}
-            </AppProvider>
-            <PWAInstallBanner />
-          </PWAProvider>
-        </LanguageProvider>
+        <StyledComponentsRegistry>
+          <LanguageProvider>
+            <PWAProvider>
+              <AppProvider>
+                {children}
+              </AppProvider>
+              <PWAInstallBanner />
+            </PWAProvider>
+          </LanguageProvider>
+        </StyledComponentsRegistry>
         {/* This is the portal root for modals */}
         <div id="modal-root" />
       </body>

@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCategories } from '@/context/CategoriesContext';
+import { useCartStore } from '@/store/cartStore';
 
 const CATEGORY_ICONS: Record<string, string> = {
   'Living Room': 'fa-couch',
@@ -30,6 +31,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   const { user, logout, signInWithGoogle } = useAuth();
   const { categories } = useCategories();
+  const cartCount = useCartStore(state => state.items.reduce((s, i) => s + i.quantity, 0));
 
   // Close on escape key, swipe-to-close, and lock body scroll
   const touchStartX = React.useRef(0);
@@ -218,6 +220,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           <i className="fas fa-search" style={iconStyle}></i>
           Search Products
         </div>
+
+        {/* Cart */}
+        {user && (
+          <div style={menuItemStyle} onClick={() => handleNav('/cart')}>
+            <i className="fas fa-shopping-cart" style={iconStyle}></i>
+            My Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+          </div>
+        )}
 
         {/* Shop Categories */}
         <div style={categoryHeaderStyle}>
