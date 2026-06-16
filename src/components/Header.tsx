@@ -190,7 +190,7 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
           </HeaderIcons>
 
           <style jsx>{`
-            @media (max-width: 900px) {
+            @media (max-width: 1200px) {
               .lang-selector {
                 display: none;
               }

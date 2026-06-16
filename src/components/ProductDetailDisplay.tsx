@@ -1342,6 +1342,16 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             </div>
           </QuantitySelector>
 
+          {/* Total for selected quantity */}
+          {quantity > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.25rem 0', padding: '0.4rem 0.6rem', background: '#fffbeb', borderRadius: 6, border: '1px solid #fcd34d' }}>
+              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Total ({quantity} items):</span>
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#92400e' }}>
+                ₹{(displayPrice * quantity).toLocaleString()}
+              </span>
+            </div>
+          )}
+
           {/* Add to Cart & Actions */}
           <ActionButtons style={{ margin: '0.25rem 0' }}>
             {mustSelectVariant ? (

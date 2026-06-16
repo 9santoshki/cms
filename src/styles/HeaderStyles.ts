@@ -119,7 +119,7 @@ export const HeaderMenu = styled.div`
     gap: 15px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1200px) {
     display: none;
   }
 `;
@@ -318,7 +318,7 @@ export const MobileMenuToggle = styled.button`
   transition: background 0.2s ease;
   touch-action: manipulation;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1200px) {
     display: flex;
   }
 

@@ -552,22 +552,7 @@ export const CartSummary = styled.div`
 
 // Summary items list - compact
 export const SummaryItemsList = styled.div`
-  max-height: 200px;
-  overflow-y: auto;
   margin-bottom: 8px;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #c19a6b;
-    border-radius: 2px;
-  }
 `;
 
 export const SummaryItem = styled.div`
