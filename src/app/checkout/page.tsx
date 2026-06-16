@@ -319,9 +319,11 @@ const CheckoutPage = () => {
 
             <OrderItemsList>
               {cartItems.map((item, index) => {
-                const uniqueKey = item.product_id ? `prod-${item.product_id}` :
-                                 item.id ? `item-${item.id}-${index}` :
-                                 `idx-${index}`;
+                const uniqueKey = item.id != null
+                  ? `item-${item.id}`
+                  : item.product_id
+                  ? `prod-${item.product_id}-${item.variant_id ?? 'nv'}-${index}`
+                  : `idx-${index}`;
 
                 // Check if image_url is valid (not a placeholder URL)
                 const hasValidImage = item.image_url &&
@@ -364,6 +366,16 @@ const CheckoutPage = () => {
 
                     <ItemDetails>
                       <h3>{item.name}</h3>
+                      {item.variant_name && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '10px', fontWeight: 500,
+                          color: '#7c5c32', background: 'rgba(193,154,107,0.12)',
+                          border: '1px solid #e8d5c4', borderRadius: '4px',
+                          padding: '1px 6px', marginBottom: '3px'
+                        }}>
+                          {item.variant_name}
+                        </span>
+                      )}
                       <div className="price-qty">
                         <span className="qty">Qty: {item.quantity}</span>
                         <span className="price">

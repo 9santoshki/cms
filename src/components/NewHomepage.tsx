@@ -121,7 +121,6 @@ const NewHomepage = () => {
     return grouped;
   }, [products]);
 
-  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Fetch products and homepage categories on mount
   useEffect(() => {
@@ -445,47 +444,19 @@ const NewHomepage = () => {
           </div>
           <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
             {recentlyViewed.map(item => (
-              <div
+              <ProductCardWithVariant
                 key={item.product_id}
-                onClick={() => router.push(`/products/${item.slug || item.product_id}`)}
-                style={{
-                  flex: '0 0 auto',
-                  width: '110px',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  border: '1px solid #eee',
-                  overflow: 'hidden',
-                  transition: 'all 0.2s ease',
+                product={{
+                  id: item.product_id,
+                  name: item.name,
+                  price: item.price,
+                  sale_price: item.sale_price,
+                  slug: item.slug,
+                  primary_image: item.primary_image,
+                  image_url: item.image_url,
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = '#c19a6b';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '#eee';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <div style={{
-                  width: '110px',
-                  height: '90px',
-                  backgroundImage: item.primary_image || item.image_url
-                    ? `url('${item.primary_image || item.image_url}')`
-                    : 'linear-gradient(135deg, #f5f5f5, #e8e8e8)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }} />
-                <div style={{ padding: '6px 8px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1a1a1a', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#B12704', fontWeight: '700', marginTop: '2px' }}>
-                    ₹{(item.sale_price && item.sale_price < item.price ? item.sale_price : item.price).toLocaleString()}
-                  </div>
-                </div>
-              </div>
+                width="180px"
+              />
             ))}
           </div>
         </section>

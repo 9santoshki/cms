@@ -179,6 +179,16 @@ const EnhancedCartPage = () => {
                     />
                     <ItemDetails>
                       <h3>{item.name}</h3>
+                      {item.variant_name && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '11px', fontWeight: 500,
+                          color: '#7c5c32', background: 'rgba(193,154,107,0.12)',
+                          border: '1px solid #e8d5c4', borderRadius: '4px',
+                          padding: '1px 7px', marginBottom: '2px'
+                        }}>
+                          {item.variant_name}
+                        </span>
+                      )}
                       <p>{item.description}</p>
                     </ItemDetails>
                   </ItemProduct>
@@ -260,6 +270,16 @@ const EnhancedCartPage = () => {
                     </div>
                     <div className="item-info">
                       <h4>{item.name}</h4>
+                      {item.variant_name && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '10px', fontWeight: 500,
+                          color: '#7c5c32', background: 'rgba(193,154,107,0.12)',
+                          border: '1px solid #e8d5c4', borderRadius: '4px',
+                          padding: '1px 6px', marginBottom: '2px'
+                        }}>
+                          {item.variant_name}
+                        </span>
+                      )}
                       <div className="item-details">
                         <span className="qty">Qty: {item.quantity}</span>
                         <span className="price">
