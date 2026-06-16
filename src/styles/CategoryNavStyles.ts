@@ -53,9 +53,15 @@ export const AllProductsLink = styled.a`
     background: #a8825f;
   }
 
-  @media (max-width: 768px) {
-    padding: 10px 12px;
+  @media (max-width: 1500px) {
+    padding: 12px 10px;
     font-size: 12px;
+  }
+
+  @media (max-width: 1350px) {
+    padding: 12px 8px;
+    font-size: 11px;
+    i { display: none; }
   }
 `;
 
@@ -98,9 +104,19 @@ export const CategoryButton = styled.button<{ $active?: boolean }>`
     transform: rotate(180deg);
   }
 
-  @media (max-width: 768px) {
-    padding: 10px 10px;
+  @media (max-width: 1500px) {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 1350px) {
+    padding: 12px 6px;
     font-size: 11px;
+
+    /* Hide decorative category icon, keep chevron */
+    i:first-child {
+      display: none;
+    }
   }
 `;
 
@@ -242,50 +258,3 @@ export const DropdownDivider = styled.div`
   margin: 8px 0;
 `;
 
-// Mobile-only horizontal scroll strip (shown ≤1200px, hidden on desktop)
-export const MobileCategoryStrip = styled.nav`
-  display: none;
-
-  @media (max-width: 1200px) {
-    display: flex;
-    align-items: center;
-    overflow-x: auto;
-    background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 0 4px;
-    position: sticky;
-    top: 75px;
-    z-index: 998;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-`;
-
-export const MobileCategoryPill = styled.a`
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 10px 14px;
-  color: rgba(255,255,255,0.85);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
-  -webkit-tap-highlight-color: transparent;
-
-  i { font-size: 13px; color: #c19a6b; }
-
-  &:hover, &:active {
-    color: #fff;
-    border-bottom-color: #c19a6b;
-  }
-`;

@@ -180,7 +180,9 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
               <i className="fas fa-search"></i>
             </button>
 
-            <UserMenu onNavigate={navigate} />
+            <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <UserMenu onNavigate={navigate} />
+            </div>
 
             <MobileMenuToggle onClick={toggleMobileMenu}>
               <span></span>
@@ -194,23 +196,11 @@ const Header: React.FC<SharedHeaderProps> = ({ activePage = '' }) => {
               .lang-selector {
                 display: none;
               }
-            }
-
-            @media (max-width: 768px) {
               .search-btn {
-                font-size: 18px !important;
-                padding: 6px !important;
-                min-width: 44px !important;
-                min-height: 44px !important;
+                display: none;
               }
-            }
-
-            @media (max-width: 480px) {
-              .search-btn {
-                font-size: 16px !important;
-                padding: 6px !important;
-                min-width: 44px !important;
-                min-height: 44px !important;
+              .desktop-only {
+                display: none;
               }
             }
           `}</style>

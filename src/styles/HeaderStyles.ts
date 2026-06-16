@@ -103,94 +103,6 @@ export const HeaderLogo = styled.div`
   }
 `;
 
-export const HeaderMenu = styled.div`
-  display: flex;
-  gap: 35px;
-  flex: 1;
-  justify-content: center;
-  min-width: 0;
-  overflow: hidden;
-
-  @media (max-width: 1200px) {
-    gap: 25px;
-  }
-
-  @media (max-width: 1024px) {
-    gap: 15px;
-  }
-
-  @media (max-width: 1200px) {
-    display: none;
-  }
-`;
-
-export const HeaderLink = styled.a<{ $active?: boolean }>`
-  text-decoration: none;
-  color: ${props => props.$active ? '#c19a6b' : '#333'};
-  font-weight: 400;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  transition: all 0.3s ease;
-  position: relative;
-  padding: 10px 0;
-  display: inline-block;
-  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  @media (max-width: 1200px) {
-    font-size: 12px;
-    letter-spacing: 1px;
-  }
-
-  @media (max-width: 1024px) {
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    padding: 8px 0;
-  }
-
-  &:hover {
-    color: #c19a6b;
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(to right, #c19a6b, transparent);
-    transition: width 0.4s ease;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    width: ${props => props.$active ? '100%' : '0'};
-    height: 2px;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(to left, #c19a6b, transparent);
-    transition: width 0.4s ease;
-  }
-
-  &:hover::before {
-    width: 100%;
-  }
-
-  &::after {
-    ${props => props.$active && `
-      width: 100%;
-    `}
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-  }
-`;
-
 export const HeaderIcons = styled.div`
   display: flex;
   gap: 20px;
@@ -246,15 +158,6 @@ export const CartCount = styled.span`
     top: -6px;
     right: -6px;
   }
-`;
-
-export const UserGreeting = styled.span`
-  color: #333;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 15px;
-  margin: 0 10px;
-  font-weight: 500;
-  text-align: right;
 `;
 
 export const NavIcon = styled.button`
