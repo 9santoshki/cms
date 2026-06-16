@@ -221,7 +221,10 @@ const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory = '' }) => {
                     onMouseEnter={() => handleDropdownEnter(category.slug)}
                     onMouseLeave={handleDropdownLeave}
                   >
-                    <DropdownHeader>
+                    <DropdownHeader
+                      onClick={() => navigateTo(`/shop?category=${encodeURIComponent(category.name)}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <h4>{categoryNames[category.name] || category.name}</h4>
                       <p>{t('exploreCollection')}</p>
                     </DropdownHeader>

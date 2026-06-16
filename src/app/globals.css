@@ -364,3 +364,10 @@ body.overflow-hidden {
 }
 
 /* Add any other global styles here */
+
+/* Hide number input spinners for quantity fields */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

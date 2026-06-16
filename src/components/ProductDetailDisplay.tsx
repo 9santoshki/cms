@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCartStore } from '@/store/cartStore';
 import { useLanguage } from '@/context/LanguageContext';
@@ -266,14 +266,6 @@ const QuantityButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`;
-
-const QuantityDisplay = styled.span`
-  min-width: 3rem;
-  text-align: center;
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: #1f2937;
 `;
 
 // Action buttons
@@ -807,6 +799,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const isLoading = useCartStore(state => state.isLoading);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [zoomPos, setZoomPos] = useState({ active: false, x: 0, y: 0, clientX: 0, clientY: 0 });
   const [error, setError] = useState<string | null>(null);
   const [variantHighlight, setVariantHighlight] = useState(false);
   const variantSectionRef = useRef<HTMLDivElement>(null);
@@ -824,10 +817,34 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   // True when a specific variant is matched AND it has no stock.
   // Undefined/null selected variant means no variant system → don't block.
   const isVariantOutOfStock = selectedVariant !== null && selectedVariant.stock_quantity <= 0;
+
   // Track whether this product has a variant system at all
   const [productHasVariants, setProductHasVariants] = useState(false);
+
+  // Unified out-of-stock flag:
+  // - Variant products: use anyVariantInStock (set by VariantSelector after fetch)
+  // - Non-variant products: use product.stock_quantity
+  // Note: VariantSelector calls onStockChange(false) for empty variant lists, so we
+  // gate on productHasVariants to avoid treating "no variants" as "all variants OOS".
+  const isOutOfStock = isVariantOutOfStock ||
+    (productHasVariants
+      ? anyVariantInStock === false
+      : (product.stock_quantity !== undefined && product.stock_quantity <= 0));
   // Block add-to-cart when variants exist but none is selected yet
   const mustSelectVariant = productHasVariants && !selectedVariant && !selectionLabel;
+
+  const [stockMessage, setStockMessage] = useState<string | null>(null);
+  const stockMsgTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => { if (stockMsgTimeoutRef.current) clearTimeout(stockMsgTimeoutRef.current); };
+  }, []);
+
+  const showStockMessage = () => {
+    if (stockMsgTimeoutRef.current) clearTimeout(stockMsgTimeoutRef.current);
+    setStockMessage('This item is currently out of stock');
+    stockMsgTimeoutRef.current = setTimeout(() => setStockMessage(null), 3000);
+  };
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -978,6 +995,13 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
     : baseHasDiscount;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
+  const handleVariantChange = useCallback((variant: ProductVariant | null, label?: string) => {
+    setSelectedVariant(variant);
+    setSelectionLabel(label || '');
+    setQuantity(1);
+    setStockMessage(null);
+  }, []);
+
   const handleGuideToVariants = () => {
     variantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setVariantHighlight(true);
@@ -992,6 +1016,8 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
       handleGuideToVariants();
       return;
     }
+
+    if (isOutOfStock) return;
 
     // Clear any previous errors
     setError(null);
@@ -1035,9 +1061,11 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   };
 
   const handleQuantityChange = (value: number) => {
-    if (value >= 1) {
-      setQuantity(value);
+    if (isOutOfStock && value > quantity) {
+      showStockMessage();
+      return;
     }
+    if (value >= 1) setQuantity(value);
   };
 
   // Share helpers
@@ -1115,11 +1143,43 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
         <div style={{ flex: 1, minWidth: 0 }}>
           <ProductImageContainer>
             {selectedImageUrl ? (
-              <img
-                src={selectedImageUrl}
-                alt={product.name}
-                style={{ width: '100%', maxHeight: '500px', height: 'auto', objectFit: 'contain', display: 'block' }}
-              />
+              <>
+                <img
+                  src={selectedImageUrl}
+                  alt={product.name}
+                  style={{ width: '100%', maxHeight: '500px', height: 'auto', objectFit: 'contain', display: 'block', cursor: 'crosshair' }}
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setZoomPos({
+                      active: true,
+                      x: ((e.clientX - rect.left) / rect.width) * 100,
+                      y: ((e.clientY - rect.top) / rect.height) * 100,
+                      clientX: e.clientX,
+                      clientY: e.clientY,
+                    });
+                  }}
+                  onMouseLeave={() => setZoomPos(p => ({ ...p, active: false }))}
+                />
+                {zoomPos.active && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      width: 160,
+                      height: 160,
+                      borderRadius: '50%',
+                      border: '2px solid rgba(0,0,0,0.15)',
+                      backgroundImage: `url(${selectedImageUrl})`,
+                      backgroundSize: '300%',
+                      backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                      left: zoomPos.clientX - 80,
+                      top: zoomPos.clientY - 80,
+                      pointerEvents: 'none',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                      zIndex: 1000,
+                    }}
+                  />
+                )}
+              </>
             ) : (
               <ProductDetailImage
                 imageClass={product.imageClass}
@@ -1310,10 +1370,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             <VariantSelector
               key={variantResetKey}
               productId={product.id}
-              onVariantChange={(variant, label) => {
-                setSelectedVariant(variant);
-                setSelectionLabel(label || '');
-              }}
+              onVariantChange={handleVariantChange}
               onStockChange={setAnyVariantInStock}
               onHasVariants={setProductHasVariants}
             />
@@ -1331,9 +1388,37 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
                 </svg>
               </QuantityButton>
-              <QuantityDisplay style={{ minWidth: '2.5rem', fontSize: '0.875rem' }}>{quantity}</QuantityDisplay>
+              <input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={e => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v) && v >= 1) {
+                    if (isOutOfStock && v > quantity) { showStockMessage(); return; }
+                    setQuantity(v);
+                  }
+                }}
+                onBlur={e => {
+                  const v = parseInt(e.target.value, 10);
+                  if (isNaN(v) || v < 1) setQuantity(1);
+                }}
+                style={{
+                  width: '2.5rem',
+                  textAlign: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  color: '#111827',
+                  padding: '0.5rem 0',
+                  MozAppearance: 'textfield',
+                }}
+              />
               <QuantityButton style={{ padding: '0.5rem 0.75rem', minWidth: '44px', minHeight: '44px' }}
                 onClick={() => handleQuantityChange(quantity + 1)}
+                disabled={mustSelectVariant}
               >
                 <svg style={{ width: '0.75rem', height: '0.75rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1341,6 +1426,13 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               </QuantityButton>
             </div>
           </QuantitySelector>
+
+          {stockMessage && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#dc2626', margin: '0.15rem 0' }}>
+              <i className="fas fa-ban" style={{ fontSize: '0.7rem' }}></i>
+              {stockMessage}
+            </div>
+          )}
 
           {/* Total for selected quantity */}
           {quantity > 1 && (
@@ -1354,7 +1446,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
 
           {/* Add to Cart & Actions */}
           <ActionButtons style={{ margin: '0.25rem 0' }}>
-            {mustSelectVariant ? (
+            {mustSelectVariant && !isOutOfStock ? (
               <button
                 onClick={handleGuideToVariants}
                 style={{
@@ -1388,7 +1480,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
             ) : (
               <AddToCartButton style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
                 onClick={handleAddToCart}
-                disabled={isLoading || isVariantOutOfStock}
+                disabled={isLoading || isOutOfStock}
               >
                 {isLoading ? (
                   <>
@@ -1398,7 +1490,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                     </svg>
                     Adding...
                   </>
-                ) : isVariantOutOfStock ? (
+                ) : isOutOfStock ? (
                   t('outOfStock')
                 ) : (
                   t('addToCart')

@@ -165,12 +165,15 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
     onVariantChange(selectedVariant, selectionLabel || undefined);
   }, [selectedVariant, selectionLabel, onVariantChange]);
 
-  // Handle option selection
+  // Handle option selection — clicking the already-selected option deselects it
   const handleOptionSelect = (typeName: string, optionId: number) => {
-    setSelectedOptions(prev => ({
-      ...prev,
-      [typeName]: optionId
-    }));
+    setSelectedOptions(prev => {
+      if (prev[typeName] === optionId) {
+        const { [typeName]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [typeName]: optionId };
+    });
   };
 
   // UX rule: users must be able to change any option at any time without being locked

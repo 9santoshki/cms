@@ -280,13 +280,22 @@ export async function findVariantByOptions(
   productId: number,
   optionIds: number[]
 ): Promise<ProductVariant | null> {
-  // Build query to find variant that has all specified options
+  // Find a variant whose option set exactly matches optionIds (same count, same members).
+  // Two conditions are required:
+  //   1. The number of matching options equals optionIds.length (all supplied IDs are present).
+  //   2. The total number of option values on the variant equals optionIds.length (no extras).
+  // Without condition 2, an empty optionIds array would match every variant because
+  // COUNT(... IN empty set) = 0 = 0 for all rows, including those with options.
   const result = await query(
     `SELECT v.* FROM product_variants v
      WHERE v.product_id = $1 AND v.is_active = TRUE
      AND (
        SELECT COUNT(*) FROM product_variant_values vv
        WHERE vv.variant_id = v.id AND vv.option_id = ANY($2::int[])
+     ) = $3
+     AND (
+       SELECT COUNT(*) FROM product_variant_values vv
+       WHERE vv.variant_id = v.id
      ) = $3`,
     [productId, optionIds, optionIds.length]
   );
@@ -376,6 +385,62 @@ export async function deleteProductVariant(variantId: number): Promise<boolean> 
     [variantId]
   );
   return result.rowCount !== null && result.rowCount > 0;
+}
+
+// ============================================================================
+// Find-or-create helpers (used by bulk upload)
+// ============================================================================
+
+/** Find a variant option type by name, or create it if it doesn't exist.
+ *  Uses an upsert pattern (INSERT … ON CONFLICT DO NOTHING) so concurrent
+ *  requests never race to insert the same row twice. Names are normalised to
+ *  lowercase before storage so the case-sensitive UNIQUE(name) constraint is
+ *  sufficient to prevent duplicates regardless of the casing passed by callers.
+ */
+export async function findOrCreateVariantOptionType(name: string): Promise<VariantOptionType> {
+  const normalizedName = name.toLowerCase();
+  const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+
+  // Attempt insert; silently skip if the row already exists.
+  const insertRes = await query(
+    `INSERT INTO variant_option_types (name, display_name, description, display_order)
+     VALUES ($1, $2, NULL, 0)
+     ON CONFLICT (name) DO NOTHING
+     RETURNING *`,
+    [normalizedName, displayName]
+  );
+  if (insertRes.rows[0]) return insertRes.rows[0];
+
+  // Row already existed (either pre-existing or a concurrent insert won the race).
+  const selectRes = await query(
+    `SELECT * FROM variant_option_types WHERE name = $1 LIMIT 1`,
+    [normalizedName]
+  );
+  return selectRes.rows[0];
+}
+
+/** Find a variant option by type + value, or create it if it doesn't exist.
+ *  Uses the same upsert pattern as findOrCreateVariantOptionType. Values are
+ *  normalised to lowercase for storage; the original casing is kept as
+ *  display_value.
+ */
+export async function findOrCreateVariantOption(optionTypeId: number, value: string): Promise<VariantOption> {
+  const normalizedValue = value.toLowerCase();
+
+  const insertRes = await query(
+    `INSERT INTO variant_options (option_type_id, value, display_value, price_modifier, display_order)
+     VALUES ($1, $2, $3, 0, 0)
+     ON CONFLICT (option_type_id, value) DO NOTHING
+     RETURNING *`,
+    [optionTypeId, normalizedValue, value]
+  );
+  if (insertRes.rows[0]) return insertRes.rows[0];
+
+  const selectRes = await query(
+    `SELECT * FROM variant_options WHERE option_type_id = $1 AND value = $2 LIMIT 1`,
+    [optionTypeId, normalizedValue]
+  );
+  return selectRes.rows[0];
 }
 
 /** Check if product has variants */

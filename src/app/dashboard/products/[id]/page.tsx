@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -95,8 +95,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const toggleSection = (key: string) =>
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
 
+  // Pending images for new product creation
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  // Ref tracks current previews for unmount cleanup without re-running the effect on each addition
+  const pendingPreviewsRef = useRef<string[]>([]);
+  pendingPreviewsRef.current = pendingPreviews;
+
   useEffect(() => {
     params.then((p) => setProductId(p.id));
+  }, []);
+
+  // Revoke all remaining object URLs only on unmount
+  useEffect(() => {
+    return () => { pendingPreviewsRef.current.forEach(URL.revokeObjectURL); };
   }, []);
 
   useEffect(() => {
@@ -190,6 +203,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     });
   };
 
+  const handlePendingImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const previews = files.map(f => URL.createObjectURL(f));
+    setPendingImages(prev => [...prev, ...files]);
+    setPendingPreviews(prev => [...prev, ...previews]);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const removePendingImage = (i: number) => {
+    URL.revokeObjectURL(pendingPreviews[i]);
+    setPendingImages(prev => prev.filter((_, idx) => idx !== i));
+    setPendingPreviews(prev => prev.filter((_, idx) => idx !== i));
+  };
+
   // Returns true on success, false on failure
   const saveProduct = async (): Promise<boolean> => {
     if (!productId) return false;
@@ -225,10 +253,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       if (data.success) {
         if (isNewProduct) {
-          setSuccessMessage('Product created successfully! Redirecting...');
+          const newId = data.data.id;
+          if (pendingImages.length > 0) {
+            try {
+              const fd = new FormData();
+              fd.append('productId', String(newId));
+              fd.append('isPrimary', 'true');
+              pendingImages.forEach(f => fd.append('images', f));
+              const uploadRes = await fetch('/api/products/images/upload', { method: 'POST', body: fd });
+              if (!uploadRes.ok) {
+                setSuccessMessage('Product created! Some images failed to upload — add them from the edit page.');
+              } else {
+                setSuccessMessage('Product created successfully! Redirecting...');
+              }
+            } catch {
+              setSuccessMessage('Product created! Images failed to upload — add them from the edit page.');
+            }
+          } else {
+            setSuccessMessage('Product created successfully! Redirecting...');
+          }
           setTimeout(() => {
-            router.push(`/dashboard/products/${data.data.id}`);
-          }, 1000);
+            router.push(`/dashboard/products/${newId}`);
+          }, 1500);
         } else {
           loadProduct();
         }
@@ -995,6 +1041,71 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     {product?.reviewer_comment || 'No reviewer comment yet.'}
                   </p>
                 ))}
+              </div>
+            )}
+
+            {/* Images — pick before creation */}
+            {productId === 'new' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>
+                  Product Images <span style={{ fontWeight: 400, color: '#999' }}>(optional — can also add after creation)</span>
+                </label>
+                <div
+                  onClick={() => imageInputRef.current?.click()}
+                  style={{
+                    border: '2px dashed #e8d5c4',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: 'rgba(193,154,107,0.02)',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#c19a6b'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8d5c4'; }}
+                >
+                  <i className="fas fa-cloud-upload-alt" style={{ fontSize: '28px', color: '#c19a6b', marginBottom: '6px' }}></i>
+                  <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Click to select images</p>
+                </div>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handlePendingImageSelect}
+                  style={{ display: 'none' }}
+                />
+                {pendingPreviews.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                    {pendingPreviews.map((src, i) => (
+                      <div key={i} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                        <img
+                          src={src}
+                          alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e8d5c4' }}
+                        />
+                        {i === 0 && (
+                          <span style={{
+                            position: 'absolute', top: '2px', left: '2px',
+                            background: '#c19a6b', color: 'white', fontSize: '9px',
+                            fontWeight: '700', padding: '1px 5px', borderRadius: '4px',
+                          }}>PRIMARY</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removePendingImage(i)}
+                          style={{
+                            position: 'absolute', top: '-6px', right: '-6px',
+                            width: '18px', height: '18px', borderRadius: '50%',
+                            background: '#ef4444', color: 'white', border: 'none',
+                            cursor: 'pointer', fontSize: '11px', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                          }}
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

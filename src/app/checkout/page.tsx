@@ -77,6 +77,19 @@ const CheckoutPage = () => {
     }));
   };
 
+  // Load the Razorpay checkout.js script once; resolve immediately if already loaded.
+  const loadRazorpayScript = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      // @ts-ignore
+      if (typeof window !== 'undefined' && window.Razorpay) { resolve(); return; }
+      if (document.querySelector('script[src*="checkout.razorpay.com"]')) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load payment gateway. Please try again.'));
+      document.body.appendChild(script);
+    });
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,84 +97,84 @@ const CheckoutPage = () => {
     setError(null);
 
     try {
-      // Verify cart is not empty
       if (cartItems.length === 0) {
         throw new Error('Cannot checkout with an empty cart');
       }
 
-      // Create checkout session with Razorpay
+      // Create order on backend (stock check + Razorpay order creation happen here)
       const response = await apiClient.createCheckoutSession({
         items: cartItems.map(item => ({
           product_id: item.product_id,
+          variant_id: item.variant_id,       // required for stock check
+          variant_name: item.variant_name,   // stored on order_items
           quantity: item.quantity,
-          price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'), // Ensure price is a number
-          name: item.name
+          price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
+          name: item.name,
         })),
-        shipping_address: shippingAddress
+        shipping_address: shippingAddress,
       });
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to create checkout session');
       }
 
-      // Initialize Razorpay checkout
+      await loadRazorpayScript();
+
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!, // Should be in environment variables
-        amount: response.data.amount, // Amount in paise
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: response.data.amount,
         currency: response.data.currency,
         name: 'Colour My Space',
-        description: 'Furniture Purchase',
+        description: 'Interior Design Products',
         order_id: response.data.razorpay_order_id,
-        handler: async (response: any) => {
+        modal: {
+          // Reset loading state if the user closes the modal without paying
+          ondismiss: () => setLoading(false),
+        },
+        handler: async (paymentResponse: any) => {
           try {
-            // Verify payment with our backend after successful payment
             const verifyResponse = await apiClient.verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
             });
 
             if (!verifyResponse.success || !verifyResponse.data) {
               throw new Error(verifyResponse.error || 'Payment verification failed');
             }
 
-            if (verifyResponse.success && verifyResponse.data) {
-              // Payment successful - clear cart and redirect to success page
-              import('@/store/cartStore').then((module) => {
-                module.useCartStore.getState().clearCart();
-              });
-              router.push(`/checkout/success?orderId=${verifyResponse.data.order_id}`);
-            } else {
-              setError('Payment verification failed. Please contact support.');
-            }
+            // Clear cart and go to success page
+            import('@/store/cartStore').then((module) => {
+              module.useCartStore.getState().clearCart();
+            });
+            router.push(`/checkout/success?orderId=${verifyResponse.data.order_id}`);
           } catch (verifyError) {
             console.error('Payment verification error:', verifyError);
             setError('Payment verification failed. Please contact support.');
+            setLoading(false);
           }
         },
         prefill: {
           name: shippingAddress.name,
           email: shippingAddress.email,
-          contact: shippingAddress.phone
+          contact: shippingAddress.phone,
         },
         theme: {
-          color: '#F59E0B' // Amber color to match our theme
-        }
+          color: '#c19a6b',
+        },
       };
 
-      // Load Razorpay checkout
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => {
-        // @ts-ignore - Razorpay checkout is added to window by the script
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      };
-      script.onerror = () => {
-        setError('Failed to load payment gateway. Please try again.');
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+
+      // Show error if payment fails inside the modal (e.g. card declined)
+      rzp.on('payment.failed', (failureResponse: any) => {
+        const msg = failureResponse?.error?.description || 'Payment failed. Please try again.';
+        setError(msg);
         setLoading(false);
-      };
-      document.body.appendChild(script);
+      });
+
+      rzp.open();
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'An error occurred during checkout');
@@ -306,9 +319,11 @@ const CheckoutPage = () => {
 
             <OrderItemsList>
               {cartItems.map((item, index) => {
-                const uniqueKey = item.product_id ? `prod-${item.product_id}` :
-                                 item.id ? `item-${item.id}-${index}` :
-                                 `idx-${index}`;
+                const uniqueKey = item.id != null
+                  ? `item-${item.id}`
+                  : item.product_id
+                  ? `prod-${item.product_id}-${item.variant_id ?? 'nv'}-${index}`
+                  : `idx-${index}`;
 
                 // Check if image_url is valid (not a placeholder URL)
                 const hasValidImage = item.image_url &&
@@ -351,6 +366,16 @@ const CheckoutPage = () => {
 
                     <ItemDetails>
                       <h3>{item.name}</h3>
+                      {item.variant_name && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '10px', fontWeight: 500,
+                          color: '#7c5c32', background: 'rgba(193,154,107,0.12)',
+                          border: '1px solid #e8d5c4', borderRadius: '4px',
+                          padding: '1px 6px', marginBottom: '3px'
+                        }}>
+                          {item.variant_name}
+                        </span>
+                      )}
                       <div className="price-qty">
                         <span className="qty">Qty: {item.quantity}</span>
                         <span className="price">
