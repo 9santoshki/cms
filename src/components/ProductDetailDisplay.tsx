@@ -1334,6 +1334,7 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
               <QuantityDisplay style={{ minWidth: '2.5rem', fontSize: '0.875rem' }}>{quantity}</QuantityDisplay>
               <QuantityButton style={{ padding: '0.5rem 0.75rem', minWidth: '44px', minHeight: '44px' }}
                 onClick={() => handleQuantityChange(quantity + 1)}
+                disabled={mustSelectVariant}
               >
                 <svg style={{ width: '0.75rem', height: '0.75rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
