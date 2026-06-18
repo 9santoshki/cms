@@ -113,6 +113,7 @@ const NewHomepage = () => {
   const productsByCategory = useMemo(() => {
     const grouped: Record<string, any[]> = {};
     for (const product of products) {
+      if (product.status && product.status !== 'published') continue;
       const cat = product.category;
       if (!cat) continue;
       if (!grouped[cat]) grouped[cat] = [];

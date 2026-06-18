@@ -237,6 +237,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const filteredProducts = useMemo(() => {
     return products
       .filter(p => {
+        if (p.status && p.status !== 'published') return false;
         if (filters.category !== 'All') {
           if (p.category !== filters.category) return false;
           if (filters.subcategory !== 'All' && p.subcategory !== filters.subcategory) return false;
