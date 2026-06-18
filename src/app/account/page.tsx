@@ -39,7 +39,8 @@ const AccountPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
+    gstin: ''
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -49,7 +50,8 @@ const AccountPage = () => {
       setFormData({
         name: user.name,
         email: user.email,
-        phone: user.phone || ''
+        phone: user.phone || '',
+        gstin: user.gstin || ''
       });
     }
   }, [user]);
@@ -68,9 +70,15 @@ const AccountPage = () => {
     setMessage(null);
 
     try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name, phone: formData.phone, gstin: formData.gstin }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
-
       setTimeout(() => setMessage(null), 3000);
     } catch (err: unknown) {
       console.error('Error updating profile:', err);
@@ -200,6 +208,10 @@ const AccountPage = () => {
                 <div className="value">{user.phone || 'Not provided'}</div>
               </DetailGroup>
               <DetailGroup>
+                <div className="label">GSTIN</div>
+                <div className="value">{user.gstin || 'Not provided'}</div>
+              </DetailGroup>
+              <DetailGroup>
                 <div className="label">Account Type</div>
                 <div className="value" style={{ textTransform: 'capitalize' }}>{user.role}</div>
               </DetailGroup>
@@ -252,7 +264,21 @@ const AccountPage = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+91 98765 43210"
+                  />
+                </FormField>
+
+                <FormField>
+                  <label htmlFor="gstin">GSTIN <span style={{ fontWeight: 400, color: '#999' }}>(optional)</span></label>
+                  <input
+                    type="text"
+                    id="gstin"
+                    name="gstin"
+                    value={formData.gstin}
+                    onChange={handleChange}
+                    placeholder="22AAAAA0000A1Z5"
+                    maxLength={15}
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </FormField>
               </FormGrid>
@@ -262,7 +288,7 @@ const AccountPage = () => {
                   type="button"
                   onClick={() => {
                     setIsEditing(false);
-                    setFormData({ name: user.name, email: user.email, phone: user.phone || '' });
+                    setFormData({ name: user.name, email: user.email, phone: user.phone || '', gstin: user.gstin || '' });
                   }}
                 >
                   Cancel

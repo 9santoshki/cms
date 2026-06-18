@@ -244,6 +244,13 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  async patchProfile(fields: Record<string, unknown>) {
+    return this.request<void>('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(fields),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

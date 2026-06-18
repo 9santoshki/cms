@@ -42,9 +42,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { name, avatar } = await request.json();
+    const { name, avatar, phone, gstin } = await request.json();
 
-    const updatedProfile = await updateUserProfile(session.userId, { name, avatar });
+    const updatedProfile = await updateUserProfile(session.userId, { name, avatar, phone, gstin });
 
     if (!updatedProfile) {
       return NextResponse.json(

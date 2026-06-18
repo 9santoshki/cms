@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
 import Footer from './Footer';
-import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, calculateTaxAmount } from '../utils/cartUtils';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import { OrderSummaryRows } from './OrderSummaryRows';
 import {
   CartContainer,
   CartHeaderSection,
@@ -39,6 +41,7 @@ const EnhancedCartPage = () => {
   const updateCartItem = useCartStore(state => state.updateItem);
   const removeFromCart = useCartStore(state => state.removeItem);
   const [stockError, setStockError] = useState<string | null>(null);
+  const siteSettings = useSiteSettings();
 
   // Sync with server on every cart page visit so stale/deleted products are pruned
   useEffect(() => {
@@ -66,8 +69,9 @@ const EnhancedCartPage = () => {
   };
 
   const subtotal = calculateCartTotal(cartItems);
-  const shipping = calculateShippingCost(subtotal);
-  const total = subtotal + shipping;
+  const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
+  const tax = calculateTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
+  const total = subtotal + shipping + tax;
 
   const handleCheckout = () => {
     if (cartItems.length > 0) {
@@ -296,18 +300,7 @@ const EnhancedCartPage = () => {
             </SummaryItemsList>
 
             <SummaryDetails>
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'FREE' : `₹${shipping.toLocaleString()}`}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total</span>
-                <span>₹{total.toLocaleString()}</span>
-              </div>
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
             </SummaryDetails>
 
             <SummaryActions>

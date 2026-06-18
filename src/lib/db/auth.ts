@@ -24,6 +24,8 @@ export interface UserProfile {
   email: string;
   name: string;
   avatar?: string;
+  phone?: string;
+  gstin?: string;
   role: 'customer' | 'moderator' | 'admin';
   created_at?: string;
   updated_at?: string;
@@ -108,7 +110,7 @@ export const upsertUserFromGoogle = async (googleUser: {
 // Get user profile by ID
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   const result = await query(
-    'SELECT id, email, name, avatar, role, created_at, updated_at FROM users WHERE id = $1',
+    'SELECT id, email, name, avatar, phone, gstin, role, created_at, updated_at FROM users WHERE id = $1',
     [userId]
   );
 
@@ -122,7 +124,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 // Get user profile by email
 export const getUserByEmail = async (email: string): Promise<UserProfile | null> => {
   const result = await query(
-    'SELECT id, email, name, avatar, role, created_at, updated_at FROM users WHERE email = $1',
+    'SELECT id, email, name, avatar, phone, gstin, role, created_at, updated_at FROM users WHERE email = $1',
     [email]
   );
 
@@ -182,7 +184,7 @@ export const updateUserRole = async (
 // Get all user profiles (admin only)
 export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
   const result = await query(
-    'SELECT id, email, name, avatar, role, created_at, updated_at FROM users ORDER BY created_at DESC'
+    'SELECT id, email, name, avatar, phone, gstin, role, created_at, updated_at FROM users ORDER BY created_at DESC'
   );
 
   return result.rows;
@@ -191,7 +193,7 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
 // Update user profile
 export const updateUserProfile = async (
   userId: string,
-  updates: { name?: string; avatar?: string }
+  updates: { name?: string; avatar?: string; phone?: string; gstin?: string }
 ): Promise<UserProfile | null> => {
   const result = buildUpdateQueryById('users', userId, updates);
   if (!result) {

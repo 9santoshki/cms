@@ -8,6 +8,9 @@ export interface Order {
   payment_id?: string;
   payment_status?: string;
   shipping_address?: any;
+  cost_price?: number | null;
+  cash_expense?: number | null;
+  cost_notes?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -133,6 +136,65 @@ export async function updateOrderStatus(
     [status, orderId]
   );
   return result.rows[0] || null;
+}
+
+export interface OrderReceipt {
+  id: number;
+  order_id: number;
+  r2_key: string;
+  filename?: string;
+  uploaded_by?: number;
+  created_at?: string;
+}
+
+export async function updateOrderCost(
+  orderId: string,
+  costPrice: number | null,
+  cashExpense: number | null,
+  costNotes: string | null
+): Promise<Order | null> {
+  const result = await query(
+    `UPDATE orders SET cost_price = $1, cash_expense = $2, cost_notes = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
+    [costPrice, cashExpense, costNotes, orderId]
+  );
+  return result.rows[0] || null;
+}
+
+export async function getOrderReceipts(orderId: string): Promise<OrderReceipt[]> {
+  const result = await query(
+    `SELECT * FROM order_receipts WHERE order_id = $1 ORDER BY created_at ASC`,
+    [orderId]
+  );
+  return result.rows;
+}
+
+export async function addOrderReceipt(
+  orderId: string,
+  r2Key: string,
+  filename: string,
+  uploadedBy: string
+): Promise<OrderReceipt> {
+  const result = await query(
+    `INSERT INTO order_receipts (order_id, r2_key, filename, uploaded_by)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [orderId, r2Key, filename, uploadedBy]
+  );
+  return result.rows[0];
+}
+
+/**
+ * Deletes receipt row and returns the r2_key so the caller can remove from R2.
+ * orderId check prevents deleting another order's receipt.
+ */
+export async function deleteOrderReceipt(
+  receiptId: string,
+  orderId: string
+): Promise<string | null> {
+  const result = await query(
+    `DELETE FROM order_receipts WHERE id = $1 AND order_id = $2 RETURNING r2_key`,
+    [receiptId, orderId]
+  );
+  return result.rows[0]?.r2_key ?? null;
 }
 
 export async function updateOrderPaymentStatus(

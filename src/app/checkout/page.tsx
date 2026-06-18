@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { useCartStore } from '@/store/cartStore';
 import { apiClient } from '@/lib/api';
-import { calculateCartTotal, calculateShippingCost } from '@/utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, calculateTaxAmount } from '@/utils/cartUtils';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { OrderSummaryRows } from '@/components/OrderSummaryRows';
 import {
   CheckoutContainer,
   CheckoutHeader,
@@ -35,6 +37,7 @@ const CheckoutPage = () => {
   const getTotalPrice = useCartStore(state => state.getTotalPrice);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gstin, setGstin] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -45,10 +48,12 @@ const CheckoutPage = () => {
     zipCode: '',
     country: 'India'
   });
+  const siteSettings = useSiteSettings();
 
   const subtotal = calculateCartTotal(cartItems);
-  const shipping = calculateShippingCost(subtotal);
-  const total = subtotal + shipping;
+  const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
+  const tax = calculateTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
+  const total = subtotal + shipping + tax;
 
   // Check if user is logged in
   useEffect(() => {
@@ -57,14 +62,16 @@ const CheckoutPage = () => {
     }
   }, [user, router]);
 
-  // Update shipping address when user data becomes available
+  // Update shipping address and GSTIN when user data becomes available
   useEffect(() => {
     if (user) {
       setShippingAddress(prev => ({
         ...prev,
         name: user.name || prev.name,
-        email: user.email || prev.email
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
       }));
+      if (user.gstin) setGstin(user.gstin);
     }
   }, [user]);
 
@@ -101,24 +108,30 @@ const CheckoutPage = () => {
         throw new Error('Cannot checkout with an empty cart');
       }
 
-      // Create order on backend (stock check + Razorpay order creation happen here)
-      const response = await apiClient.createCheckoutSession({
-        items: cartItems.map(item => ({
-          product_id: item.product_id,
-          variant_id: item.variant_id,       // required for stock check
-          variant_name: item.variant_name,   // stored on order_items
-          quantity: item.quantity,
-          price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
-          name: item.name,
-        })),
-        shipping_address: shippingAddress,
-      });
+      // Persist GSTIN to profile if it changed (fire-and-forget)
+      if (gstin !== (user?.gstin || '')) {
+        apiClient.patchProfile({ gstin }).catch(() => {});
+      }
+
+      // Create order on backend and load Razorpay script in parallel
+      const [response] = await Promise.all([
+        apiClient.createCheckoutSession({
+          items: cartItems.map(item => ({
+            product_id: item.product_id,
+            variant_id: item.variant_id,       // required for stock check
+            variant_name: item.variant_name,   // stored on order_items
+            quantity: item.quantity,
+            price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
+            name: item.name,
+          })),
+          shipping_address: shippingAddress,
+        }),
+        loadRazorpayScript(),
+      ]);
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to create checkout session');
       }
-
-      await loadRazorpayScript();
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
@@ -308,6 +321,21 @@ const CheckoutPage = () => {
               </FormField>
             </FormGrid>
 
+            <FormField style={{ marginTop: '16px' }}>
+              <label htmlFor="gstin">
+                GSTIN <span style={{ fontWeight: 400, fontSize: '13px', color: '#999' }}>(optional — for GST invoice)</span>
+              </label>
+              <input
+                type="text"
+                id="gstin"
+                value={gstin}
+                onChange={e => setGstin(e.target.value.toUpperCase())}
+                placeholder="22AAAAA0000A1Z5"
+                maxLength={15}
+                style={{ textTransform: 'uppercase' }}
+              />
+            </FormField>
+
             {error && <ErrorMessage>{error}</ErrorMessage>}
           </form>
         </ShippingSection>
@@ -389,18 +417,7 @@ const CheckoutPage = () => {
             </OrderItemsList>
 
             <OrderSummaryDetails>
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'FREE' : `₹${shipping.toLocaleString()}`}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total</span>
-                <span>₹{total.toLocaleString()}</span>
-              </div>
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
             </OrderSummaryDetails>
 
             <PayButton

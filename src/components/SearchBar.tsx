@@ -28,7 +28,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ isOpen, onToggle }) => {
         backgroundColor: '#f9fafb',
         padding: '15px 20px',
         borderBottom: '1px solid #e5e7eb',
-        zIndex: 999
+        position: 'relative',
+        zIndex: 50
       }}
     >
       <div
