@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import type { OrderReceipt } from '@/types';
+import { formatOrderNumber } from '@/utils/orderUtils';
 
 interface OrderItem {
   id: number;
@@ -32,6 +33,7 @@ interface Order {
   payment_status?: string;
   payment_id?: string;
   shipping_address?: any;
+  billing_address?: any;
   cost_price?: string | number | null;
   cash_expense?: string | number | null;
   cost_notes?: string | null;
@@ -266,6 +268,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const shippingAddress = parseShippingAddress(order.shipping_address);
+  const billingAddress = parseShippingAddress(order.billing_address);
   const totalAmount = typeof order.total_amount === 'string'
     ? parseFloat(order.total_amount)
     : order.total_amount;
@@ -349,7 +352,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Interior Design &amp; Decor</div>
           </div>
           <div style={{ textAlign: 'right', fontSize: '12px', color: '#666' }}>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Order #{order.id}</div>
+            <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>{formatOrderNumber(order.id)}</div>
             <div style={{ marginTop: '2px' }}>{new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
           </div>
         </div>
@@ -360,7 +363,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <button className="od-back" onClick={() => router.push('/dashboard/orders')}>
               <i className="fas fa-arrow-left" /> Back to Orders
             </button>
-            <h1 className="od-title">Order #{order.id}</h1>
+            <h1 className="od-title">{formatOrderNumber(order.id)}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button className="od-print-btn" onClick={() => window.print()}>
@@ -425,6 +428,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                   {shippingAddress.country && <div>{shippingAddress.country}</div>}
                   {shippingAddress.phone && <div style={{ marginTop: '4px' }}>📞 {shippingAddress.phone}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Billing Address (only shown when different from shipping) */}
+            {billingAddress && billingAddress.address && billingAddress.address !== shippingAddress?.address && (
+              <div className="od-card">
+                <p className="od-card-title">Billing Address</p>
+                <div className="od-addr">
+                  {billingAddress.name && <div style={{ fontWeight: '500', color: '#333' }}>{billingAddress.name}</div>}
+                  {billingAddress.address && <div>{billingAddress.address}</div>}
+                  <div>
+                    {billingAddress.city}{billingAddress.state && `, ${billingAddress.state}`}
+                    {billingAddress.zipCode && ` — ${billingAddress.zipCode}`}
+                  </div>
+                  {billingAddress.country && <div>{billingAddress.country}</div>}
                 </div>
               </div>
             )}

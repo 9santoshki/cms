@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { LoadingSpinner, EmptyState, STATUS_COLORS } from '@/components/DashboardShared';
+import { formatOrderNumber } from '@/utils/orderUtils';
 
 function num(v: any): number | null {
   const n = parseFloat(v);
@@ -88,7 +89,7 @@ const DashboardOrdersPage = () => {
                     style={{ cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(193,154,107,0.03)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>#{order.id}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{formatOrderNumber(order.id)}</td>
                     <td style={{ padding: '10px 12px', color: '#666' }}>{order.user_email || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', color: '#888', fontSize: 12 }}>{new Date(order.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'center' }}>{order.items?.length || 0}</td>
@@ -129,7 +130,7 @@ const DashboardOrdersPage = () => {
               <div key={order.id} onClick={() => router.push(`/dashboard/orders/${order.id}`)}
                 style={{ background: 'white', borderRadius: 8, border: '1px solid #e8d5c4', padding: '12px 14px', marginBottom: 8, cursor: 'pointer' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>#{order.id}</span>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{formatOrderNumber(order.id)}</span>
                   <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                     background: STATUS_COLORS[order.status]?.bg || '#6b728015', color: STATUS_COLORS[order.status]?.color || '#6b7280' }}>
                     {order.status || 'pending'}

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { items, shipping_address } = body;
+    const { items, shipping_address, billing_address } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -133,10 +133,10 @@ export async function POST(request: NextRequest) {
 
     // Create order in our database
     const orderResult = await query(
-      `INSERT INTO orders (user_id, total_amount, status, payment_id, shipping_address, created_at)
-       VALUES ($1, $2, 'pending', $3, $4, NOW())
+      `INSERT INTO orders (user_id, total_amount, status, payment_id, shipping_address, billing_address, created_at)
+       VALUES ($1, $2, 'pending', $3, $4, $5, NOW())
        RETURNING id`,
-      [userId, totalAmount, razorpayOrder.id, shipping_address]
+      [userId, totalAmount, razorpayOrder.id, shipping_address, billing_address || shipping_address]
     );
 
     const orderId = orderResult.rows[0].id;

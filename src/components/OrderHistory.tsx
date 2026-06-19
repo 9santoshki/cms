@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import Header from './Header';
 import Footer from './Footer';
 import { formatDate } from '../utils/formatUtils';
+import { formatOrderNumber } from '../utils/orderUtils';
 import {
   OrdersContainer,
   OrdersHeaderSection,
@@ -48,7 +49,7 @@ const printOrderInvoice = (order: any) => {
       <td style="text-align:right">₹${fmt(price * qty)}</td>
     </tr>`;
   }).join('');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order #${order.id}</title><style>
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order ${formatOrderNumber(order.id)}</title><style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;padding:32px;color:#333;max-width:760px;margin:0 auto}
     .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #c19a6b;padding-bottom:14px;margin-bottom:18px}
@@ -69,12 +70,12 @@ const printOrderInvoice = (order: any) => {
   </style></head><body>
     <div class="hdr">
       <div><div class="brand">Colour My Space</div><div class="sub">Interior Design &amp; Decor</div></div>
-      <div><div class="ord-no">Order #${order.id}</div><div class="ord-date">${new Date(order.created_at || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div><div><span class="badge">${order.status || 'pending'}</span></div></div>
+      <div><div class="ord-no">Order ${formatOrderNumber(order.id)}</div><div class="ord-date">${new Date(order.created_at || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div><div><span class="badge">${order.status || 'pending'}</span></div></div>
     </div>
     <div class="grid">
       <div>
         <div class="sec-title">Order Details</div>
-        <div class="kv"><b>Order #</b>${order.id}</div>
+        <div class="kv"><b>Order</b>${formatOrderNumber(order.id)}</div>
         <div class="kv"><b>Status</b>${order.status || 'pending'}</div>
         ${order.payment_id ? `<div class="kv"><b>Payment ID</b><span style="font-size:10px">${order.payment_id}</span></div>` : ''}
       </div>
@@ -196,7 +197,7 @@ const OrderHistory = () => {
                 <OrderCard key={orderId}>
                   <OrderHeader>
                     <OrderInfo>
-                      <span className="order-number">Order #{orderId}</span>
+                      <span className="order-number">{formatOrderNumber(orderId)}</span>
                       <span className="order-date">{orderDate}</span>
                       <OrderStatus $status={status}>
                         <i className={getStatusIcon(status)} />
