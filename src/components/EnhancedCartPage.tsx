@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
 import Footer from './Footer';
-import { calculateCartTotal, calculateShippingCost, calculateTaxAmount } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, backComputeTaxAmount } from '../utils/cartUtils';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { OrderSummaryRows } from './OrderSummaryRows';
 import {
@@ -70,8 +70,8 @@ const EnhancedCartPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const tax = calculateTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
-  const total = subtotal + shipping + tax;
+  const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
+  const total = subtotal + shipping;
 
   const handleCheckout = () => {
     if (cartItems.length > 0) {

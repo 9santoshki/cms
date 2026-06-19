@@ -3,6 +3,8 @@ import Razorpay from 'razorpay';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query, getClient } from '@/lib/db/connection';
 import { checkVariantStock } from '@/lib/db/suppliers';
+import { getSettings } from '@/lib/db/settings';
+import { calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,20 +102,25 @@ export async function POST(request: NextRequest) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Calculate total amount
-    let totalAmount = 0;
+    // Calculate total amount (subtotal + shipping + tax)
+    let subtotal = 0;
     for (const item of items) {
       if (typeof item.price === 'number' && typeof item.quantity === 'number') {
-        totalAmount += item.price * item.quantity;
+        subtotal += item.price * item.quantity;
       }
     }
 
-    if (totalAmount <= 0) {
+    if (subtotal <= 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid cart total' },
         { status: 400 }
       );
     }
+
+    const settings = await getSettings();
+    const shipping = calculateShippingCost(subtotal, settings.shipping.flat_rate, settings.shipping.min_order_amount);
+    const tax = backComputeTaxAmount(subtotal + shipping, settings.tax.rate, settings.tax.enabled);
+    const totalAmount = subtotal + shipping; // tax is already included in listing prices
 
     // Create Razorpay order
     const options = {
@@ -168,6 +175,9 @@ export async function POST(request: NextRequest) {
         razorpay_order_id: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
+        subtotal,
+        shipping,
+        tax,
         total_amount: totalAmount,
         order_id: orderId,
       }

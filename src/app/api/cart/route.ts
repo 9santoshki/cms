@@ -12,7 +12,7 @@ import {
 import { checkVariantStock } from '@/lib/db/suppliers';
 import { getCloudflareImageUrl } from '@/lib/cloudflare';
 import { unauthorized, badRequest, serverError } from '@/lib/api-response';
-import { MAX_CART_QUANTITY, MAX_CART_TOTAL_ITEMS } from '@/lib/constants';
+import { MAX_CART_TOTAL_ITEMS } from '@/lib/constants';
 
 async function getUserId() {
   try {
@@ -84,11 +84,6 @@ export async function POST(request: NextRequest) {
 
     if (typeof quantity !== 'number' || isNaN(quantity) || quantity <= 0) {
       return badRequest('Valid positive quantity is required');
-    }
-
-    // SECURITY: Maximum quantity limit to prevent manipulation
-    if (quantity > MAX_CART_QUANTITY) {
-      return badRequest(`Maximum ${MAX_CART_QUANTITY} units allowed per item in cart`);
     }
 
     // variant_id can be null for products without variants, or a valid integer for variant products
@@ -173,11 +168,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const validVariantId = variant_id ? parseInt(variant_id, 10) : null;
-
-    // SECURITY: Maximum quantity limit to prevent manipulation
-    if (quantity > MAX_CART_QUANTITY) {
-      return badRequest(`Maximum ${MAX_CART_QUANTITY} units allowed per item in cart`);
-    }
 
     if (quantity <= 0) {
       await removeCartItem(userId, product_id, validVariantId);

@@ -138,6 +138,40 @@ export async function updateOrderStatus(
   return result.rows[0] || null;
 }
 
+export interface OrderStatusHistoryEntry {
+  id: number;
+  order_id: number;
+  from_status: string | null;
+  to_status: string;
+  changed_by: number | null;
+  changed_by_name: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
+export async function addOrderStatusHistory(
+  orderId: string,
+  fromStatus: string | null,
+  toStatus: string,
+  changedById: string,
+  changedByName: string,
+  comment: string | null
+): Promise<void> {
+  await query(
+    `INSERT INTO order_status_history (order_id, from_status, to_status, changed_by, changed_by_name, comment)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [orderId, fromStatus || null, toStatus, changedById, changedByName, comment || null]
+  );
+}
+
+export async function getOrderStatusHistory(orderId: string): Promise<OrderStatusHistoryEntry[]> {
+  const result = await query(
+    `SELECT * FROM order_status_history WHERE order_id = $1 ORDER BY created_at ASC`,
+    [orderId]
+  );
+  return result.rows;
+}
+
 export interface OrderReceipt {
   id: number;
   order_id: number;

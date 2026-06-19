@@ -157,6 +157,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of products) {
+      if (p.status && p.status !== 'published') continue;
       if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
     }
     const listed = new Set(categories.map(c => c.name));
@@ -170,6 +171,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     if (filters.category === 'All') return {} as Record<string, number>;
     const counts: Record<string, number> = {};
     for (const p of products) {
+      if (p.status && p.status !== 'published') continue;
       if (p.category === filters.category && p.subcategory) {
         counts[p.subcategory] = (counts[p.subcategory] || 0) + 1;
       }
@@ -189,6 +191,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     const listedSubs = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
 
     for (const p of products) {
+      if (p.status && p.status !== 'published') continue;
       if (!p.brand) continue;
       if (filters.category === 'All') {
         if (!listedCats.has(p.category ?? '')) continue;
@@ -212,6 +215,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     const listedSubs = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
 
     for (const p of products) {
+      if (p.status && p.status !== 'published') continue;
       if (filters.category === 'All') {
         if (!listedCats.has(p.category ?? '')) continue;
       } else {

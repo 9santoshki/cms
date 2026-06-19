@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { useCartStore } from '@/store/cartStore';
 import { apiClient } from '@/lib/api';
-import { calculateCartTotal, calculateShippingCost, calculateTaxAmount } from '@/utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -52,8 +52,8 @@ const CheckoutPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const tax = calculateTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
-  const total = subtotal + shipping + tax;
+  const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
+  const total = subtotal + shipping;
 
   // Check if user is logged in
   useEffect(() => {

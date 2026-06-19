@@ -13,6 +13,15 @@ interface OrderItem {
   image_url?: string;
 }
 
+interface StatusHistoryEntry {
+  id: number;
+  from_status: string | null;
+  to_status: string;
+  changed_by_name: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
 interface Order {
   id: number;
   user_id: number;
@@ -59,6 +68,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [savingCost, setSavingCost] = useState(false);
   const [receipts, setReceipts] = useState<OrderReceipt[]>([]);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [statusComment, setStatusComment] = useState('');
+  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
 
   useEffect(() => {
     params.then((p) => setOrderId(p.id));
@@ -85,6 +96,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         setCostPrice(o.cost_price != null ? String(+o.cost_price) : '');
         setCashExpense(o.cash_expense != null ? String(+o.cash_expense) : '');
         setCostNotes(o.cost_notes ?? '');
+        setStatusHistory(o.statusHistory ?? []);
       } else {
         setError(orderData.error || 'Failed to load order details');
       }
@@ -112,7 +124,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     try {
       setUpdating(true);
 
-      const payload: any = { status: newStatus };
+      const payload: any = { status: newStatus, comment: statusComment || null };
 
       // Include tracking details if status is shipped
       if (newStatus === 'shipped') {
@@ -131,7 +143,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
       if (data.success) {
         setOrder({ ...order, status: newStatus });
-        alert(data.message || 'Order status updated successfully');
+        setStatusComment('');
+        // Refresh history from server
+        fetch(`/api/orders/${orderId}`)
+          .then(r => r.json())
+          .then(d => { if (d.success) setStatusHistory(d.data.statusHistory ?? []); });
         // Reset tracking form
         setSelectedStatus(null);
         setTrackingNumber('');
@@ -268,6 +284,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .od-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
         .od-title { font-size: 18px; font-weight: 600; color: #333; margin: 2px 0 0; }
         .od-back { background: none; border: none; color: #c19a6b; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 0; margin-bottom: 1px; }
+        .od-print-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: #f8f4f0; border: 1px solid #e8d5c4; border-radius: 6px; font-size: 12px; font-weight: 500; color: #c19a6b; cursor: pointer; white-space: nowrap; }
+        .od-print-btn:hover { background: #f0e8de; }
         .od-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
         .od-card { background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #e5e7eb; margin-bottom: 8px; }
         .od-card:last-child { margin-bottom: 0; }
@@ -293,6 +311,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .od-upload-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; color: #fff; }
         .od-receipt-grid { display: flex; flex-wrap: wrap; gap: 8px; }
         .od-addr { font-size: 12px; color: #666; line-height: 1.6; }
+        .od-print-header { display: none; }
+        .od-history-line { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .od-history-line:last-child { border-bottom: none; }
+        .od-history-dot { width: 8px; height: 8px; border-radius: 50%; background: #c19a6b; flex-shrink: 0; margin-top: 5px; }
+        .od-history-body { flex: 1; min-width: 0; }
+        .od-history-status { font-size: 12px; font-weight: 500; color: #333; }
+        .od-history-meta { font-size: 11px; color: #888; margin-top: 2px; }
+        .od-history-comment { font-size: 11px; color: #555; background: #f9fafb; border-left: 2px solid #e8d5c4; padding: 4px 7px; margin-top: 4px; border-radius: 0 4px 4px 0; }
         @media (min-width: 680px) {
           .od-page { padding: 16px; }
           .od-grid { grid-template-columns: 2fr 1fr; gap: 12px; }
@@ -304,9 +330,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         @media (min-width: 1024px) {
           .od-page { padding: 20px; }
         }
+        @media print {
+          .od-back, .od-print-btn, .od-no-print { display: none !important; }
+          .od-print-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #c19a6b; padding-bottom: 12px; margin-bottom: 14px; }
+          .od-page { padding: 0; max-width: 100%; }
+          .od-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+          .od-card { border: 1px solid #ddd; break-inside: avoid; }
+          .od-header { margin-bottom: 6px; }
+          body { background: white; }
+        }
       `}</style>
 
       <div className="od-page">
+        {/* Print-only company header */}
+        <div className="od-print-header">
+          <div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: '#c19a6b' }}>Colour My Space</div>
+            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Interior Design &amp; Decor</div>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: '12px', color: '#666' }}>
+            <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Order #{order.id}</div>
+            <div style={{ marginTop: '2px' }}>{new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="od-header">
           <div>
@@ -315,13 +362,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </button>
             <h1 className="od-title">Order #{order.id}</h1>
           </div>
-          <span style={{
-            padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600',
-            textTransform: 'uppercase', whiteSpace: 'nowrap', marginTop: '4px',
-            backgroundColor: sc.bg, color: sc.text,
-          }}>
-            {order.status}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className="od-print-btn" onClick={() => window.print()}>
+              <i className="fas fa-download" /> Download PDF
+            </button>
+            <span style={{
+              padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600',
+              textTransform: 'uppercase', whiteSpace: 'nowrap',
+              backgroundColor: sc.bg, color: sc.text,
+            }}>
+              {order.status}
+            </span>
+          </div>
         </div>
 
         <div className="od-grid">
@@ -391,7 +443,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Update Status */}
-            <div className="od-card">
+            <div className="od-card od-no-print">
               <p className="od-card-title">Update Status</p>
 
               {selectedStatus === 'shipped' && (
@@ -430,6 +482,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               )}
 
+              <div className="od-field" style={{ marginBottom: '8px' }}>
+                <label className="od-label">Comment (optional)</label>
+                <textarea
+                  className="od-input"
+                  rows={2}
+                  value={statusComment}
+                  onChange={(e) => setStatusComment(e.target.value)}
+                  placeholder="Reason for status change…"
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </div>
+
               <div className="od-status-grid">
                 {['pending','processing','shipped','completed','cancelled'].map((s) => (
                   <button key={s}
@@ -451,7 +515,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Cost & Receipts */}
-        <div className="od-card" style={{ marginTop: '8px' }}>
+        <div className="od-card od-no-print" style={{ marginTop: '8px' }}>
           <p className="od-card-title">Cost & Purchase Receipts</p>
 
           <div className="od-cost-grid">
@@ -525,6 +589,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
         </div>
+        {/* Status History */}
+        {statusHistory.length > 0 && (
+          <div className="od-card" style={{ marginTop: '8px' }}>
+            <p className="od-card-title">Status History</p>
+            {statusHistory.map((entry) => {
+              const sc2 = STATUS_COLORS[entry.to_status] ?? DEFAULT_STATUS_COLOR;
+              return (
+                <div key={entry.id} className="od-history-line">
+                  <div className="od-history-dot" style={{ background: sc2.text }} />
+                  <div className="od-history-body">
+                    <div className="od-history-status">
+                      {entry.from_status ? (
+                        <>
+                          <span style={{ textTransform: 'capitalize' }}>{entry.from_status}</span>
+                          {' → '}
+                        </>
+                      ) : null}
+                      <span style={{ textTransform: 'capitalize', color: sc2.text }}>{entry.to_status}</span>
+                    </div>
+                    <div className="od-history-meta">
+                      {entry.changed_by_name ?? 'System'}
+                      {' · '}
+                      {new Date(entry.created_at).toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </div>
+                    {entry.comment && (
+                      <div className="od-history-comment">{entry.comment}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );

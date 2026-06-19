@@ -17,17 +17,6 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
-    // Fast-path: skip DB session lookup for unauthenticated requests (most public traffic)
-    // Importing cookies here avoids a full DB round-trip for every anonymous page load
-    const { cookies } = await import('next/headers');
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('cms-session');
-    let isAdmin = false;
-    if (sessionCookie) {
-      const session = await getSessionFromCookieWithDB();
-      isAdmin = session?.role === 'admin' || session?.role === 'moderator';
-    }
-
     const result = await getProductsWithImages({
       search,
       category,
@@ -36,8 +25,9 @@ export async function GET(request: NextRequest) {
       maxPrice,
       page,
       limit,
-      // Public visitors only see published products
-      publishedOnly: !isAdmin,
+      // Storefront always shows published products only.
+      // Admins use /api/admin/products to see all statuses.
+      publishedOnly: true,
     });
 
     return NextResponse.json({

@@ -302,7 +302,7 @@ const NewHomepage = () => {
       {/* Browse by Category — image tiles driven by homepage subcategories in DB */}
       <section style={{
         width: '100%',
-        maxWidth: '1400px',
+        maxWidth: '1800px',
         margin: '15px auto 0 auto',
         padding: '15px 30px',
         background: 'white',
@@ -418,8 +418,8 @@ const NewHomepage = () => {
       {/* Recently Viewed — only shown to logged-in users with history */}
       {user && recentlyViewed.length > 0 && (
         <section style={{
-          width: '88%',
-          maxWidth: '1100px',
+          width: '100%',
+          maxWidth: '1800px',
           margin: '15px auto 0 auto',
           padding: '15px 20px',
           background: 'white',

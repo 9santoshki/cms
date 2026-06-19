@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query } from '@/lib/db/connection';
-import { getOrderItems } from '@/lib/db/orders';
+import { getOrderItems, addOrderStatusHistory, getOrderStatusHistory } from '@/lib/db/orders';
 import { sendShipmentEmail, sendDeliveryEmail } from '@/lib/email';
 import { validateOrderStatus } from '@/lib/validation';
 
@@ -56,14 +56,18 @@ export async function GET(
       );
     }
 
-    // Fetch order items
-    const items = await getOrderItems(orderId);
+    // Fetch order items and status history
+    const [items, statusHistory] = await Promise.all([
+      getOrderItems(orderId),
+      getOrderStatusHistory(orderId),
+    ]);
 
     return NextResponse.json({
       success: true,
       data: {
         ...order,
         items,
+        statusHistory,
       },
     });
   } catch (err: unknown) {
@@ -103,7 +107,7 @@ export async function PUT(
     const params = await context.params;
     const orderId = params.id;
     const body = await request.json();
-    const { status, trackingNumber, carrier, trackingUrl } = body;
+    const { status, trackingNumber, carrier, trackingUrl, comment } = body;
 
     if (!status) {
       return NextResponse.json(
@@ -152,6 +156,18 @@ export async function PUT(
       return NextResponse.json(
         { success: false, error: 'Order not found' },
         { status: 404 }
+      );
+    }
+
+    // Log the status change
+    if (statusChanged) {
+      await addOrderStatusHistory(
+        orderId,
+        currentOrder.status,
+        status,
+        session.userId,
+        session.name,
+        comment || null
       );
     }
 

@@ -36,6 +36,16 @@ export const calculateShippingCost = (
   return subtotal >= minOrderAmount ? 0 : flatRate;
 };
 
+// Back-compute tax from a tax-inclusive total (listing prices already include tax)
+export const backComputeTaxAmount = (
+  inclusiveTotal: number,
+  taxRate = 0,
+  taxEnabled = false
+): number => {
+  if (!taxEnabled || taxRate <= 0) return 0;
+  return inclusiveTotal * taxRate / (100 + taxRate);
+};
+
 // Get tax amount based on subtotal and configured tax settings
 export const calculateTaxAmount = (
   subtotal: number,

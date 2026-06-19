@@ -200,6 +200,7 @@ run_migration "$APP_DIR/scripts/migrations/add_hsn_supplier_price_to_variants.sq
 run_migration "$APP_DIR/scripts/migrations/add_user_phone_gstin.sql"              "add_user_phone_gstin"
 run_migration "$APP_DIR/scripts/migrations/add_site_settings.sql"                 "add_site_settings"
 run_migration "$APP_DIR/scripts/migrations/add_order_cost_receipts.sql"           "add_order_cost_receipts"
+run_migration "$APP_DIR/scripts/migrations/add_order_status_history.sql"          "add_order_status_history"
 echo "✅ Migrations complete"
 
 echo ""
