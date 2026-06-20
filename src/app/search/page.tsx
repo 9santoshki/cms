@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -71,6 +71,13 @@ const SearchPageInner = () => {
     performSearch(searchInput);
   };
 
+  // Only show category filters for categories that appear in the search results.
+  const applicableCategories = useMemo(() => {
+    if (products.length === 0) return categories;
+    const productCategories = new Set(products.map(p => p.category));
+    return categories.filter(c => productCategories.has(c.name));
+  }, [products, categories]);
+
   const initialFilters = urlBrand !== 'All' ? { brand: urlBrand } : undefined;
 
   const emptyMessage = query
@@ -105,7 +112,7 @@ const SearchPageInner = () => {
       <SearchContent>
         <ProductBrowser
           products={products}
-          categories={categories}
+          categories={applicableCategories}
           loading={loading}
           error={error}
           initialFilters={initialFilters}

@@ -55,20 +55,9 @@ const DashboardSettingsPage = () => {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      // In a real application, fetch from API
-      const mockSettings = {
-        shipping: {
-          min_order_amount: 50000,
-          flat_rate: 1500,
-          enabled: true
-        },
-        tax: {
-          rate: 0,
-          type: 'percentage',
-          enabled: false
-        }
-      };
-      setSettings(mockSettings);
+      const res = await fetch('/api/admin/settings');
+      const json = await res.json();
+      if (json.success) setSettings(json.data);
     } catch (err: unknown) {
       console.error('Error loading settings:', err);
     } finally {
@@ -91,9 +80,18 @@ const DashboardSettingsPage = () => {
     setSuccessMessage(null);
 
     try {
-      setSuccessMessage('Settings saved successfully!');
-
-      setTimeout(() => setSuccessMessage(null), 3000);
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSuccessMessage('Settings saved successfully!');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        console.error('Failed to save settings:', json.error);
+      }
     } catch (err: unknown) {
       console.error('Error saving settings:', err);
     } finally {
@@ -229,7 +227,7 @@ const DashboardSettingsPage = () => {
               <input
                 type="number"
                 value={settings.shipping.min_order_amount}
-                onChange={(e) => handleInputChange('shipping', 'min_order_amount', parseFloat(e.target.value))}
+                onChange={(e) => handleInputChange('shipping', 'min_order_amount', parseFloat(e.target.value) || 0)}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -254,7 +252,7 @@ const DashboardSettingsPage = () => {
               <input
                 type="number"
                 value={settings.shipping.flat_rate}
-                onChange={(e) => handleInputChange('shipping', 'flat_rate', parseFloat(e.target.value))}
+                onChange={(e) => handleInputChange('shipping', 'flat_rate', parseFloat(e.target.value) || 0)}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -328,7 +326,7 @@ const DashboardSettingsPage = () => {
                 <input
                   type="number"
                   value={settings.tax.rate}
-                  onChange={(e) => handleInputChange('tax', 'rate', parseFloat(e.target.value))}
+                  onChange={(e) => handleInputChange('tax', 'rate', parseFloat(e.target.value) || 0)}
                   style={{
                     width: '100%',
                     padding: '10px 14px',

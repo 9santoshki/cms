@@ -4,10 +4,16 @@ export interface Order {
   id: string;
   user_id: string;
   total_amount: number;
+  subtotal_amount?: number | null;
+  shipping_amount?: number | null;
+  tax_amount?: number | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'returned';
   payment_id?: string;
   payment_status?: string;
   shipping_address?: any;
+  cost_price?: number | null;
+  cash_expense?: number | null;
+  cost_notes?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -133,6 +139,99 @@ export async function updateOrderStatus(
     [status, orderId]
   );
   return result.rows[0] || null;
+}
+
+export interface OrderStatusHistoryEntry {
+  id: number;
+  order_id: number;
+  from_status: string | null;
+  to_status: string;
+  changed_by: number | null;
+  changed_by_name: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
+export async function addOrderStatusHistory(
+  orderId: string,
+  fromStatus: string | null,
+  toStatus: string,
+  changedById: string,
+  changedByName: string,
+  comment: string | null
+): Promise<void> {
+  await query(
+    `INSERT INTO order_status_history (order_id, from_status, to_status, changed_by, changed_by_name, comment)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [orderId, fromStatus || null, toStatus, changedById, changedByName, comment || null]
+  );
+}
+
+export async function getOrderStatusHistory(orderId: string): Promise<OrderStatusHistoryEntry[]> {
+  const result = await query(
+    `SELECT * FROM order_status_history WHERE order_id = $1 ORDER BY created_at ASC`,
+    [orderId]
+  );
+  return result.rows;
+}
+
+export interface OrderReceipt {
+  id: number;
+  order_id: number;
+  r2_key: string;
+  filename?: string;
+  uploaded_by?: number;
+  created_at?: string;
+}
+
+export async function updateOrderCost(
+  orderId: string,
+  costPrice: number | null,
+  cashExpense: number | null,
+  costNotes: string | null
+): Promise<Order | null> {
+  const result = await query(
+    `UPDATE orders SET cost_price = $1, cash_expense = $2, cost_notes = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
+    [costPrice, cashExpense, costNotes, orderId]
+  );
+  return result.rows[0] || null;
+}
+
+export async function getOrderReceipts(orderId: string): Promise<OrderReceipt[]> {
+  const result = await query(
+    `SELECT * FROM order_receipts WHERE order_id = $1 ORDER BY created_at ASC`,
+    [orderId]
+  );
+  return result.rows;
+}
+
+export async function addOrderReceipt(
+  orderId: string,
+  r2Key: string,
+  filename: string,
+  uploadedBy: string
+): Promise<OrderReceipt> {
+  const result = await query(
+    `INSERT INTO order_receipts (order_id, r2_key, filename, uploaded_by)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [orderId, r2Key, filename, uploadedBy]
+  );
+  return result.rows[0];
+}
+
+/**
+ * Deletes receipt row and returns the r2_key so the caller can remove from R2.
+ * orderId check prevents deleting another order's receipt.
+ */
+export async function deleteOrderReceipt(
+  receiptId: string,
+  orderId: string
+): Promise<string | null> {
+  const result = await query(
+    `DELETE FROM order_receipts WHERE id = $1 AND order_id = $2 RETURNING r2_key`,
+    [receiptId, orderId]
+  );
+  return result.rows[0]?.r2_key ?? null;
 }
 
 export async function updateOrderPaymentStatus(

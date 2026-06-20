@@ -169,6 +169,7 @@ class ApiClient {
   async createCheckoutSession(cartData: {
     items: Array<{ product_id?: number; quantity: number; price: number; name?: string }>;
     shipping_address: unknown;
+    billing_address?: unknown;
   }) {
     return this.request<{
       razorpay_order_id: string;
@@ -242,6 +243,13 @@ class ApiClient {
   async deleteAppointment(id: string) {
     return this.request<{ message: string }>(`/appointments/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  async patchProfile(fields: Record<string, unknown>) {
+    return this.request<void>('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(fields),
     });
   }
 }

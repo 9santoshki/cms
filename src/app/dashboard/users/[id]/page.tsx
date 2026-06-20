@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { formatOrderNumber } from '@/utils/orderUtils';
 
 const UserDetailsPage = () => {
   const router = useRouter();
@@ -266,7 +267,7 @@ const UserDetailsPage = () => {
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '12px', fontSize: '14px', color: '#333' }}>#{order.id}</td>
+                    <td style={{ padding: '12px', fontSize: '14px', color: '#333' }}>{formatOrderNumber(order.id)}</td>
                     <td style={{ padding: '12px', fontSize: '14px', color: '#666' }}>
                       {new Date(order.created_at).toLocaleDateString('en-IN')}
                     </td>

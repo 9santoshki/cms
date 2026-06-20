@@ -3,6 +3,8 @@ import Razorpay from 'razorpay';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query, getClient } from '@/lib/db/connection';
 import { checkVariantStock } from '@/lib/db/suppliers';
+import { getSettings } from '@/lib/db/settings';
+import { calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { items, shipping_address } = body;
+    const { items, shipping_address, billing_address } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -100,20 +102,25 @@ export async function POST(request: NextRequest) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Calculate total amount
-    let totalAmount = 0;
+    // Calculate total amount (subtotal + shipping + tax)
+    let subtotal = 0;
     for (const item of items) {
       if (typeof item.price === 'number' && typeof item.quantity === 'number') {
-        totalAmount += item.price * item.quantity;
+        subtotal += item.price * item.quantity;
       }
     }
 
-    if (totalAmount <= 0) {
+    if (subtotal <= 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid cart total' },
         { status: 400 }
       );
     }
+
+    const settings = await getSettings();
+    const shipping = calculateShippingCost(subtotal, settings.shipping.flat_rate, settings.shipping.min_order_amount);
+    const tax = backComputeTaxAmount(subtotal + shipping, settings.tax.rate, settings.tax.enabled);
+    const totalAmount = subtotal + shipping; // tax is already included in listing prices
 
     // Create Razorpay order
     const options = {
@@ -126,10 +133,10 @@ export async function POST(request: NextRequest) {
 
     // Create order in our database
     const orderResult = await query(
-      `INSERT INTO orders (user_id, total_amount, status, payment_id, shipping_address, created_at)
-       VALUES ($1, $2, 'pending', $3, $4, NOW())
+      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, status, payment_id, shipping_address, billing_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW())
        RETURNING id`,
-      [userId, totalAmount, razorpayOrder.id, shipping_address]
+      [userId, totalAmount, subtotal, shipping, tax, razorpayOrder.id, shipping_address, billing_address || shipping_address]
     );
 
     const orderId = orderResult.rows[0].id;
@@ -168,6 +175,9 @@ export async function POST(request: NextRequest) {
         razorpay_order_id: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
+        subtotal,
+        shipping,
+        tax,
         total_amount: totalAmount,
         order_id: orderId,
       }

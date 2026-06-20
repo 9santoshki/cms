@@ -22,7 +22,7 @@ export const AdminHeader = styled.header`
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     width: 100%;
   }

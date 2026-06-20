@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { useCartStore } from '@/store/cartStore';
 import { apiClient } from '@/lib/api';
-import { calculateCartTotal, calculateShippingCost } from '@/utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { OrderSummaryRows } from '@/components/OrderSummaryRows';
 import {
   CheckoutContainer,
   CheckoutHeader,
@@ -35,6 +37,7 @@ const CheckoutPage = () => {
   const getTotalPrice = useCartStore(state => state.getTotalPrice);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gstin, setGstin] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -45,9 +48,26 @@ const CheckoutPage = () => {
     zipCode: '',
     country: 'India'
   });
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+  const [billingAddress, setBillingAddress] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'India'
+  });
+  // Saved addresses from profile (immutable snapshots)
+  const [savedShippingAddr, setSavedShippingAddr] = useState<any>(null);
+  const [savedBillingAddr, setSavedBillingAddr] = useState<any>(null);
+  // 'saved' = use the profile card, 'new' = show the editable form
+  const [shippingMode, setShippingMode] = useState<'saved' | 'new'>('new');
+  const [billingMode, setBillingMode] = useState<'saved' | 'new'>('new');
+  const siteSettings = useSiteSettings();
 
   const subtotal = calculateCartTotal(cartItems);
-  const shipping = calculateShippingCost(subtotal);
+  const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
+  const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
   const total = subtotal + shipping;
 
   // Check if user is logged in
@@ -57,24 +77,41 @@ const CheckoutPage = () => {
     }
   }, [user, router]);
 
-  // Update shipping address when user data becomes available
+  // Load saved addresses and GSTIN from profile when user is available
   useEffect(() => {
     if (user) {
+      const u = user as any;
+      // Always pre-fill contact fields in the form
       setShippingAddress(prev => ({
         ...prev,
-        name: user.name || prev.name,
-        email: user.email || prev.email
+        name: u.name || prev.name,
+        email: u.email || prev.email,
+        phone: u.phone || prev.phone,
       }));
+      if (u.gstin) setGstin(u.gstin);
+      // Snapshot saved addresses; switch to 'saved' mode when available
+      if (u.shipping_address?.address) {
+        setSavedShippingAddr(u.shipping_address);
+        setShippingMode('saved');
+      }
+      if (u.billing_address?.address) {
+        setSavedBillingAddr(u.billing_address);
+        setBillingMode('saved');
+        setBillingSameAsShipping(false);
+      }
     }
   }, [user]);
 
   // Handle input changes for shipping address
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setShippingAddress(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setShippingAddress(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle input changes for billing address
+  const handleBillingInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBillingAddress(prev => ({ ...prev, [name]: value }));
   };
 
   // Load the Razorpay checkout.js script once; resolve immediately if already loaded.
@@ -101,24 +138,49 @@ const CheckoutPage = () => {
         throw new Error('Cannot checkout with an empty cart');
       }
 
-      // Create order on backend (stock check + Razorpay order creation happen here)
-      const response = await apiClient.createCheckoutSession({
-        items: cartItems.map(item => ({
-          product_id: item.product_id,
-          variant_id: item.variant_id,       // required for stock check
-          variant_name: item.variant_name,   // stored on order_items
-          quantity: item.quantity,
-          price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
-          name: item.name,
-        })),
-        shipping_address: shippingAddress,
-      });
+      const u = user as any;
+
+      // Resolve effective addresses
+      const contactFields = { name: shippingAddress.name, email: shippingAddress.email, phone: shippingAddress.phone };
+      const effectiveShipping = shippingMode === 'saved' && savedShippingAddr
+        ? { ...savedShippingAddr, ...contactFields }
+        : shippingAddress;
+      const effectiveBilling = billingSameAsShipping
+        ? effectiveShipping
+        : billingMode === 'saved' && savedBillingAddr
+          ? { ...savedBillingAddr, name: savedBillingAddr.name || shippingAddress.name }
+          : billingAddress;
+
+      // Persist addresses and GSTIN to profile (fire-and-forget)
+      if (gstin !== (u.gstin || '')) {
+        apiClient.patchProfile({ gstin }).catch(() => {});
+      }
+      const addrToSave = { address: effectiveShipping.address, city: effectiveShipping.city, state: effectiveShipping.state, zipCode: effectiveShipping.zipCode, country: effectiveShipping.country };
+      apiClient.patchProfile({
+        shipping_address: addrToSave,
+        billing_address: billingSameAsShipping ? null : { name: effectiveBilling.name, address: effectiveBilling.address, city: effectiveBilling.city, state: effectiveBilling.state, zipCode: effectiveBilling.zipCode, country: effectiveBilling.country },
+      }).catch(() => {});
+
+      // Create order on backend and load Razorpay script in parallel
+      const [response] = await Promise.all([
+        apiClient.createCheckoutSession({
+          items: cartItems.map(item => ({
+            product_id: item.product_id,
+            variant_id: item.variant_id,       // required for stock check
+            variant_name: item.variant_name,   // stored on order_items
+            quantity: item.quantity,
+            price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
+            name: item.name,
+          })),
+          shipping_address: effectiveShipping,
+          billing_address: effectiveBilling,
+        }),
+        loadRazorpayScript(),
+      ]);
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to create checkout session');
       }
-
-      await loadRazorpayScript();
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
@@ -182,6 +244,14 @@ const CheckoutPage = () => {
     }
   };
 
+  const addrCardStyle = (selected: boolean): React.CSSProperties => ({
+    display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px',
+    border: `1.5px solid ${selected ? '#c19a6b' : '#e8d5c4'}`,
+    borderRadius: '8px', marginBottom: '8px', cursor: 'pointer',
+    background: selected ? 'rgba(193,154,107,0.06)' : 'white',
+    transition: 'border-color 0.15s',
+  });
+
   if (!user) {
     return (
       <LoadingScreen>
@@ -208,7 +278,27 @@ const CheckoutPage = () => {
           <h2>Shipping Information</h2>
 
           <form onSubmit={handleSubmit}>
-            <FormGrid>
+            {/* Saved shipping address picker */}
+            {savedShippingAddr?.address && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={addrCardStyle(shippingMode === 'saved')} onClick={() => setShippingMode('saved')}>
+                  <input type="radio" readOnly checked={shippingMode === 'saved'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#333', marginBottom: '2px' }}>{(user as any).name}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {savedShippingAddr.address}, {savedShippingAddr.city}{savedShippingAddr.state ? `, ${savedShippingAddr.state}` : ''} — {savedShippingAddr.zipCode}
+                    </div>
+                  </div>
+                </label>
+                <label style={addrCardStyle(shippingMode === 'new')} onClick={() => setShippingMode('new')}>
+                  <input type="radio" readOnly checked={shippingMode === 'new'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <span style={{ fontSize: '13px', color: '#555' }}>Use a different address</span>
+                </label>
+              </div>
+            )}
+
+            {/* Shipping address form — always shown when no saved address, or when 'new' is selected */}
+            {(shippingMode === 'new' || !savedShippingAddr?.address) && <FormGrid>
               <FormField>
                 <label htmlFor="name">Full Name *</label>
                 <input
@@ -306,7 +396,87 @@ const CheckoutPage = () => {
                   readOnly
                 />
               </FormField>
-            </FormGrid>
+            </FormGrid>}
+
+            {/* Billing Address */}
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#333', marginBottom: '12px' }}>Billing Address</h3>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#555', cursor: 'pointer', marginBottom: '12px' }}>
+                <input
+                  type="checkbox"
+                  checked={billingSameAsShipping}
+                  onChange={e => setBillingSameAsShipping(e.target.checked)}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                Same as shipping address
+              </label>
+
+              {!billingSameAsShipping && (<>
+                {/* Saved billing address picker */}
+                {savedBillingAddr?.address && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={addrCardStyle(billingMode === 'saved')} onClick={() => setBillingMode('saved')}>
+                      <input type="radio" readOnly checked={billingMode === 'saved'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: '#333', marginBottom: '2px' }}>{savedBillingAddr.name || (user as any).name}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          {savedBillingAddr.address}, {savedBillingAddr.city}{savedBillingAddr.state ? `, ${savedBillingAddr.state}` : ''} — {savedBillingAddr.zipCode}
+                        </div>
+                      </div>
+                    </label>
+                    <label style={addrCardStyle(billingMode === 'new')} onClick={() => setBillingMode('new')}>
+                      <input type="radio" readOnly checked={billingMode === 'new'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <span style={{ fontSize: '13px', color: '#555' }}>Use a different billing address</span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Billing form — shown when no saved billing or 'new' is selected */}
+                {(billingMode === 'new' || !savedBillingAddr?.address) && (
+                  <FormGrid>
+                    <FormField $fullWidth>
+                      <label htmlFor="billing_name">Full Name *</label>
+                      <input type="text" name="name" id="billing_name" value={billingAddress.name} onChange={handleBillingInputChange} required />
+                    </FormField>
+                    <FormField $fullWidth>
+                      <label htmlFor="billing_address">Street Address *</label>
+                      <input type="text" name="address" id="billing_address" value={billingAddress.address} onChange={handleBillingInputChange} required />
+                    </FormField>
+                    <FormField>
+                      <label htmlFor="billing_city">City *</label>
+                      <input type="text" name="city" id="billing_city" value={billingAddress.city} onChange={handleBillingInputChange} required />
+                    </FormField>
+                    <FormField>
+                      <label htmlFor="billing_state">State *</label>
+                      <input type="text" name="state" id="billing_state" value={billingAddress.state} onChange={handleBillingInputChange} required />
+                    </FormField>
+                    <FormField>
+                      <label htmlFor="billing_zipCode">PIN Code *</label>
+                      <input type="text" name="zipCode" id="billing_zipCode" value={billingAddress.zipCode} onChange={handleBillingInputChange} required />
+                    </FormField>
+                    <FormField>
+                      <label htmlFor="billing_country">Country</label>
+                      <input type="text" name="country" id="billing_country" value={billingAddress.country} onChange={handleBillingInputChange} required readOnly />
+                    </FormField>
+                  </FormGrid>
+                )}
+              </>)}
+            </div>
+
+            <FormField style={{ marginTop: '16px' }}>
+              <label htmlFor="gstin">
+                GSTIN <span style={{ fontWeight: 400, fontSize: '13px', color: '#999' }}>(optional — for GST invoice)</span>
+              </label>
+              <input
+                type="text"
+                id="gstin"
+                value={gstin}
+                onChange={e => setGstin(e.target.value.toUpperCase())}
+                placeholder="22AAAAA0000A1Z5"
+                maxLength={15}
+                style={{ textTransform: 'uppercase' }}
+              />
+            </FormField>
 
             {error && <ErrorMessage>{error}</ErrorMessage>}
           </form>
@@ -389,18 +559,7 @@ const CheckoutPage = () => {
             </OrderItemsList>
 
             <OrderSummaryDetails>
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'FREE' : `₹${shipping.toLocaleString()}`}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total</span>
-                <span>₹{total.toLocaleString()}</span>
-              </div>
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
             </OrderSummaryDetails>
 
             <PayButton

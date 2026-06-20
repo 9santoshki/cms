@@ -106,7 +106,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, desc
           zIndex: 100
         }}>
           <div style={{
-            maxWidth: '1400px',
+            maxWidth: '1600px',
             margin: '0 auto',
             padding: '0 12px',
             height: '56px',

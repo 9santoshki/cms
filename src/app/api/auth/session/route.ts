@@ -71,6 +71,8 @@ export async function GET(request: NextRequest) {
       email: userProfile.email,
       name: userProfile.name,
       avatar: userProfile.avatar,
+      phone: userProfile.phone,
+      gstin: userProfile.gstin,
       role: userProfile.role,
     };
 

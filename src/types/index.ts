@@ -76,6 +76,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  gstin?: string;
   avatar?: string;
   role: UserRole;
   created_at?: string;
@@ -235,6 +236,18 @@ export interface Order {
   tracking_number?: string;
   tracking_carrier?: string;
   tracking_url?: string;
+  cost_price?: number;
+  cash_expense?: number;
+}
+
+export interface OrderReceipt {
+  id: number;
+  order_id: number;
+  r2_key: string;
+  filename?: string;
+  uploaded_by?: number;
+  created_at?: string;
+  url?: string;
 }
 
 export interface Appointment {

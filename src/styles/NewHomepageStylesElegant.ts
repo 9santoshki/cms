@@ -164,7 +164,7 @@ export const FeaturedSection = styled.section`
   padding: 15px 40px 20px;
   background: #fafafa;
   position: relative;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -219,7 +219,7 @@ export const ProductsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 0 20px;
 `;
@@ -577,7 +577,7 @@ export const ServicesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 30px;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 0 20px;
 `;
@@ -677,7 +677,7 @@ export const TestimonialsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 35px;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 0 20px;
 
@@ -893,7 +893,7 @@ export const CategorySection = styled.section`
   padding: 12px 40px;
   background: white;
   position: relative;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 10px auto;
   width: 100%;
   box-sizing: border-box;

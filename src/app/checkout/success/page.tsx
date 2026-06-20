@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAppContext } from '@/context/AppContext';
 import { formatDate } from '@/utils/formatUtils';
+import { formatOrderNumber } from '@/utils/orderUtils';
 import {
   SuccessContainer,
   SuccessContent,
@@ -148,7 +149,7 @@ const CheckoutSuccessContent = () => {
               <DetailBox>
                 <h3>Order Information</h3>
                 <div className="detail-item">
-                  <strong>Order ID:</strong> #{order.id}
+                  <strong>Order ID:</strong> {formatOrderNumber(order.id)}
                 </div>
                 <div className="detail-item">
                   <strong>Date:</strong> {formatDate(order.created_at)}

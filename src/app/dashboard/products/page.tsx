@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { useProduct } from '@/context/ProductContext';
-
 interface Category {
   id: number;
   name: string;
@@ -17,12 +15,32 @@ interface Category {
 const DashboardProductsPage = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { products, fetchProducts, loading, error: contextError } = useProduct();
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [contextError, setContextError] = useState<string | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [categories, setCategories] = useState<Category[]>([]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setContextError(null);
+    try {
+      const res = await fetch('/api/admin/products?limit=500');
+      const data = await res.json();
+      if (data.success) {
+        setProducts(data.data.products ?? []);
+      } else {
+        setContextError(data.error || 'Failed to load products');
+      }
+    } catch (err) {
+      setContextError('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
