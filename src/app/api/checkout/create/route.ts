@@ -133,10 +133,10 @@ export async function POST(request: NextRequest) {
 
     // Create order in our database
     const orderResult = await query(
-      `INSERT INTO orders (user_id, total_amount, status, payment_id, shipping_address, billing_address, created_at)
-       VALUES ($1, $2, 'pending', $3, $4, $5, NOW())
+      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, status, payment_id, shipping_address, billing_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW())
        RETURNING id`,
-      [userId, totalAmount, razorpayOrder.id, shipping_address, billing_address || shipping_address]
+      [userId, totalAmount, subtotal, shipping, tax, razorpayOrder.id, shipping_address, billing_address || shipping_address]
     );
 
     const orderId = orderResult.rows[0].id;

@@ -86,18 +86,23 @@ const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory = '' }) => {
 
   const categoryNames = getTranslatedCategories();
 
+  // Max categories shown directly in the nav bar — overflow goes into "Other"
+  const MAX_MENU_CATEGORIES = 8;
+
   // Pre-split categories so renders don't re-filter on every paint
   const { menuCategories, otherCategories } = useMemo(() => {
     type MenuCategory = NavCategory & { menuSubs: NavCategory[]; otherSubs: NavCategory[] };
+    const withMenuFlag = categories.filter(c => c.show_in_menu);
     return {
-      menuCategories: categories
-        .filter(c => c.show_in_menu)
-        .map((cat): MenuCategory => ({
-          ...cat,
-          menuSubs: (cat.children || []).filter(s => s.show_in_menu),
-          otherSubs: (cat.children || []).filter(s => !s.show_in_menu),
-        })),
-      otherCategories: categories.filter(c => !c.show_in_menu),
+      menuCategories: withMenuFlag.slice(0, MAX_MENU_CATEGORIES).map((cat): MenuCategory => ({
+        ...cat,
+        menuSubs: (cat.children || []).filter(s => s.show_in_menu),
+        otherSubs: (cat.children || []).filter(s => !s.show_in_menu),
+      })),
+      otherCategories: [
+        ...withMenuFlag.slice(MAX_MENU_CATEGORIES),
+        ...categories.filter(c => !c.show_in_menu),
+      ],
     };
   }, [categories]);
 

@@ -8,7 +8,7 @@ export const FooterContainer = styled.footer`
 `;
 
 export const FooterContent = styled.div`
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 28px 40px 16px;
 

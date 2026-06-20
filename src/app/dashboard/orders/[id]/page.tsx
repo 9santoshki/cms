@@ -29,6 +29,9 @@ interface Order {
   user_email?: string;
   user_name?: string;
   total_amount: string | number;
+  subtotal_amount?: string | number | null;
+  shipping_amount?: string | number | null;
+  tax_amount?: string | number | null;
   status: string;
   payment_status?: string;
   payment_id?: string;
@@ -272,6 +275,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const totalAmount = typeof order.total_amount === 'string'
     ? parseFloat(order.total_amount)
     : order.total_amount;
+  const subtotalAmount = order.subtotal_amount != null ? parseFloat(String(order.subtotal_amount)) : null;
+  const shippingAmt = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : null;
+  const taxAmt = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : null;
 
   const costNum = parseOrNull(costPrice);
   const expenseNum = parseOrNull(cashExpense);
@@ -405,6 +411,24 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       </div>
                     );
                   })}
+                  {subtotalAmount !== null && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0', borderTop: '1px solid #f3f3f3', marginTop: '4px' }}>
+                        <span>Subtotal</span>
+                        <span>₹{subtotalAmount.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
+                        <span>Shipping</span>
+                        <span>{shippingAmt === 0 ? 'FREE' : `₹${(shippingAmt ?? 0).toLocaleString()}`}</span>
+                      </div>
+                      {taxAmt != null && taxAmt > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
+                          <span>Tax (incl.)</span>
+                          <span>₹{taxAmt.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="od-total-row">
                     <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Grand Total</span>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#c19a6b' }}>₹{totalAmount.toLocaleString()}</span>

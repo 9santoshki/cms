@@ -4,6 +4,9 @@ export interface Order {
   id: string;
   user_id: string;
   total_amount: number;
+  subtotal_amount?: number | null;
+  shipping_amount?: number | null;
+  tax_amount?: number | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'returned';
   payment_id?: string;
   payment_status?: string;

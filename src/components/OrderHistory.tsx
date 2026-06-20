@@ -89,7 +89,13 @@ const printOrderInvoice = (order: any) => {
     </div>
     <div class="sec-title">Items</div>
     <table><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-    <tbody>${itemsHtml}<tr class="tot"><td colspan="3" style="text-align:right">Grand Total</td><td style="text-align:right">₹${fmt(total)}</td></tr></tbody>
+    <tbody>${itemsHtml}
+    ${order.subtotal_amount != null ? `
+      <tr><td colspan="3" style="text-align:right;font-size:12px;color:#777">Subtotal</td><td style="text-align:right;font-size:12px;color:#555">₹${fmt(parseFloat(order.subtotal_amount))}</td></tr>
+      <tr><td colspan="3" style="text-align:right;font-size:12px;color:#777">Shipping</td><td style="text-align:right;font-size:12px;color:#555">${parseFloat(order.shipping_amount || '0') === 0 ? 'FREE' : '₹' + fmt(parseFloat(order.shipping_amount || '0'))}</td></tr>
+      ${order.tax_amount && parseFloat(order.tax_amount) > 0 ? `<tr><td colspan="3" style="text-align:right;font-size:12px;color:#777">Tax (incl.)</td><td style="text-align:right;font-size:12px;color:#555">₹${fmt(parseFloat(order.tax_amount))}</td></tr>` : ''}
+    ` : ''}
+    <tr class="tot"><td colspan="3" style="text-align:right">Grand Total</td><td style="text-align:right">₹${fmt(total)}</td></tr></tbody>
     </table>
     <div class="footer">Thank you for shopping with Colour My Space &nbsp;·&nbsp; colourmyspace.com</div>
     <script>window.onload=function(){window.print();}<\/script>
