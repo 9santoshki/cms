@@ -61,8 +61,7 @@ if ! git diff-index --quiet HEAD --; then
     echo "⚠️  Warning: You have uncommitted changes."
     git status --short
     echo ""
-    read -p "Continue anyway? (y/n) " -n 1 -r < /dev/tty
-    echo ""
+    if [ "${AUTO_CONFIRM}" = "yes" ]; then REPLY="y"; else read -p "Continue anyway? (y/n) " -n 1 -r < /dev/tty; echo ""; fi
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "❌ Deployment cancelled"
         exit 1
@@ -76,8 +75,12 @@ echo "   PROD port: 3001  (/home/cms/app-prod)"
 echo "   URL:       $PROD_URL"
 echo ""
 
-# Final confirmation
-read -p "🚨 Are you ABSOLUTELY SURE you want to deploy to PRODUCTION? (yes/no): " CONFIRM < /dev/tty
+# Final confirmation (AUTO_CONFIRM=yes bypasses prompt for non-interactive use)
+if [ "${AUTO_CONFIRM}" = "yes" ]; then
+    CONFIRM="yes"
+else
+    read -p "🚨 Are you ABSOLUTELY SURE you want to deploy to PRODUCTION? (yes/no): " CONFIRM < /dev/tty
+fi
 if [ "$CONFIRM" != "yes" ]; then
     echo "❌ Deployment cancelled"
     exit 1
