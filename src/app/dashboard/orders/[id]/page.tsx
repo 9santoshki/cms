@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import type { OrderReceipt } from '@/types';
 import { formatOrderNumber } from '@/utils/orderUtils';
+import { printInvoice } from '@/utils/invoiceUtils';
 
 interface OrderItem {
   id: number;
@@ -320,7 +321,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .od-upload-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; color: #fff; }
         .od-receipt-grid { display: flex; flex-wrap: wrap; gap: 8px; }
         .od-addr { font-size: 12px; color: #666; line-height: 1.6; }
-        .od-print-header { display: none; }
         .od-history-line { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
         .od-history-line:last-child { border-bottom: none; }
         .od-history-dot { width: 8px; height: 8px; border-radius: 50%; background: #c19a6b; flex-shrink: 0; margin-top: 5px; }
@@ -339,30 +339,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         @media (min-width: 1024px) {
           .od-page { padding: 20px; }
         }
-        @media print {
-          .od-back, .od-print-btn, .od-no-print { display: none !important; }
-          .od-print-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #c19a6b; padding-bottom: 12px; margin-bottom: 14px; }
-          .od-page { padding: 0; max-width: 100%; }
-          .od-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-          .od-card { border: 1px solid #ddd; break-inside: avoid; }
-          .od-header { margin-bottom: 6px; }
-          body { background: white; }
-        }
       `}</style>
 
       <div className="od-page">
-        {/* Print-only company header */}
-        <div className="od-print-header">
-          <div>
-            <div style={{ fontSize: '22px', fontWeight: '700', color: '#c19a6b' }}>Colour My Space</div>
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Interior Design &amp; Decor</div>
-          </div>
-          <div style={{ textAlign: 'right', fontSize: '12px', color: '#666' }}>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>{formatOrderNumber(order.id)}</div>
-            <div style={{ marginTop: '2px' }}>{new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="od-header">
           <div>
@@ -372,7 +351,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <h1 className="od-title">{formatOrderNumber(order.id)}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button className="od-print-btn" onClick={() => window.print()}>
+            <button className="od-print-btn" onClick={() => printInvoice(order)}>
               <i className="fas fa-download" /> Download PDF
             </button>
             <span style={{
