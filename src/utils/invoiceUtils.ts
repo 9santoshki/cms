@@ -64,7 +64,7 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
   // Same state (Karnataka) → CGST + SGST; different state → IGST.
   const shipAddr     = parseAddr(order.shipping_address) || parseAddr(order.customer) || null;
   const billAddr     = parseAddr(order.billing_address) || shipAddr;
-  const buyerState   = shipAddr?.state?.trim() ?? '';
+  const buyerState   = (shipAddr?.state?.trim() ?? '').replace(/\b\w/g, c => c.toUpperCase());
   const isIntraState = buyerState.toLowerCase() === SELLER_STATE.toLowerCase();
 
   const invoiceNo   = formatOrderNumber(order.id);
