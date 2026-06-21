@@ -279,6 +279,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const subtotalAmount = order.subtotal_amount != null ? parseFloat(String(order.subtotal_amount)) : null;
   const shippingAmt = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : null;
   const taxAmt = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : null;
+  // Derive subtotal from items when not stored (older orders)
+  const itemsSubtotal = order.items
+    ? order.items.reduce((sum: number, it: any) => sum + parseFloat(String(it.price ?? 0)) * (it.quantity || 1), 0)
+    : 0;
+  const effectiveSubtotal = subtotalAmount ?? (itemsSubtotal > 0 ? itemsSubtotal : null);
 
   const costNum = parseOrNull(costPrice);
   const expenseNum = parseOrNull(cashExpense);
@@ -390,24 +395,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       </div>
                     );
                   })}
-                  {subtotalAmount !== null && (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0', borderTop: '1px solid #f3f3f3', marginTop: '4px' }}>
+                  <div style={{ borderTop: '1px solid #f3f3f3', marginTop: '4px' }}>
+                    {effectiveSubtotal !== null && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
                         <span>Subtotal</span>
-                        <span>₹{subtotalAmount.toLocaleString()}</span>
+                        <span>₹{effectiveSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
+                    )}
+                    {shippingAmt !== null && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
                         <span>Shipping</span>
-                        <span>{shippingAmt === 0 ? 'FREE' : `₹${(shippingAmt ?? 0).toLocaleString()}`}</span>
+                        <span>{shippingAmt === 0 ? 'FREE' : `₹${shippingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                       </div>
-                      {taxAmt != null && taxAmt > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
-                          <span>Tax (incl.)</span>
-                          <span>₹{taxAmt.toLocaleString()}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
+                    )}
+                    {taxAmt != null && taxAmt > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
+                        <span>Tax (GST, incl.)</span>
+                        <span>₹{taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="od-total-row">
                     <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Grand Total</span>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#c19a6b' }}>₹{totalAmount.toLocaleString()}</span>
