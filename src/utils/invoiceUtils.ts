@@ -48,16 +48,21 @@ function addrBlock(addr: AddrObj | null): string {
 }
 
 export function generateInvoiceHTML(order: InvoiceOrder): string {
+  const DEFAULT_GST_RATE = 18; // Site-configured standard rate
+
   const items          = order.items || [];
   const total          = parseFloat(String(order.total_amount ?? 0));
-  const taxTotal       = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : 0;
   const shippingAmount = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : 0;
 
-  // Prices in DB are GST-inclusive.
-  // GST Amount = Price × gstRate / (100 + gstRate)
-  // Taxable    = Price - GST Amount  =  Price × 100 / (100 + gstRate)
+  // Prices are GST-inclusive. When tax_amount is stored use it directly;
+  // for older orders without tax_amount, back-compute from total at default rate.
+  const taxTotal = order.tax_amount != null
+    ? parseFloat(String(order.tax_amount))
+    : total > 0 ? total * DEFAULT_GST_RATE / (100 + DEFAULT_GST_RATE) : 0;
+
+  // Back-compute the effective rate (will equal DEFAULT_GST_RATE for fallback orders)
   const gstRate = taxTotal > 0 && total > taxTotal
-    ? (taxTotal / (total - taxTotal)) * 100   // back-compute rate % (e.g. 18)
+    ? (taxTotal / (total - taxTotal)) * 100
     : 0;
   const hasTax = gstRate > 0;
 
