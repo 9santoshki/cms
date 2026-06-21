@@ -121,7 +121,7 @@ export async function getOrderItemsBatch(orderIds: string[]): Promise<Map<string
 
   const itemsMap = new Map<string, OrderItem[]>();
   for (const row of result.rows) {
-    const orderId = row.order_id;
+    const orderId = String(row.order_id);
     if (!itemsMap.has(orderId)) {
       itemsMap.set(orderId, []);
     }
