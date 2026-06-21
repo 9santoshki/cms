@@ -17,6 +17,7 @@ interface InvoiceItem {
 interface InvoiceOrder {
   id: number | string; created_at?: string;
   total_amount: number | string; tax_amount?: number | string | null;
+  shipping_amount?: number | string | null;
   payment_id?: string;
   shipping_address?: any; billing_address?: any; customer?: any;
   items?: InvoiceItem[];
@@ -47,9 +48,10 @@ function addrBlock(addr: AddrObj | null): string {
 }
 
 export function generateInvoiceHTML(order: InvoiceOrder): string {
-  const items    = order.items || [];
-  const total    = parseFloat(String(order.total_amount ?? 0));
-  const taxTotal = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : 0;
+  const items          = order.items || [];
+  const total          = parseFloat(String(order.total_amount ?? 0));
+  const taxTotal       = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : 0;
+  const shippingAmount = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : 0;
 
   // Prices in DB are GST-inclusive.
   // GST Amount = Price × gstRate / (100 + gstRate)
@@ -109,14 +111,20 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
   const sgstTotal    = isIntraState ? taxTotal / 2 : 0;
   const igstTotal    = isIntraState ? 0 : taxTotal;
 
+  const shippingRow = shippingAmount > 0
+    ? `<tr><td>Shipping</td><td style="text-align:right">₹${fmt(shippingAmount)}</td></tr>`
+    : '';
+
   const taxSummaryRows = hasTax ? `
     <tr><td>Taxable Value</td><td style="text-align:right"><strong>₹${fmt(taxableTotal)}</strong></td></tr>
     <tr><td>CGST (${halfRate}%)</td><td style="text-align:right">₹${fmt(cgstTotal)}</td></tr>
     <tr><td>SGST (${halfRate}%)</td><td style="text-align:right">₹${fmt(sgstTotal)}</td></tr>
     <tr><td>IGST (${isIntraState ? 0 : gstRate}%)</td><td style="text-align:right">₹${fmt(igstTotal)}</td></tr>
     <tr><td><strong>Total Tax</strong></td><td style="text-align:right"><strong>₹${fmt(taxTotal)}</strong></td></tr>
+    ${shippingRow}
     <tr style="background:#f0f0f0"><td><strong>Grand Total</strong></td><td style="text-align:right"><strong>₹${fmt(total)}</strong></td></tr>
   ` : `
+    ${shippingRow}
     <tr style="background:#f0f0f0"><td><strong>Grand Total</strong></td><td style="text-align:right"><strong>₹${fmt(total)}</strong></td></tr>
   `;
 
