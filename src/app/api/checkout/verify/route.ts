@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Complete order + deduct stock ───────────────────────────────────────
-    await completeOrderWithStockDeduction(order);
+    await completeOrderWithStockDeduction(order, razorpay_payment_id);
 
     // ── Clear cart ──────────────────────────────────────────────────────────
     await clearCart(order.user_id);

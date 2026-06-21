@@ -27,7 +27,7 @@ export async function GET(
 
     // Fetch order with user details
     const orderResult = await query(
-      `SELECT o.*, u.name as user_name, u.email as user_email
+      `SELECT o.*, u.name as user_name, u.email as user_email, u.gstin as user_gstin
        FROM orders o
        JOIN users u ON o.user_id = u.id
        WHERE o.id = $1`,

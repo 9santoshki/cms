@@ -7,7 +7,7 @@
  */
 import crypto from 'crypto';
 import { query } from '@/lib/db/connection';
-import { getOrderItems } from '@/lib/db/orders';
+import { getOrderItems, addOrderStatusHistory } from '@/lib/db/orders';
 import { deductStockForOrder } from '@/lib/db/suppliers';
 import { sendStockDiscrepancyAlert } from '@/lib/email';
 import razorpay from '@/lib/razorpay';
@@ -78,27 +78,39 @@ export async function findOrderByPaymentId(
 }
 
 /**
- * Mark the order as completed and deduct inventory for variant items.
+ * Mark the order as processing and deduct inventory for variant items.
  * Inventory errors are logged + alerted but NEVER thrown — the payment
  * is already captured at this point.
  */
 export async function completeOrderWithStockDeduction(
   order: VerifiedOrder,
+  razorpayPaymentId: string,
 ): Promise<void> {
   await query(
     `UPDATE orders
-     SET status = 'completed', payment_status = 'captured', updated_at = NOW()
+     SET status = 'processing', payment_status = 'paid', payment_id = $2, updated_at = NOW()
      WHERE id = $1`,
-    [order.id],
+    [order.id, razorpayPaymentId],
   );
 
-  let orderItems: Awaited<ReturnType<typeof query>> | null = null;
-  try {
-    orderItems = await query(
+  // History insert and order-items fetch are independent — run in parallel.
+  const [, orderItemsResult] = await Promise.all([
+    addOrderStatusHistory(
+      String(order.id),
+      order.status,   // actual status, not assumed 'pending'
+      'processing',
+      String(order.user_id),
+      'Payment Gateway',
+      'Payment captured via Razorpay',
+    ).catch((err) => console.error('[checkout-service] Status history insert failed:', err)),
+    query(
       'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = $1',
       [order.id],
-    );
-    for (const item of orderItems.rows) {
+    ),
+  ]);
+
+  try {
+    for (const item of orderItemsResult.rows) {
       if (item.variant_id) {
         await deductStockForOrder(
           Number(item.variant_id),
@@ -110,8 +122,7 @@ export async function completeOrderWithStockDeduction(
     }
   } catch (stockErr) {
     console.error(`[checkout-service] ⚠️ Stock deduction failed for order ${order.id}:`, stockErr);
-    const items = orderItems?.rows ?? [];
-    for (const item of items) {
+    for (const item of orderItemsResult.rows) {
       if (item.variant_id) {
         await sendStockDiscrepancyAlert({
           orderId: Number(order.id),

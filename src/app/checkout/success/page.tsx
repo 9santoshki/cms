@@ -212,6 +212,33 @@ const CheckoutSuccessContent = () => {
           </OrderItemsSection>
 
           <OrderTotal>
+            {(() => {
+              const fmtAmt = (v: string | number) =>
+                parseFloat(String(v)).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+              const row = (style: React.CSSProperties) => style;
+              const summaryRow = row({ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#666', marginBottom: '6px' });
+              return (
+                <>
+                  {order.subtotal_amount != null && (
+                    <div style={summaryRow}><span>Subtotal</span><span>₹{fmtAmt(order.subtotal_amount)}</span></div>
+                  )}
+                  {order.shipping_amount != null && (
+                    <div style={summaryRow}>
+                      <span>Shipping</span>
+                      <span>{parseFloat(order.shipping_amount) === 0 ? 'FREE' : `₹${fmtAmt(order.shipping_amount)}`}</span>
+                    </div>
+                  )}
+                  {order.tax_amount != null && parseFloat(order.tax_amount) > 0 && (
+                    <div style={summaryRow}><span>GST (incl.)</span><span>₹{fmtAmt(order.tax_amount)}</span></div>
+                  )}
+                  {order.payment_id && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#999', marginBottom: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <span>Payment ID</span><span style={{ fontFamily: 'monospace' }}>{order.payment_id}</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <div className="label">Grand Total</div>
             <div className="amount">
               ₹{typeof order.total_amount === 'number'
