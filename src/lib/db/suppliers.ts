@@ -580,7 +580,7 @@ export async function deductStockForOrder(
          SELECT 1 FROM supplier_variants
          WHERE variant_id = $1
            AND min_stock_threshold > 0
-           AND $2 <= min_stock_threshold
+           AND $2::integer <= min_stock_threshold
          LIMIT 1
        )`,
       [variantId, newTotal, changedBy, orderId]

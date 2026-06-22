@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { useAppContext } from '@/context/AppContext';
 import { formatDate } from '@/utils/formatUtils';
 import { formatOrderNumber } from '@/utils/orderUtils';
+import { printInvoice } from '@/utils/invoiceUtils';
 import {
   SuccessContainer,
   SuccessContent,
@@ -251,6 +252,10 @@ const CheckoutSuccessContent = () => {
             <Button $variant="secondary" onClick={handleContinueShopping}>
               <i className="fas fa-shopping-bag" />
               Continue Shopping
+            </Button>
+            <Button $variant="secondary" onClick={() => printInvoice(order)}>
+              <i className="fas fa-download" />
+              Download Invoice
             </Button>
             <Button $variant="primary" onClick={handleViewOrders}>
               <i className="fas fa-receipt" />
