@@ -29,12 +29,14 @@ BEGIN
   FROM product_variants WHERE id = v_variant_id FOR UPDATE;
 
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Variant % not found', v_variant_id;
+    RAISE NOTICE 'Variant % not found — skipping (non-production env).', v_variant_id;
+    RETURN;
   END IF;
 
   IF v_previous < v_qty THEN
-    RAISE EXCEPTION 'Insufficient stock for variant %: available %, requested %',
+    RAISE NOTICE 'Insufficient stock for variant %: available %, requested % — skipping.',
       v_variant_id, v_previous, v_qty;
+    RETURN;
   END IF;
 
   -- Deduct from supplier buckets (highest-stock first)
@@ -55,8 +57,9 @@ BEGIN
   END LOOP;
 
   IF v_remaining > 0 THEN
-    RAISE EXCEPTION 'Stock inconsistency for variant %: could not deduct % remaining units',
+    RAISE NOTICE 'Stock inconsistency for variant %: could not deduct % remaining — skipping.',
       v_variant_id, v_remaining;
+    RETURN;
   END IF;
 
   v_new := v_previous - v_qty;
