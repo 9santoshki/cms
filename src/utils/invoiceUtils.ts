@@ -54,10 +54,11 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
   const total          = parseFloat(String(order.total_amount ?? 0));
   const shippingAmount = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : 0;
 
-  // Prices are GST-inclusive. When tax_amount is stored use it directly;
-  // for older orders without tax_amount, back-compute from total at default rate.
-  const taxTotal = order.tax_amount != null
-    ? parseFloat(String(order.tax_amount))
+  // Prices are GST-inclusive. When tax_amount is stored and non-zero use it directly;
+  // for older orders (tax_amount null or 0), back-compute from total at default rate.
+  const storedTax = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : 0;
+  const taxTotal = storedTax > 0
+    ? storedTax
     : total > 0 ? total * DEFAULT_GST_RATE / (100 + DEFAULT_GST_RATE) : 0;
 
   // Back-compute the effective rate (will equal DEFAULT_GST_RATE for fallback orders)
