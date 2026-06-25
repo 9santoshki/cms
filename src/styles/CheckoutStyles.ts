@@ -156,22 +156,7 @@ export const OrderSummaryCard = styled.div`
 `;
 
 export const OrderItemsList = styled.div`
-  max-height: 150px;
-  overflow-y: auto;
   margin-bottom: 8px;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #c19a6b;
-    border-radius: 2px;
-  }
 `;
 
 export const OrderItem = styled.div`

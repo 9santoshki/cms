@@ -119,7 +119,8 @@ const CheckoutPage = () => {
     new Promise((resolve, reject) => {
       // @ts-ignore
       if (typeof window !== 'undefined' && window.Razorpay) { resolve(); return; }
-      if (document.querySelector('script[src*="checkout.razorpay.com"]')) { resolve(); return; }
+      // Remove any stale/failed script tag before retrying
+      document.querySelector('script[src*="checkout.razorpay.com"]')?.remove();
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => resolve();

@@ -575,7 +575,7 @@ export async function deductStockForOrder(
          (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, notes)
        SELECT
          $1, $2, $2, 0, $3, 'alert',
-         'LOW STOCK ALERT: variant total is ' || $2 || ' units after Order #' || $4
+         'LOW STOCK ALERT: variant total is ' || $2::text || ' units after Order #' || $4::text
        WHERE EXISTS (
          SELECT 1 FROM supplier_variants
          WHERE variant_id = $1
