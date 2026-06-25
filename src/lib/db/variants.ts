@@ -23,6 +23,14 @@ export async function getVariantOptionTypes(): Promise<VariantOptionType[]> {
   return result.rows;
 }
 
+/** Get ALL option types including inactive (admin dictionary) */
+export async function getVariantOptionTypesAdmin(): Promise<VariantOptionType[]> {
+  const result = await query(
+    `SELECT * FROM variant_option_types ORDER BY display_order`
+  );
+  return result.rows;
+}
+
 /** Get option type by ID */
 export async function getVariantOptionTypeById(id: number): Promise<VariantOptionType | null> {
   const result = await query(
@@ -80,6 +88,17 @@ export async function getAllVariantOptions(): Promise<VariantOption[]> {
      FROM variant_options o
      JOIN variant_option_types t ON o.option_type_id = t.id
      WHERE o.is_active = TRUE AND t.is_active = TRUE
+     ORDER BY t.display_order, o.display_order`
+  );
+  return result.rows;
+}
+
+/** Get ALL options across all types including inactive (admin dictionary) */
+export async function getAllVariantOptionsAdmin(): Promise<VariantOption[]> {
+  const result = await query(
+    `SELECT o.*, t.name as type_name, t.display_name as type_display_name
+     FROM variant_options o
+     JOIN variant_option_types t ON o.option_type_id = t.id
      ORDER BY t.display_order, o.display_order`
   );
   return result.rows;

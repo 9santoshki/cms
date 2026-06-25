@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
-  getAllVariantOptions,
+  getAllVariantOptionsAdmin,
   getVariantOptionById,
   getVariantOptionsByType,
   createVariantOption,
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       return ok(options);
     }
 
-    const options = await getAllVariantOptions();
+    const options = await getAllVariantOptionsAdmin();
     return ok(options);
   } catch (err: unknown) {
     console.error('Error fetching options:', err);

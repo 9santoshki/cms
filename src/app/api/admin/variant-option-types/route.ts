@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import {
-  getVariantOptionTypes,
+  getVariantOptionTypesAdmin,
   getVariantOptionTypeById,
   createVariantOptionType,
   updateVariantOptionType
@@ -17,7 +17,7 @@ import { ok, created, badRequest, unauthorized, forbidden, notFound, serverError
  */
 export async function GET() {
   try {
-    const optionTypes = await getVariantOptionTypes();
+    const optionTypes = await getVariantOptionTypesAdmin();
     return ok(optionTypes);
   } catch (err: unknown) {
     console.error('Error fetching option types:', err);
