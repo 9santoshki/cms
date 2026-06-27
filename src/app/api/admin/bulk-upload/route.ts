@@ -1,34 +1,25 @@
 /**
  * Admin API: Bulk product upload via CSV
- * GET  — download CSV template
+ * GET  — download CSV template (dynamic: reflects active variant types from DB)
  * POST — parse CSV and create products with variants (status: draft)
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { createProduct, generateUniqueSlug, deleteProduct } from '@/lib/db/products';
 import {
-  findOrCreateVariantOptionType,
+  getVariantOptionTypes,
+  getVariantOptionsByType,
   findOrCreateVariantOption,
   createProductVariant,
   findVariantByOptions,
 } from '@/lib/db/variants';
 import { ok, badRequest, unauthorized, forbidden, serverError } from '@/lib/api-response';
 import { toErrorMessage } from '@/lib/error-utils';
-import type { VariantOptionType, VariantOption } from '@/types';
+import type { VariantOption } from '@/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type CSVRow = Record<string, string> & { _row: number };
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const VARIANT_COLS = ['color', 'size', 'thickness', 'material'] as const;
-
-const TEMPLATE_CSV = [
-  'name,description,brand,category,subcategory,price,sale_price,sku,stock_quantity,delivery_time,highlights,hsn_code,supplier_price,color,size,thickness,material',
-  '"Luxury Wallpaper","Modern geometric design",BrandX,Wallpapers,Geometric,2500,2200,WP-GEO-BLK-SM,50,3-5 days,,,,Black,Small,,',
-  '"Luxury Wallpaper","Modern geometric design",BrandX,Wallpapers,Geometric,2600,2300,WP-GEO-GRY-SM,40,3-5 days,,,,Grey,Small,,',
-].join('\n');
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
@@ -73,13 +64,60 @@ function parseCSV(text: string): CSVRow[] {
 
 // ─── Template download ────────────────────────────────────────────────────────
 
+const PRODUCT_COLS = [
+  'name', 'description', 'brand', 'category', 'subcategory',
+  'price', 'sale_price', 'sku', 'stock_quantity', 'delivery_time',
+  'highlights', 'hsn_code', 'supplier_price',
+];
+
 export async function GET() {
-  return new NextResponse(TEMPLATE_CSV, {
-    headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
-    },
-  });
+  try {
+    const optionTypes = await getVariantOptionTypes(); // active types only
+    const variantColNames = optionTypes.map(t => t.name);
+    const header = [...PRODUCT_COLS, ...variantColNames].join(',');
+
+    // Fetch sample values for each active type to populate example rows
+    const optionValuesList = await Promise.all(
+      optionTypes.map(t => getVariantOptionsByType(t.id))
+    );
+
+    const makeRow = (sku: string, variantVals: string[]) =>
+      ['"Luxury Wallpaper"', '"Modern geometric design"', 'BrandX', 'Wallpapers', 'Geometric',
+        '2500', '2200', sku, '50', '3-5 days', '', '', '', ...variantVals].join(',');
+
+    const rows = [header];
+
+    // Row 1: first option value for each active type
+    const varVals1 = optionTypes.map((_, i) => optionValuesList[i][0]?.display_value ?? '');
+    rows.push(makeRow('WP-EXAMPLE-01', varVals1));
+
+    // Row 2: vary the first option type if it has a second value (shows grouping by name)
+    if (optionTypes.length > 0 && optionValuesList[0].length > 1) {
+      const varVals2 = optionTypes.map((_, i) =>
+        (i === 0 ? optionValuesList[0][1] : optionValuesList[i][0])?.display_value ?? ''
+      );
+      rows.push(makeRow('WP-EXAMPLE-02', varVals2));
+    }
+
+    return new NextResponse(rows.join('\n'), {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
+      },
+    });
+  } catch {
+    // Fallback: minimal template without variant columns if DB is unavailable
+    return new NextResponse(
+      PRODUCT_COLS.join(',') + '\n' +
+      '"Luxury Wallpaper","Modern geometric design",BrandX,Wallpapers,Geometric,2500,2200,WP-EXAMPLE-01,50,3-5 days,,,',
+      {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
+        },
+      }
+    );
+  }
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -100,6 +138,11 @@ export async function POST(request: NextRequest) {
     const rows = parseCSV(text);
     if (rows.length === 0) return badRequest('CSV is empty or has no data rows');
 
+    // Load active variant option types once for this request.
+    // Only columns matching these types are treated as variant dimensions;
+    // inactive or unknown columns are silently ignored.
+    const activeOptionTypes = await getVariantOptionTypes();
+
     // Group rows by product name, preserving CSV order
     const groups = new Map<string, CSVRow[]>();
     for (const row of rows) {
@@ -114,23 +157,22 @@ export async function POST(request: NextRequest) {
     let createdVariants = 0;
     const isAdmin = session.role === 'admin';
 
-    // Request-scoped caches: avoid O(rows × cols) repeated DB lookups for the same
-    // option type / option value across all rows in the upload.
-    const optionTypeCache = new Map<string, VariantOptionType>();
+    // Cache option values to avoid repeated DB hits for the same type/value across rows
     const optionValueCache = new Map<string, VariantOption>();
 
     for (const groupRows of groups.values()) {
       const first = groupRows[0];
 
-      // Validate required product fields from the first row of the group
-      if (!first['name'] || !first['description'] || !first['price']) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: 'Missing required field(s): name, description, price' }));
+      // Validate required product fields — report exactly which are missing
+      const missing = ['name', 'description', 'price'].filter(f => !first[f]);
+      if (missing.length > 0) {
+        groupRows.forEach(r => errors.push({ row: r._row, error: `Missing required field(s): ${missing.join(', ')}` }));
         continue;
       }
 
       const basePrice = parseFloat(first['price']);
       if (isNaN(basePrice)) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: 'Invalid price — skipping product group' }));
+        groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid price "${first['price']}" — must be a number` }));
         continue;
       }
 
@@ -162,42 +204,44 @@ export async function POST(request: NextRequest) {
       }
 
       // Create a variant for each row in the group
-      const variantsCreatedForProduct: number[] = []; // track count for orphan cleanup
+      const variantsCreatedForProduct: number[] = []; // track for orphan cleanup
       for (const row of groupRows) {
         const varPrice = parseFloat(row['price']);
         if (isNaN(varPrice)) {
-          errors.push({ row: row._row, error: 'Invalid price — variant skipped' });
+          errors.push({ row: row._row, error: `Invalid price "${row['price']}" — must be a number` });
+          continue;
+        }
+
+        if (row['sale_price'] && isNaN(parseFloat(row['sale_price']))) {
+          errors.push({ row: row._row, error: `Invalid sale_price "${row['sale_price']}" — must be a number` });
           continue;
         }
 
         try {
-          // Resolve variant option IDs (auto-create unknown values).
-          // Cache results to avoid repeat DB hits for the same col/value across rows.
+          // Resolve variant option IDs for active types only.
+          // New option values (e.g. a new colour) are created automatically.
           const optionIds: number[] = [];
-          for (const col of VARIANT_COLS) {
-            const val = row[col];
+          for (const optType of activeOptionTypes) {
+            const val = row[optType.name];
             if (!val) continue;
 
-            let optType = optionTypeCache.get(col);
-            if (!optType) {
-              optType = await findOrCreateVariantOptionType(col);
-              optionTypeCache.set(col, optType);
-            }
-
-            const valueKey = `${col}:${val.toLowerCase()}`;
+            const valueKey = `${optType.name}:${val.toLowerCase()}`;
             let opt = optionValueCache.get(valueKey);
             if (!opt) {
               opt = await findOrCreateVariantOption(optType.id, val);
               optionValueCache.set(valueKey, opt);
             }
-
             optionIds.push(opt.id);
           }
 
           // Skip duplicate variant combinations within this product
           const dup = await findVariantByOptions(productId, optionIds);
           if (dup) {
-            errors.push({ row: row._row, error: 'Duplicate variant combination — skipped' });
+            const variantDesc = activeOptionTypes
+              .filter(t => row[t.name])
+              .map(t => `${t.display_name}=${row[t.name]}`)
+              .join(', ');
+            errors.push({ row: row._row, error: `Duplicate variant${variantDesc ? ` [${variantDesc}]` : ''} — already defined for this product` });
             continue;
           }
 
