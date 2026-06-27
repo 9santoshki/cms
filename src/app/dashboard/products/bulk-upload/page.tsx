@@ -77,8 +77,8 @@ const BulkUploadPage = () => {
         <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: '#2c2c2c' }}>How it works</h3>
         <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#555', lineHeight: 1.8 }}>
           <li>Download the CSV template and fill in your product data.</li>
-          <li><strong>One row = one variant.</strong> Rows sharing the same <code>name</code> are grouped into a single product.</li>
-          <li>Variant columns are shown in the template header and reflect the types currently active in the system — leave any blank if not applicable.</li>
+          <li><strong>One row = one variant.</strong> Rows sharing the same <code>Product Name</code> are grouped into a single product.</li>
+          <li>Variant columns appear between the product fields and the pricing columns — they reflect the types currently active in the system. Leave any blank if not applicable.</li>
           <li>Products are created in <strong>draft</strong> status. Upload images and publish them from the Products page.</li>
           <li>New variant values (e.g. a new colour) are created automatically. Variant <em>types</em> must already be enabled in the dictionary.</li>
         </ol>
