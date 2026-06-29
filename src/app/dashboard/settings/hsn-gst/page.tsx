@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import type { HsnGstRate } from '@/lib/db/hsnGst';
-import { VALID_GST_RATES } from '@/lib/db/hsnGst';
+import type { HsnGstRate } from '@/lib/gst-constants';
+import { VALID_GST_RATES } from '@/lib/gst-constants';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',

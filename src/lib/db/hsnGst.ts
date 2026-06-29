@@ -1,18 +1,10 @@
 import { query } from './connection';
 import { buildUpdateQueryById } from './query-builder';
+import { VALID_GST_RATES } from '@/lib/gst-constants';
+import type { HsnGstRate } from '@/lib/gst-constants';
 
-export const VALID_GST_RATES = [0, 0.25, 3, 5, 12, 18, 28] as const;
-export type GstRate = typeof VALID_GST_RATES[number];
-
-export interface HsnGstRate {
-  id: number;
-  hsn_code: string;
-  description: string | null;
-  gst_rate: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export { VALID_GST_RATES } from '@/lib/gst-constants';
+export type { GstRate, HsnGstRate } from '@/lib/gst-constants';
 
 export interface HsnGstListOptions {
   search?: string;
