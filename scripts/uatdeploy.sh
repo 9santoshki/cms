@@ -156,6 +156,7 @@ run_migration "$APP_DIR/scripts/migrations/add_billing_address.sql"             
 run_migration "$APP_DIR/scripts/migrations/add_user_addresses.sql"                "add_user_addresses"
 run_migration "$APP_DIR/scripts/migrations/add_order_cost_breakdown.sql"          "add_order_cost_breakdown"
 run_migration "$APP_DIR/scripts/migrations/fix_order_16_stock_deduction.sql"      "fix_order_16_stock_deduction"
+run_migration "$APP_DIR/scripts/migrations/add_hsn_gst_rates.sql"                 "add_hsn_gst_rates"
 echo "✅ Migrations complete"
 
 echo ""

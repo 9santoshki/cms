@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 
 interface Settings {
@@ -370,7 +371,7 @@ const DashboardSettingsPage = () => {
           )}
         </div>
 
-        {/* Site Configuration */}
+        {/* HSN-GST Rates */}
         <div style={{
           background: 'white',
           borderRadius: '8px',
@@ -379,17 +380,37 @@ const DashboardSettingsPage = () => {
           boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
           border: '1px solid #e8d5c4'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <i className="fas fa-cog" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-              Site Information
-            </h3>
-          </div>
-
-          <div style={{ padding: '12px', background: 'rgba(193, 154, 107, 0.05)', borderRadius: '6px' }}>
-            <p style={{ fontSize: '12px', color: '#666', lineHeight: '1.5', margin: 0 }}>
-              Additional site configuration options will be available here. This includes site name, logo, contact information, and other general settings.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <i className="fas fa-tags" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 2px' }}>
+                  HSN–GST Rate Mapping
+                </h3>
+                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
+                  Map HSN codes to Indian GST rates for invoicing
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/settings/hsn-gst"
+              style={{
+                padding: '7px 14px',
+                background: 'linear-gradient(135deg, #c19a6b, #a67c52)',
+                color: 'white',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <i className="fas fa-arrow-right"></i>
+              Manage
+            </Link>
           </div>
         </div>
 
