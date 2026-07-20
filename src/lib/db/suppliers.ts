@@ -570,20 +570,23 @@ export async function deductStockForOrder(
     );
 
     // Low-stock check: warn if any supplier's share has fallen below their threshold
+    // Note text is built in JS (not SQL) to avoid reusing $2 with conflicting
+    // implicit/::text/::integer casts in one statement, which Postgres cannot
+    // always resolve to a single parameter type (42P08 / 42883 errors).
+    const lowStockNote = `LOW STOCK ALERT: variant total is ${newTotal} units after Order #${orderId}`;
     await client.query(
       `INSERT INTO inventory_logs
          (variant_id, previous_quantity, new_quantity, change_quantity, changed_by, change_type, notes)
        SELECT
-         $1, $2, $2, 0, $3, 'alert',
-         'LOW STOCK ALERT: variant total is ' || $2::text || ' units after Order #' || $4::text
+         $1, $2, $2, 0, $3, 'alert', $4
        WHERE EXISTS (
          SELECT 1 FROM supplier_variants
          WHERE variant_id = $1
            AND min_stock_threshold > 0
-           AND $2::integer <= min_stock_threshold
+           AND $2 <= min_stock_threshold
          LIMIT 1
        )`,
-      [variantId, newTotal, changedBy, orderId]
+      [variantId, newTotal, changedBy, lowStockNote]
     );
 
     await client.query('COMMIT');
