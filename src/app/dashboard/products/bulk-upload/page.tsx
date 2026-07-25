@@ -47,14 +47,22 @@ const BulkUploadPage = () => {
     setUploadError(null);
     setResult(null);
 
-    const form = new FormData();
-    form.append('file', file);
-
     try {
+      // Read the file into memory before building the request. On some
+      // mobile/tablet Safari sessions the raw File handle streams lazily
+      // (e.g. from an incompletely-synced cloud/Files-app source or a
+      // backgrounded tab) and the browser ends up sending an empty body —
+      // Content-Length: 0 despite a valid multipart boundary — which makes
+      // the server's request.formData() throw. Forcing a full in-memory
+      // read up front means the bytes are already materialized before any
+      // network call starts.
+      const buffer = await file.arrayBuffer();
+      const form = new FormData();
+      form.append('file', new Blob([buffer], { type: 'text/csv' }), file.name);
+
       // Uses XMLHttpRequest instead of fetch(): Safari/WebKit has a known bug
       // where fetch() can send an empty body for multipart FormData uploads
-      // over HTTP/2 (Content-Length: 0 despite a real boundary), causing the
-      // server's request.formData() to throw. XHR does not hit this bug.
+      // over HTTP/2. XHR does not hit that particular bug either.
       const data = await new Promise<{ success: boolean; data?: UploadResult; error?: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/admin/bulk-upload');
