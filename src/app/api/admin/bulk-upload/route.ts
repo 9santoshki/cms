@@ -297,10 +297,6 @@ export async function POST(request: NextRequest) {
           groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — cannot be negative` }));
           continue;
         }
-        if (baseSalePrice !== undefined && baseSalePrice >= basePrice) {
-          groupRows.forEach(r => errors.push({ row: r._row, error: `"Sale Price" (${baseSalePrice}) must be less than "Regular Price" (${basePrice})` }));
-          continue;
-        }
 
         // Create the product (draft, no image required)
         try {
@@ -393,10 +389,6 @@ export async function POST(request: NextRequest) {
           }
           if (varSalePrice < 0) {
             errors.push({ row: row._row, error: `Invalid "Variant Sale Price" "${row['variant sale price']}" — cannot be negative` });
-            continue;
-          }
-          if (varSalePrice >= varPrice) {
-            errors.push({ row: row._row, error: `"Variant Sale Price" (${varSalePrice}) must be less than "Price" (${varPrice})` });
             continue;
           }
         }

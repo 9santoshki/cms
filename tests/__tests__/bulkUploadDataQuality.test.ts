@@ -11,7 +11,8 @@
  *     both the product-level and per-variant column) must be rejected up
  *     front instead of silently colliding.
  *  3. Numeric fields (prices, stock, supplier price) must reject negative
- *     values, and sale prices must be less than their corresponding price.
+ *     values. Sale price is intentionally NOT required to be less than its
+ *     corresponding price — equal (or greater) is a valid business case.
  *  4. SKU length and HSN Code format (4/6/8 digits) are validated.
  *
  * All DB modules are mocked — this is a unit test of the route's parsing and
@@ -149,13 +150,13 @@ describe('bulk upload — price/stock sanity checks', () => {
     expect(mockCreateProduct).not.toHaveBeenCalled();
   });
 
-  it('rejects a product Sale Price that is not less than Regular Price', async () => {
+  it('accepts a product Sale Price equal to or greater than Regular Price (no relative check)', async () => {
     const res = await POST(csvRequest([
       row({ 'Product Name': 'A', 'Description': 'B', 'Regular Price': '100', 'Sale Price': '150', 'SKU': 'S1', 'Price': '100', 'Stock': '1' }),
     ]));
     const body = await res.json();
-    expect(body.data.errors[0].error).toContain('must be less than "Regular Price"');
-    expect(mockCreateProduct).not.toHaveBeenCalled();
+    expect(body.data.errors).toEqual([]);
+    expect(mockCreateProduct).toHaveBeenCalledWith(expect.objectContaining({ price: 100, sale_price: 150 }));
   });
 
   it('rejects a negative variant Price', async () => {
@@ -167,13 +168,13 @@ describe('bulk upload — price/stock sanity checks', () => {
     expect(mockCreateProductVariant).not.toHaveBeenCalled();
   });
 
-  it('rejects a Variant Sale Price that is not less than Price', async () => {
+  it('accepts a Variant Sale Price equal to Price (no relative check)', async () => {
     const res = await POST(csvRequest([
       row({ 'Product Name': 'A', 'Description': 'B', 'Regular Price': '100', 'SKU': 'S1', 'Price': '100', 'Variant Sale Price': '100', 'Stock': '1' }),
     ]));
     const body = await res.json();
-    expect(body.data.errors[0].error).toContain('must be less than "Price"');
-    expect(mockCreateProductVariant).not.toHaveBeenCalled();
+    expect(body.data.errors).toEqual([]);
+    expect(mockCreateProductVariant).toHaveBeenCalledWith(1, 100, [], 'S1', 100, 1, undefined, undefined);
   });
 
   it('rejects a non-numeric Stock value', async () => {
