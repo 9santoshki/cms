@@ -129,20 +129,27 @@ function parseCSV(text: string): CSVRow[] {
 
 // ─── Template download ────────────────────────────────────────────────────────
 
+// Wrap a value in quotes if it contains a comma — otherwise a plain join()
+// silently splits it into extra fields (e.g. the "Warranty, Return &
+// Exchange Policy" column name), throwing off every column after it.
+const q = (v: string) => v.includes(',') ? `"${v}"` : v;
+
 export async function GET() {
   try {
     const optionTypes = await getVariantOptionTypes(); // active types only
-    const variantColNames = optionTypes.map(t => t.name);
+    // Column header shown to admins is the human-readable display_name, not
+    // the internal `name` slug — the latter can be an arbitrary DB value
+    // (e.g. a mistakenly-created type named after a specific product spec)
+    // and is never meant to be shown as a column label.
+    const variantColNames = optionTypes.map(t => t.display_name);
     const allCols = [...PRODUCT_COLS, ...variantColNames, ...PRICING_COLS];
-    const header = allCols.join(',');
+    const header = allCols.map(q).join(',');
 
     // Fetch sample values for each active type to populate example rows
     const optionValuesList = await Promise.all(
       optionTypes.map(t => getVariantOptionsByType(t.id))
     );
 
-    // Build a CSV-safe example row. Wrap values containing commas in quotes.
-    const q = (v: string) => v.includes(',') ? `"${v}"` : v;
     const makeRow = (sku: string, price: string, variantVals: string[]) =>
       [
         '"Sample Product"',       // Product Name
@@ -186,7 +193,7 @@ export async function GET() {
     });
   } catch {
     // Fallback: minimal template without variant columns if DB is unavailable
-    const fallbackCols = [...PRODUCT_COLS, ...PRICING_COLS].join(',');
+    const fallbackCols = [...PRODUCT_COLS, ...PRICING_COLS].map(q).join(',');
     return new NextResponse(
       fallbackCols + '\n"Sample Product","Sample description",1000,,Category,BrandName,3-5 days,,,,,SKU-001,1000,,,, 10',
       {
@@ -442,7 +449,10 @@ export async function POST(request: NextRequest) {
           // New option values (e.g. a new colour) are created automatically.
           const optionIds: number[] = [];
           for (const optType of activeOptionTypes) {
-            const val = row[optType.name.toLowerCase()];
+            // Column is keyed by display_name — matches the header the GET
+            // template shows admins (the internal `name` slug is never
+            // displayed, so it must never be used to look up a CSV column).
+            const val = row[optType.display_name.toLowerCase()];
             if (!val) continue;
 
             const valueKey = `${optType.name}:${val.toLowerCase()}`;
@@ -458,8 +468,8 @@ export async function POST(request: NextRequest) {
           const dup = await findVariantByOptions(productId, optionIds);
           if (dup) {
             const variantDesc = activeOptionTypes
-              .filter(t => row[t.name.toLowerCase()])
-              .map(t => `${t.display_name}=${row[t.name.toLowerCase()]}`)
+              .filter(t => row[t.display_name.toLowerCase()])
+              .map(t => `${t.display_name}=${row[t.display_name.toLowerCase()]}`)
               .join(', ');
             errors.push({ row: row._row, error: `Duplicate variant${variantDesc ? ` [${variantDesc}]` : ''} — already defined for this product` });
             continue;

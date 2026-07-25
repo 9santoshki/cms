@@ -18,7 +18,11 @@ import type {
 /** Get all active option types */
 export async function getVariantOptionTypes(): Promise<VariantOptionType[]> {
   const result = await query(
-    `SELECT * FROM variant_option_types WHERE is_active = TRUE ORDER BY display_order`
+    // Tiebreak on id: display_order is admin-editable and not guaranteed
+    // unique, so without a tiebreaker Postgres can return tied rows in a
+    // different order on different calls — which would shuffle the bulk-
+    // upload template's column order between downloads.
+    `SELECT * FROM variant_option_types WHERE is_active = TRUE ORDER BY display_order, id`
   );
   return result.rows;
 }
@@ -26,7 +30,7 @@ export async function getVariantOptionTypes(): Promise<VariantOptionType[]> {
 /** Get ALL option types including inactive (admin dictionary) */
 export async function getVariantOptionTypesAdmin(): Promise<VariantOptionType[]> {
   const result = await query(
-    `SELECT * FROM variant_option_types ORDER BY display_order`
+    `SELECT * FROM variant_option_types ORDER BY display_order, id`
   );
   return result.rows;
 }
