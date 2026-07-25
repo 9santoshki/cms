@@ -17,6 +17,11 @@ interface Settings {
     type: string;
     enabled: boolean;
   };
+  upi: {
+    enabled: boolean;
+    vpa: string;
+    payee_name: string;
+  };
   [key: string]: any;
 }
 
@@ -33,6 +38,11 @@ const DashboardSettingsPage = () => {
       rate: 0,
       type: 'percentage',
       enabled: false
+    },
+    upi: {
+      enabled: false,
+      vpa: '',
+      payee_name: ''
     }
   });
   const [loading, setLoading] = useState(true);
@@ -366,6 +376,112 @@ const DashboardSettingsPage = () => {
                   <option value="percentage">Percentage</option>
                   <option value="fixed">Fixed Amount</option>
                 </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* UPI Scan & Pay Configuration */}
+        <div style={{
+          background: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '12px',
+          boxShadow: '0 2px 8px rgba(193, 154, 107, 0.08)',
+          border: '1px solid #e8d5c4'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <i className="fas fa-qrcode" style={{ fontSize: '16px', color: '#c19a6b' }}></i>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+              UPI Scan &amp; Pay
+            </h3>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#333'
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.upi.enabled}
+                onChange={(e) => handleInputChange('upi', 'enabled', e.target.checked)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  cursor: 'pointer',
+                  accentColor: '#c19a6b'
+                }}
+              />
+              Offer &quot;Scan &amp; Pay (UPI)&quot; at checkout
+            </label>
+            <p style={{ fontSize: '12px', color: '#888', margin: '6px 0 0 28px' }}>
+              Orders paid this way are created as &quot;awaiting verification&quot; — confirm them manually
+              from the order detail page once you see the money in your account.
+            </p>
+          </div>
+
+          {settings.upi.enabled && (
+            <div className="settings-grid" style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '20px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#666',
+                  marginBottom: '8px'
+                }}>
+                  UPI ID (VPA)
+                </label>
+                <input
+                  type="text"
+                  value={settings.upi.vpa}
+                  onChange={(e) => handleInputChange('upi', 'vpa', e.target.value)}
+                  placeholder="yourbusiness@icici"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#666',
+                  marginBottom: '8px'
+                }}>
+                  Payee Name (shown to customers)
+                </label>
+                <input
+                  type="text"
+                  value={settings.upi.payee_name}
+                  onChange={(e) => handleInputChange('upi', 'payee_name', e.target.value)}
+                  placeholder="Your Business Name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    border: '1px solid #e8d5c4',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
               </div>
             </div>
           )}

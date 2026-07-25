@@ -12,7 +12,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { createProduct, generateUniqueSlug, deleteProduct } from '@/lib/db/products';
+import { createProduct, generateUniqueSlug, deleteProduct, getProductByName, setProductCategories } from '@/lib/db/products';
+import { getCategoryByName } from '@/lib/db/categories';
 import {
   getVariantOptionTypes,
   getVariantOptionsByType,
@@ -23,6 +24,11 @@ import {
 import { ok, badRequest, unauthorized, forbidden, serverError } from '@/lib/api-response';
 import { toErrorMessage } from '@/lib/error-utils';
 import type { VariantOption } from '@/types';
+
+/** True when `err` is a Postgres unique-violation (duplicate key) error. */
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23505';
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -204,54 +210,90 @@ export async function POST(request: NextRequest) {
     for (const groupRows of groups.values()) {
       const first = groupRows[0];
 
-      // Validate required product fields — report exactly which are missing
-      const missing = (
-        [['product name', 'Product Name'], ['description', 'Description'], ['regular price', 'Regular Price']] as [string, string][]
-      ).filter(([key]) => !first[key]).map(([, label]) => label);
-      if (missing.length > 0) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: `Missing required field(s): ${missing.join(', ')}` }));
-        continue;
-      }
-
-      const basePrice = parseFloat(first['regular price']);
-      if (isNaN(basePrice)) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — must be a number` }));
-        continue;
-      }
-
-      const baseSalePrice = first['sale price'] ? parseFloat(first['sale price']) : undefined;
-      if (baseSalePrice !== undefined && isNaN(baseSalePrice)) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — must be a number` }));
-        continue;
-      }
-
-      // Create the product (draft, no image required)
+      // If a product with this name already exists, add these rows as new variants
+      // to it instead of creating a duplicate product. Product-level fields in the
+      // CSV (description, price, categories, etc.) are ignored in that case — only
+      // edit those from the Products page.
+      const existingProduct = await getProductByName(first['product name']);
       let productId: number;
-      try {
-        const slug = await generateUniqueSlug(first['product name']);
-        const product = await createProduct({
-          name: first['product name'],
-          description: first['description'],
-          price: basePrice,
-          sale_price: baseSalePrice,
-          category: first['categories'] || undefined,
-          brand: first['brand'] || undefined,
-          delivery_time: first['delivery time'] || undefined,
-          highlights: first['product highlights'] || undefined,
-          description_html: first['rich description'] || undefined,
-          faqs_html: first['faqs'] || undefined,
-          warranty_policy: first['warranty, return & exchange policy'] || undefined,
-          slug,
-          status: 'draft',
-        });
-        productId = parseInt(product.id, 10);
-        createdProducts++;
-      } catch (err) {
-        groupRows.forEach(r => errors.push({
-          row: r._row,
-          error: `Failed to create product: ${toErrorMessage(err)}`,
-        }));
-        continue;
+      const isNewProduct = !existingProduct;
+
+      if (existingProduct) {
+        productId = parseInt(existingProduct.id, 10);
+      } else {
+        // Validate required product fields — report exactly which are missing
+        const missing = (
+          [['product name', 'Product Name'], ['description', 'Description'], ['regular price', 'Regular Price']] as [string, string][]
+        ).filter(([key]) => !first[key]).map(([, label]) => label);
+        if (missing.length > 0) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Missing required field(s): ${missing.join(', ')}` }));
+          continue;
+        }
+
+        const basePrice = parseFloat(first['regular price']);
+        if (isNaN(basePrice)) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — must be a number` }));
+          continue;
+        }
+
+        const baseSalePrice = first['sale price'] ? parseFloat(first['sale price']) : undefined;
+        if (baseSalePrice !== undefined && isNaN(baseSalePrice)) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — must be a number` }));
+          continue;
+        }
+
+        // Create the product (draft, no image required)
+        try {
+          const slug = await generateUniqueSlug(first['product name']);
+          const product = await createProduct({
+            name: first['product name'],
+            description: first['description'],
+            price: basePrice,
+            sale_price: baseSalePrice,
+            category: first['categories'] || undefined,
+            brand: first['brand'] || undefined,
+            delivery_time: first['delivery time'] || undefined,
+            highlights: first['product highlights'] || undefined,
+            description_html: first['rich description'] || undefined,
+            faqs_html: first['faqs'] || undefined,
+            warranty_policy: first['warranty, return & exchange policy'] || undefined,
+            slug,
+            status: 'draft',
+          });
+          productId = parseInt(product.id, 10);
+          createdProducts++;
+        } catch (err) {
+          groupRows.forEach(r => errors.push({
+            row: r._row,
+            error: `Failed to create product: ${toErrorMessage(err)}`,
+          }));
+          continue;
+        }
+
+        // Resolve the "Categories" column (comma-separated names) against the real
+        // categories table so the product actually shows up under category filters —
+        // matching how the normal product form assigns categories. Unmatched names
+        // don't block product creation; they're reported so the admin can fix them.
+        const categoryNames = (first['categories'] || '')
+          .split(',')
+          .map(c => c.trim())
+          .filter(Boolean);
+        if (categoryNames.length > 0) {
+          const categoryIds: number[] = [];
+          const unmatched: string[] = [];
+          for (const name of categoryNames) {
+            const cat = await getCategoryByName(name);
+            if (cat) categoryIds.push(cat.id);
+            else unmatched.push(name);
+          }
+          if (categoryIds.length > 0) await setProductCategories(String(productId), categoryIds);
+          if (unmatched.length > 0) {
+            errors.push({
+              row: first._row,
+              error: `Categor${unmatched.length > 1 ? 'ies' : 'y'} not found: ${unmatched.join(', ')} — product created without ${unmatched.length > 1 ? 'them' : 'it'}`,
+            });
+          }
+        }
       }
 
       // Create a variant for each row in the group
@@ -309,17 +351,18 @@ export async function POST(request: NextRequest) {
           createdVariants++;
           variantsCreatedForProduct.push(productId);
         } catch (err) {
-          errors.push({
-            row: row._row,
-            error: `Failed to create variant: ${toErrorMessage(err)}`,
-          });
+          const error = isUniqueViolation(err)
+            ? `SKU "${row['sku']}" already exists — SKUs must be unique across the entire catalog, not just this product`
+            : `Failed to create variant: ${toErrorMessage(err)}`;
+          errors.push({ row: row._row, error });
         }
       }
 
-      // If every variant row failed, remove the orphan product so the catalog
-      // stays clean. Draft products with no variants are unreachable by customers
-      // but would still clutter the admin dashboard.
-      if (variantsCreatedForProduct.length === 0) {
+      // If every variant row failed for a product we just created, remove the orphan
+      // so the catalog stays clean. Draft products with no variants are unreachable
+      // by customers but would still clutter the admin dashboard. Never delete a
+      // pre-existing product just because its new variant rows failed.
+      if (isNewProduct && variantsCreatedForProduct.length === 0) {
         await deleteProduct(String(productId));
         createdProducts--;
         groupRows.forEach(r => errors.push({

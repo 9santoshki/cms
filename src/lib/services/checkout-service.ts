@@ -24,6 +24,11 @@ export interface VerifiedOrder {
   status: string;
 }
 
+export interface OrderForPaymentConfirmation extends VerifiedOrder {
+  payment_method: string;
+  payment_status: string | null;
+}
+
 /**
  * Verify the Razorpay payment signature using timing-safe comparison.
  * Returns true if the signature is valid.
@@ -78,19 +83,42 @@ export async function findOrderByPaymentId(
 }
 
 /**
+ * Find an order by its own ID, including the fields needed to guard a manual
+ * UPI QR payment confirmation (payment_method / payment_status).
+ */
+export async function findOrderForPaymentConfirmation(
+  orderId: string,
+): Promise<OrderForPaymentConfirmation | null> {
+  const result = await query(
+    'SELECT id, user_id, status, payment_method, payment_status FROM orders WHERE id = $1',
+    [orderId],
+  );
+  if (result.rows.length === 0) return null;
+  return result.rows[0] as OrderForPaymentConfirmation;
+}
+
+/**
  * Mark the order as processing and deduct inventory for variant items.
  * Inventory errors are logged + alerted but NEVER thrown — the payment
- * is already captured at this point.
+ * is already captured (or manually confirmed) at this point.
+ *
+ * `source`/`comment` let callers other than the Razorpay flow (e.g. an admin
+ * manually confirming a UPI QR payment) record who/what completed the order,
+ * without duplicating the stock-deduction logic below.
  */
 export async function completeOrderWithStockDeduction(
   order: VerifiedOrder,
-  razorpayPaymentId: string,
+  paymentId: string,
+  options?: { source?: string; comment?: string },
 ): Promise<void> {
+  const source = options?.source ?? 'Payment Gateway';
+  const comment = options?.comment ?? 'Payment captured via Razorpay';
+
   await query(
     `UPDATE orders
      SET status = 'processing', payment_status = 'paid', payment_id = $2, updated_at = NOW()
      WHERE id = $1`,
-    [order.id, razorpayPaymentId],
+    [order.id, paymentId],
   );
 
   // History insert and order-items fetch are independent — run in parallel.
@@ -100,8 +128,8 @@ export async function completeOrderWithStockDeduction(
       order.status,   // actual status, not assumed 'pending'
       'processing',
       String(order.user_id),
-      'Payment Gateway',
-      'Payment captured via Razorpay',
+      source,
+      comment,
     ).catch((err) => console.error('[checkout-service] Status history insert failed:', err)),
     query(
       'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = $1',

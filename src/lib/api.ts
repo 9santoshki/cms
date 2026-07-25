@@ -170,16 +170,26 @@ class ApiClient {
     items: Array<{ product_id?: number; quantity: number; price: number; name?: string }>;
     shipping_address: unknown;
     billing_address?: unknown;
+    payment_method?: 'razorpay' | 'upi_qr';
   }) {
     return this.request<{
-      razorpay_order_id: string;
-      amount: number;
-      currency: string;
+      payment_method: 'razorpay' | 'upi_qr';
+      razorpay_order_id?: string;
+      amount?: number;
+      currency?: string;
       total_amount: number;
+      order_id: string;
     }>('/checkout/create', {
       method: 'POST',
       body: JSON.stringify(cartData),
     });
+  }
+
+  async generateUpiQr(amount: number) {
+    return this.request<{ qr_data_url: string; vpa: string; payee_name: string; amount: number }>(
+      '/checkout/upi-qr',
+      { method: 'POST', body: JSON.stringify({ amount }) }
+    );
   }
 
   async verifyPayment(paymentData: {

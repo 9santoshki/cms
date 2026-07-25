@@ -18,27 +18,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Razorpay client inside the function to handle missing env vars gracefully
-    const razorpayKey = process.env.RAZORPAY_KEY_ID;
-    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!razorpayKey || !razorpaySecret) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Payment gateway not configured. Please contact the site administrator.'
-        },
-        { status: 500 }
-      );
-    }
-
-    const razorpay = new Razorpay({
-      key_id: razorpayKey,
-      key_secret: razorpaySecret,
-    });
-
     const body = await request.json();
     const { items, shipping_address, billing_address } = body;
+    const paymentMethod: 'razorpay' | 'upi_qr' = body.payment_method === 'upi_qr' ? 'upi_qr' : 'razorpay';
+
+    // Razorpay is only needed for the gateway path — UPI QR orders are created
+    // directly and confirmed manually by an admin later.
+    let razorpay: Razorpay | null = null;
+    if (paymentMethod === 'razorpay') {
+      // Initialize Razorpay client inside the function to handle missing env vars gracefully
+      const razorpayKey = process.env.RAZORPAY_KEY_ID;
+      const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!razorpayKey || !razorpaySecret) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Payment gateway not configured. Please contact the site administrator.'
+          },
+          { status: 500 }
+        );
+      }
+
+      razorpay = new Razorpay({
+        key_id: razorpayKey,
+        key_secret: razorpaySecret,
+      });
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -118,25 +124,44 @@ export async function POST(request: NextRequest) {
     }
 
     const settings = await getSettings();
+
+    if (paymentMethod === 'upi_qr' && !settings.upi.enabled) {
+      return NextResponse.json(
+        { success: false, error: 'UPI payment is not available' },
+        { status: 400 }
+      );
+    }
+
     const shipping = calculateShippingCost(subtotal, settings.shipping.flat_rate, settings.shipping.min_order_amount);
     const tax = backComputeTaxAmount(subtotal + shipping, settings.tax.rate, settings.tax.enabled);
     const totalAmount = subtotal + shipping; // tax is already included in listing prices
 
-    // Create Razorpay order
-    const options = {
-      amount: Math.round(totalAmount * 100), // Amount in paise (lowest currency unit)
-      currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
-    };
-
-    const razorpayOrder = await razorpay.orders.create(options);
+    // Create the Razorpay order first (gateway path only) so we have its ID to store.
+    // UPI QR orders skip the gateway entirely — payment_id stays null until an admin
+    // confirms the transfer and payment_status starts at 'awaiting_verification'.
+    let razorpayOrder: { id: string; amount: string | number; currency: string } | null = null;
+    if (paymentMethod === 'razorpay' && razorpay) {
+      const options = {
+        amount: Math.round(totalAmount * 100), // Amount in paise (lowest currency unit)
+        currency: 'INR',
+        receipt: `receipt_${Date.now()}`,
+      };
+      razorpayOrder = await razorpay.orders.create(options);
+    }
 
     // Create order in our database
     const orderResult = await query(
-      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, status, payment_id, shipping_address, billing_address, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW())
+      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, status, payment_id, payment_status, payment_method, shipping_address, billing_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10, NOW())
        RETURNING id`,
-      [userId, totalAmount, subtotal, shipping, tax, razorpayOrder.id, shipping_address, billing_address || shipping_address]
+      [
+        userId, totalAmount, subtotal, shipping, tax,
+        razorpayOrder?.id || null,
+        paymentMethod === 'upi_qr' ? 'awaiting_verification' : null,
+        paymentMethod,
+        shipping_address,
+        billing_address || shipping_address,
+      ]
     );
 
     const orderId = orderResult.rows[0].id;
@@ -172,9 +197,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        razorpay_order_id: razorpayOrder.id,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
+        payment_method: paymentMethod,
+        ...(razorpayOrder
+          ? { razorpay_order_id: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency }
+          : {}),
         subtotal,
         shipping,
         tax,

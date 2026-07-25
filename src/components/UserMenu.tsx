@@ -24,6 +24,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
   const [cartCount, setCartCount] = useState(0);
   const [showMiniCart, setShowMiniCart] = useState(false);
   const miniCartTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+
+  // Reset the broken-image fallback whenever the avatar URL itself changes
+  // (e.g. a different user logs in), so a stale error doesn't stick around.
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar]);
 
   // Subscribe to cart store changes — drives both the badge count and the mini-cart popup
   useEffect(() => {
@@ -119,7 +126,7 @@ const renderUserAccountIcon = () => {
     return (
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }} ref={dropdownRef}>
         <NavIcon onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0 }}>
-          {user.avatar ? (
+          {user.avatar && !avatarError ? (
             <img
               src={user.avatar}
               style={{
@@ -132,10 +139,7 @@ const renderUserAccountIcon = () => {
               className="user-avatar-icon"
               alt="avatar"
               referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
+              onError={() => setAvatarError(true)}
             />
           ) : (
             <i className="fas fa-user"></i>
