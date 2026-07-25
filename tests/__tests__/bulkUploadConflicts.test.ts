@@ -17,6 +17,12 @@
  */
 import { NextRequest } from 'next/server';
 
+// The route now imports validateHsnGstInput from '@/lib/db/hsnGst', which in
+// turn imports the real './connection' (pg Pool) — mock just the connection
+// so that module loads without requiring live DB env vars. validateHsnGstInput
+// itself is pure (no query() calls) so it runs for real, unmocked.
+jest.mock('@/lib/db/connection', () => ({ query: jest.fn() }));
+
 jest.mock('@/lib/db/auth', () => ({
   getSessionFromCookieWithDB: jest.fn(),
 }));

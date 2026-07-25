@@ -23,12 +23,18 @@ import {
 } from '@/lib/db/variants';
 import { ok, badRequest, unauthorized, forbidden, serverError } from '@/lib/api-response';
 import { toErrorMessage } from '@/lib/error-utils';
+import { validateHsnGstInput } from '@/lib/db/hsnGst';
 import type { VariantOption } from '@/types';
 
 /** True when `err` is a Postgres unique-violation (duplicate key) error. */
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23505';
 }
+
+// Matches the DECIMAL(10,2) columns used for every price-like field (products
+// and product_variants) — max representable value is 99999999.99. Catches a
+// mistyped extra digit before it becomes a raw "numeric field overflow" error.
+const MAX_DECIMAL_10_2 = 99999999.99;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,37 +62,63 @@ const PRICING_COLS = ['SKU', 'Price', 'Variant Sale Price', 'HSN Code', 'Supplie
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
-function parseCSVLine(line: string): string[] {
-  const fields: string[] = [];
+// Tokenizes the whole file into records (rows of fields) in one pass, honoring
+// quoted fields per RFC 4180 — including quoted fields that contain literal
+// newlines (e.g. multi-paragraph "FAQs" or "Rich Description" cells exported
+// from Excel/Sheets). A naive line-by-line split breaks on those, since a
+// single logical row can span many physical lines.
+function tokenizeCSVRecords(text: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
+  let inQuotes = false;
   let i = 0;
-  while (i < line.length) {
-    if (line[i] === '"') {
-      let field = '';
-      i++;
-      while (i < line.length) {
-        if (line[i] === '"' && line[i + 1] === '"') { field += '"'; i += 2; }
-        else if (line[i] === '"') { i++; break; }
-        else { field += line[i++]; }
+  const len = text.length;
+
+  const endField = () => { record.push(field); field = ''; };
+  const endRecord = () => { endField(); records.push(record); record = []; };
+
+  while (i < len) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
       }
-      fields.push(field);
-      if (line[i] === ',') i++;
-    } else {
-      const end = line.indexOf(',', i);
-      if (end === -1) { fields.push(line.slice(i)); break; }
-      fields.push(line.slice(i, end));
-      i = end + 1;
+      field += ch; i++; continue;
     }
+    if (ch === '"') { inQuotes = true; i++; continue; }
+    if (ch === ',') { endField(); i++; continue; }
+    if (ch === '\r') { i++; continue; } // dropped; \n (bare or in \r\n) ends the record
+    if (ch === '\n') { endRecord(); i++; continue; }
+    field += ch; i++;
   }
-  return fields;
+  if (field.length > 0 || record.length > 0) endRecord(); // trailing row with no final newline
+
+  return records;
 }
 
 function parseCSV(text: string): CSVRow[] {
-  const lines = text.trim().split('\n').map(l => l.replace(/\r$/, ''));
-  if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+  const records = tokenizeCSVRecords(text.trim());
+  if (records.length < 2) return [];
+
+  const headers = records[0].map(h => h.trim().toLowerCase());
+
+  // A repeated header (e.g. two columns both named "Sale Price") would silently
+  // collide when rows are built into name-keyed objects below — one column's
+  // data clobbering the other with no error. Fail loudly instead.
+  const seen = new Set<string>();
+  for (const h of headers) {
+    if (!h) continue;
+    if (seen.has(h)) {
+      throw new Error(`Duplicate column header "${h}" — each column name must be unique (e.g. the per-variant sale price column must be named "Variant Sale Price", not "Sale Price")`);
+    }
+    seen.add(h);
+  }
+
   const rows: CSVRow[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseCSVLine(lines[i]);
+  for (let i = 1; i < records.length; i++) {
+    const vals = records[i];
     if (vals.every(v => !v.trim())) continue; // skip blank rows
     const row = { _row: i + 1 } as CSVRow;   // +1: header is row 1, first data row is row 2
     headers.forEach((h, idx) => { row[h] = (vals[idx] ?? '').trim(); });
@@ -182,7 +214,12 @@ export async function POST(request: NextRequest) {
     if (!file) return badRequest('CSV file is required');
 
     const text = await file.text();
-    const rows = parseCSV(text);
+    let rows: CSVRow[];
+    try {
+      rows = parseCSV(text);
+    } catch (err) {
+      return badRequest(toErrorMessage(err));
+    }
     if (rows.length === 0) return badRequest('CSV is empty or has no data rows');
 
     // Load active variant option types once for this request.
@@ -235,10 +272,26 @@ export async function POST(request: NextRequest) {
           groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — must be a number` }));
           continue;
         }
+        if (basePrice < 0) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — cannot be negative` }));
+          continue;
+        }
+        if (basePrice > MAX_DECIMAL_10_2) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — exceeds the maximum allowed value (${MAX_DECIMAL_10_2})` }));
+          continue;
+        }
 
         const baseSalePrice = first['sale price'] ? parseFloat(first['sale price']) : undefined;
         if (baseSalePrice !== undefined && isNaN(baseSalePrice)) {
           groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — must be a number` }));
+          continue;
+        }
+        if (baseSalePrice !== undefined && baseSalePrice < 0) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — cannot be negative` }));
+          continue;
+        }
+        if (baseSalePrice !== undefined && baseSalePrice >= basePrice) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `"Sale Price" (${baseSalePrice}) must be less than "Regular Price" (${basePrice})` }));
           continue;
         }
 
@@ -299,15 +352,89 @@ export async function POST(request: NextRequest) {
       // Create a variant for each row in the group
       const variantsCreatedForProduct: number[] = []; // track for orphan cleanup
       for (const row of groupRows) {
+        // Checks run left-to-right in the same order the columns appear in the
+        // sheet (SKU, Price, Variant Sale Price, HSN Code, Supplier Price,
+        // Stock), so when a row has multiple bad cells the first error
+        // reported is always the leftmost one — matching how someone scanning
+        // their spreadsheet would find it.
+
+        if (row['sku'] && row['sku'].length > 100) {
+          errors.push({ row: row._row, error: `"SKU" "${row['sku']}" is too long — must be 100 characters or fewer` });
+          continue;
+        }
+
         const varPrice = parseFloat(row['price']);
         if (isNaN(varPrice)) {
           errors.push({ row: row._row, error: `Invalid "Price" "${row['price']}" — must be a number` });
           continue;
         }
-
-        if (row['variant sale price'] && isNaN(parseFloat(row['variant sale price']))) {
-          errors.push({ row: row._row, error: `Invalid "Variant Sale Price" "${row['variant sale price']}" — must be a number` });
+        if (varPrice < 0) {
+          errors.push({ row: row._row, error: `Invalid "Price" "${row['price']}" — cannot be negative` });
           continue;
+        }
+        if (varPrice > MAX_DECIMAL_10_2) {
+          errors.push({ row: row._row, error: `Invalid "Price" "${row['price']}" — exceeds the maximum allowed value (${MAX_DECIMAL_10_2})` });
+          continue;
+        }
+
+        let varSalePrice: number | undefined;
+        if (row['variant sale price']) {
+          varSalePrice = parseFloat(row['variant sale price']);
+          if (isNaN(varSalePrice)) {
+            errors.push({ row: row._row, error: `Invalid "Variant Sale Price" "${row['variant sale price']}" — must be a number` });
+            continue;
+          }
+          if (varSalePrice < 0) {
+            errors.push({ row: row._row, error: `Invalid "Variant Sale Price" "${row['variant sale price']}" — cannot be negative` });
+            continue;
+          }
+          if (varSalePrice >= varPrice) {
+            errors.push({ row: row._row, error: `"Variant Sale Price" (${varSalePrice}) must be less than "Price" (${varPrice})` });
+            continue;
+          }
+        }
+
+        // HSN code format matches the app's own canonical rule (same regex
+        // used for the HSN-GST rate admin page) rather than a separately
+        // maintained copy that could drift out of sync with it.
+        let hsnCode: string | undefined;
+        if (isAdmin && row['hsn code']) {
+          const hsnError = validateHsnGstInput({ hsn_code: row['hsn code'] });
+          if (hsnError) {
+            errors.push({ row: row._row, error: `Invalid "HSN Code" "${row['hsn code']}" — ${hsnError}` });
+            continue;
+          }
+          hsnCode = row['hsn code'];
+        }
+
+        let varSupplierPrice: number | undefined;
+        if (isAdmin && row['supplier price']) {
+          varSupplierPrice = parseFloat(row['supplier price']);
+          if (isNaN(varSupplierPrice)) {
+            errors.push({ row: row._row, error: `Invalid "Supplier Price" "${row['supplier price']}" — must be a number` });
+            continue;
+          }
+          if (varSupplierPrice < 0) {
+            errors.push({ row: row._row, error: `Invalid "Supplier Price" "${row['supplier price']}" — cannot be negative` });
+            continue;
+          }
+          if (varSupplierPrice > MAX_DECIMAL_10_2) {
+            errors.push({ row: row._row, error: `Invalid "Supplier Price" "${row['supplier price']}" — exceeds the maximum allowed value (${MAX_DECIMAL_10_2})` });
+            continue;
+          }
+        }
+
+        let varStock = 0;
+        if (row['stock']) {
+          varStock = parseInt(row['stock'], 10);
+          if (isNaN(varStock)) {
+            errors.push({ row: row._row, error: `Invalid "Stock" "${row['stock']}" — must be a whole number` });
+            continue;
+          }
+          if (varStock < 0) {
+            errors.push({ row: row._row, error: `Invalid "Stock" "${row['stock']}" — cannot be negative` });
+            continue;
+          }
         }
 
         try {
@@ -343,10 +470,10 @@ export async function POST(request: NextRequest) {
             varPrice,
             optionIds,
             row['sku'] || undefined,
-            row['variant sale price'] ? parseFloat(row['variant sale price']) : undefined,
-            row['stock'] ? parseInt(row['stock'], 10) : 0,
-            isAdmin && row['hsn code'] ? row['hsn code'] : undefined,
-            isAdmin && row['supplier price'] ? parseFloat(row['supplier price']) : undefined,
+            varSalePrice,
+            varStock,
+            hsnCode,
+            varSupplierPrice,
           );
           createdVariants++;
           variantsCreatedForProduct.push(productId);
