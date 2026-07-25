@@ -234,22 +234,36 @@ export async function POST(request: NextRequest) {
     // inactive or unknown columns are silently ignored.
     const activeOptionTypes = await getVariantOptionTypes();
 
-    // Group rows by product name, preserving CSV order
+    const errors: { row: number; error: string }[] = [];
+
+    // Group rows by product name, preserving CSV order. A row with no
+    // Product Name has nothing to group it with — it used to be silently
+    // dropped here (no error, not created), which looked like the row had
+    // vanished. Report it instead of ignoring it.
     const groups = new Map<string, CSVRow[]>();
     for (const row of rows) {
       const key = (row['product name'] ?? '').toLowerCase();
-      if (!key) continue;
+      if (!key) {
+        errors.push({ row: row._row, error: 'Missing required field(s): Product Name' });
+        continue;
+      }
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(row);
     }
 
-    const errors: { row: number; error: string }[] = [];
     let createdProducts = 0;
     let createdVariants = 0;
     const isAdmin = session.role === 'admin';
 
     // Cache option values to avoid repeated DB hits for the same type/value across rows
     const optionValueCache = new Map<string, VariantOption>();
+
+    // SKUs must be unique across the entire catalog. A DB round-trip catches
+    // that against pre-existing rows, but two rows in the *same* file with
+    // the same SKU wouldn't be caught until the second insert — tracking
+    // what's been seen so far in this request reports it immediately,
+    // consistently, without depending on insert ordering.
+    const seenSkus = new Set<string>();
 
     for (const groupRows of groups.values()) {
       const first = groupRows[0];
@@ -361,10 +375,19 @@ export async function POST(request: NextRequest) {
         // reported is always the leftmost one — matching how someone scanning
         // their spreadsheet would find it.
 
-        if (row['sku'] && row['sku'].length > 100) {
+        if (!row['sku']) {
+          errors.push({ row: row._row, error: 'Missing required field: SKU' });
+          continue;
+        }
+        if (row['sku'].length > 100) {
           errors.push({ row: row._row, error: `"SKU" "${row['sku']}" is too long — must be 100 characters or fewer` });
           continue;
         }
+        if (seenSkus.has(row['sku'])) {
+          errors.push({ row: row._row, error: `SKU "${row['sku']}" is duplicated elsewhere in this file — SKUs must be unique across the entire catalog` });
+          continue;
+        }
+        seenSkus.add(row['sku']);
 
         const varPrice = parseFloat(row['price']);
         if (isNaN(varPrice)) {
@@ -471,7 +494,7 @@ export async function POST(request: NextRequest) {
             productId,
             varPrice,
             optionIds,
-            row['sku'] || undefined,
+            row['sku'], // validated non-blank above
             varSalePrice,
             varStock,
             hsnCode,

@@ -13,7 +13,11 @@
  *  3. Numeric fields (prices, stock, supplier price) must reject negative
  *     values. Sale price is intentionally NOT required to be less than its
  *     corresponding price — equal (or greater) is a valid business case.
- *  4. SKU length and HSN Code format (4/6/8 digits) are validated.
+ *  4. SKU is required (blank rejected), length- and format-checked, and must
+ *     not repeat elsewhere in the same file. HSN Code format (4/6/8 digits)
+ *     is validated. A row with a blank Product Name is reported as an error
+ *     instead of being silently dropped (found live: it looked like a row
+ *     had simply vanished with no created row and no error).
  *
  * All DB modules are mocked — this is a unit test of the route's parsing and
  * validation logic, not an integration test against a real database.
@@ -123,6 +127,28 @@ describe('bulk upload — multi-line quoted fields', () => {
   });
 });
 
+describe('bulk upload — row with a blank Product Name', () => {
+  it('reports a clear error instead of silently dropping the row (found live: row 2 created, row 3 vanished with no error)', async () => {
+    const csv = [
+      HEADER_LINE,
+      row({ 'Product Name': 'Real Product', 'Description': 'Desc', 'Regular Price': '100', 'SKU': 'SKU-1', 'Price': '100', 'Stock': '5' }),
+      // Second variant row for the same product, but Product Name left blank
+      // (e.g. assuming — incorrectly — that it "continues" the row above).
+      row({ 'Product Name': '', 'SKU': 'SKU-2', 'Price': '120', 'Stock': '5' }),
+    ].join('\n');
+
+    const res = await POST(csvRequestRaw(csv));
+    const body = await res.json();
+
+    expect(body.data.created_products).toBe(1);
+    expect(body.data.created_variants).toBe(1);
+    // The blank-name row must show up as an error, not disappear silently.
+    expect(body.data.errors).toEqual([
+      expect.objectContaining({ row: 3, error: expect.stringContaining('Product Name') }),
+    ]);
+  });
+});
+
 describe('bulk upload — duplicate column headers', () => {
   it('rejects a CSV where two columns share the same header instead of silently colliding', async () => {
     // Two columns both literally named "Sale Price" (product-level + per-variant),
@@ -228,6 +254,34 @@ describe('bulk upload — price/stock sanity checks', () => {
     const body = await res.json();
     expect(body.data.errors[0].error).toContain('exceeds the maximum allowed value');
     expect(mockCreateProductVariant).not.toHaveBeenCalled();
+  });
+});
+
+describe('bulk upload — SKU required and unique', () => {
+  it('rejects a row with a blank SKU', async () => {
+    const res = await POST(csvRequest([
+      row({ 'Product Name': 'A', 'Description': 'B', 'Regular Price': '100', 'Price': '100', 'Stock': '1' }),
+    ]));
+    const body = await res.json();
+    expect(body.data.errors[0].error).toBe('Missing required field: SKU');
+    expect(mockCreateProductVariant).not.toHaveBeenCalled();
+  });
+
+  it('rejects the second of two rows using the same SKU', async () => {
+    const res = await POST(csvRequest([
+      row({ 'Product Name': 'A', 'Description': 'B', 'Regular Price': '100', 'SKU': 'DUP', 'Price': '100', 'Stock': '1' }),
+      row({ 'Product Name': 'A', 'SKU': 'DUP', 'Price': '110', 'Stock': '1' }),
+    ]));
+    const body = await res.json();
+
+    // First row's variant is created fine; second is rejected before any
+    // DB insert is attempted, purely from what's already been seen in
+    // this same file.
+    expect(body.data.created_variants).toBe(1);
+    expect(body.data.errors).toEqual([
+      expect.objectContaining({ error: expect.stringContaining('duplicated elsewhere in this file') }),
+    ]);
+    expect(mockCreateProductVariant).toHaveBeenCalledTimes(1);
   });
 });
 
