@@ -51,9 +51,25 @@ const BulkUploadPage = () => {
     form.append('file', file);
 
     try {
-      const res = await fetch('/api/admin/bulk-upload', { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.success) {
+      // Uses XMLHttpRequest instead of fetch(): Safari/WebKit has a known bug
+      // where fetch() can send an empty body for multipart FormData uploads
+      // over HTTP/2 (Content-Length: 0 despite a real boundary), causing the
+      // server's request.formData() to throw. XHR does not hit this bug.
+      const data = await new Promise<{ success: boolean; data?: UploadResult; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/admin/bulk-upload');
+        xhr.onload = () => {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error('Invalid response'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(form);
+      });
+
+      if (data.success && data.data) {
         setResult(data.data);
       } else {
         setUploadError(data.error || 'Upload failed');

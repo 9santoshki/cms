@@ -1535,7 +1535,6 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
                 <>
                   {product.dimensions && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.dimensions} dimensions</HighlightText></HighlightItem>}
                   {product.material && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.material} construction</HighlightText></HighlightItem>}
-                  {product.warranty && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.warranty} warranty</HighlightText></HighlightItem>}
                   {product.color && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>{product.color} finish</HighlightText></HighlightItem>}
                   {product.weight && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>Weight: {product.weight}</HighlightText></HighlightItem>}
                   {product.delivery_time && <HighlightItem><HighlightIcon>✓</HighlightIcon><HighlightText>Delivery: {product.delivery_time}</HighlightText></HighlightItem>}
