@@ -48,6 +48,10 @@ const CheckoutPage = () => {
     zipCode: '',
     country: 'India'
   });
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi_qr'>('razorpay');
+  const [upiQr, setUpiQr] = useState<{ qr_data_url: string; vpa: string; payee_name: string } | null>(null);
+  const [upiQrLoading, setUpiQrLoading] = useState(false);
+  const [upiQrError, setUpiQrError] = useState<string | null>(null);
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
   const [billingAddress, setBillingAddress] = useState({
     name: '',
@@ -69,6 +73,28 @@ const CheckoutPage = () => {
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
   const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
   const total = subtotal + shipping;
+
+  // Fetch the UPI QR code whenever "Scan & Pay" is selected — the QR encodes
+  // the live cart total so the customer's UPI app pre-fills the amount.
+  useEffect(() => {
+    if (paymentMethod !== 'upi_qr' || total <= 0) return;
+    let cancelled = false;
+    setUpiQrLoading(true);
+    setUpiQrError(null);
+    apiClient.generateUpiQr(total).then(res => {
+      if (cancelled) return;
+      if (res.success && res.data) {
+        setUpiQr(res.data);
+      } else {
+        setUpiQrError(res.error || 'Could not load the payment QR code');
+      }
+    }).catch(() => {
+      if (!cancelled) setUpiQrError('Could not load the payment QR code');
+    }).finally(() => {
+      if (!cancelled) setUpiQrLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [paymentMethod, total]);
 
   // Check if user is logged in
   useEffect(() => {
@@ -162,17 +188,41 @@ const CheckoutPage = () => {
         billing_address: billingSameAsShipping ? null : { name: effectiveBilling.name, address: effectiveBilling.address, city: effectiveBilling.city, state: effectiveBilling.state, zipCode: effectiveBilling.zipCode, country: effectiveBilling.country },
       }).catch(() => {});
 
+      const cartItemsPayload = cartItems.map(item => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id,       // required for stock check
+        variant_name: item.variant_name,   // stored on order_items
+        quantity: item.quantity,
+        price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
+        name: item.name,
+      }));
+
+      // UPI QR path: the order is placed immediately as "awaiting verification" —
+      // no gateway involved, so just create the order and send the customer to
+      // the success page (which shows the pending-verification state).
+      if (paymentMethod === 'upi_qr') {
+        const upiResponse = await apiClient.createCheckoutSession({
+          items: cartItemsPayload,
+          shipping_address: effectiveShipping,
+          billing_address: effectiveBilling,
+          payment_method: 'upi_qr',
+        });
+
+        if (!upiResponse.success || !upiResponse.data) {
+          throw new Error(upiResponse.error || 'Failed to place order');
+        }
+
+        import('@/store/cartStore').then((module) => {
+          module.useCartStore.getState().clearCart();
+        });
+        router.push(`/checkout/success?orderId=${upiResponse.data.order_id}`);
+        return;
+      }
+
       // Create order on backend and load Razorpay script in parallel
       const [response] = await Promise.all([
         apiClient.createCheckoutSession({
-          items: cartItems.map(item => ({
-            product_id: item.product_id,
-            variant_id: item.variant_id,       // required for stock check
-            variant_name: item.variant_name,   // stored on order_items
-            quantity: item.quantity,
-            price: typeof item.price === 'number' ? item.price : parseFloat(item.price || '0'),
-            name: item.name,
-          })),
+          items: cartItemsPayload,
           shipping_address: effectiveShipping,
           billing_address: effectiveBilling,
         }),
@@ -563,9 +613,48 @@ const CheckoutPage = () => {
               <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
             </OrderSummaryDetails>
 
+            {siteSettings.upi.enabled && (
+              <div style={{ margin: '16px 0' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#333', marginBottom: '8px' }}>
+                  Payment Method
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `1.5px solid ${paymentMethod === 'razorpay' ? '#c19a6b' : '#e8d5c4'}`, borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: paymentMethod === 'razorpay' ? 'rgba(193,154,107,0.06)' : 'white' }}>
+                  <input type="radio" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
+                  <span style={{ fontSize: '13px', color: '#333' }}>Card / Netbanking / UPI (via Razorpay)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `1.5px solid ${paymentMethod === 'upi_qr' ? '#c19a6b' : '#e8d5c4'}`, borderRadius: '8px', cursor: 'pointer', background: paymentMethod === 'upi_qr' ? 'rgba(193,154,107,0.06)' : 'white' }}>
+                  <input type="radio" checked={paymentMethod === 'upi_qr'} onChange={() => setPaymentMethod('upi_qr')} />
+                  <span style={{ fontSize: '13px', color: '#333' }}>Scan &amp; Pay (UPI QR code)</span>
+                </label>
+              </div>
+            )}
+
+            {paymentMethod === 'upi_qr' && (
+              <div style={{ textAlign: 'center', padding: '16px', border: '1px solid #e8d5c4', borderRadius: '8px', marginBottom: '16px', background: '#faf8f6' }}>
+                {upiQrLoading && <p style={{ fontSize: '13px', color: '#666' }}>Loading payment QR code…</p>}
+                {upiQrError && <p style={{ fontSize: '13px', color: '#dc2626' }}>{upiQrError}</p>}
+                {upiQr && !upiQrLoading && (
+                  <>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#333', marginBottom: '10px' }}>
+                      Scan with any UPI app to pay ₹{total.toLocaleString()}
+                    </p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={upiQr.qr_data_url} alt="UPI payment QR code" style={{ width: 200, height: 200, margin: '0 auto', display: 'block' }} />
+                    <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                      UPI ID: <strong>{upiQr.vpa}</strong>
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                      After paying, click the button below. We&apos;ll confirm your payment and start
+                      processing your order — you&apos;ll get an email once it&apos;s verified.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
             <PayButton
               type="submit"
-              disabled={loading || cartItems.length === 0}
+              disabled={loading || cartItems.length === 0 || (paymentMethod === 'upi_qr' && (upiQrLoading || !upiQr))}
               onClick={handleSubmit}
             >
               {loading ? (
@@ -573,6 +662,8 @@ const CheckoutPage = () => {
                   <span className="spinner"></span>
                   Processing...
                 </>
+              ) : paymentMethod === 'upi_qr' ? (
+                `I've Paid — Place Order (₹${total.toLocaleString()})`
               ) : (
                 `Pay ₹${total.toLocaleString()}`
               )}
@@ -580,7 +671,9 @@ const CheckoutPage = () => {
 
             <SecurityNote>
               <i className="fas fa-lock"></i>
-              Secure payment powered by Razorpay. Your information is encrypted and safe.
+              {paymentMethod === 'upi_qr'
+                ? 'Your order is placed once you confirm — payment is verified manually.'
+                : 'Secure payment powered by Razorpay. Your information is encrypted and safe.'}
             </SecurityNote>
           </OrderSummaryCard>
         </OrderSummarySection>

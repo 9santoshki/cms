@@ -187,6 +187,13 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return result.rows[0] || null;
 }
 
+/** Case-insensitive exact name lookup — used by bulk upload to detect an
+ *  existing product so re-uploads add variants instead of creating a duplicate. */
+export async function getProductByName(name: string): Promise<Product | null> {
+  const result = await query('SELECT * FROM products WHERE LOWER(name) = LOWER($1) LIMIT 1', [name]);
+  return result.rows[0] || null;
+}
+
 export async function createProduct(product: {
   name: string;
   description: string;

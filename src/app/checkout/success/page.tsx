@@ -131,6 +131,8 @@ const CheckoutSuccessContent = () => {
     }
   }
 
+  const awaitingVerification = order.payment_status === 'awaiting_verification';
+
   return (
     <SuccessContainer>
       <Header activePage="checkout" />
@@ -139,10 +141,14 @@ const CheckoutSuccessContent = () => {
         <SuccessCard>
           <SuccessHeader>
             <SuccessIconWrapper>
-              <i className="fas fa-check-circle" />
+              <i className={awaitingVerification ? 'fas fa-clock' : 'fas fa-check-circle'} />
             </SuccessIconWrapper>
-            <SuccessTitle>Thank You for Your Order!</SuccessTitle>
-            <SuccessSubtitle>Your order has been successfully placed and confirmed</SuccessSubtitle>
+            <SuccessTitle>{awaitingVerification ? 'Order Placed!' : 'Thank You for Your Order!'}</SuccessTitle>
+            <SuccessSubtitle>
+              {awaitingVerification
+                ? "We're verifying your UPI payment — you'll get a confirmation email as soon as it's checked."
+                : 'Your order has been successfully placed and confirmed'}
+            </SuccessSubtitle>
           </SuccessHeader>
 
           <OrderDetailsSection>

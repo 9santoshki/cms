@@ -11,11 +11,17 @@ export interface SiteSettings {
     rate: number;
     type: string;
   };
+  upi: {
+    enabled: boolean;
+    vpa: string;
+    payee_name: string;
+  };
 }
 
 const DEFAULTS: SiteSettings = {
   shipping: { enabled: true, flat_rate: 1500, min_order_amount: 50000 },
   tax: { enabled: false, rate: 0, type: 'percentage' },
+  upi: { enabled: false, vpa: '', payee_name: '' },
 };
 
 export async function getSettings(): Promise<SiteSettings> {
@@ -33,6 +39,11 @@ export async function getSettings(): Promise<SiteSettings> {
       rate: parseFloat(row.tax_rate),
       type: row.tax_type,
     },
+    upi: {
+      enabled: row.upi_enabled,
+      vpa: row.upi_vpa || '',
+      payee_name: row.upi_payee_name || '',
+    },
   };
 }
 
@@ -45,6 +56,9 @@ export async function updateSettings(settings: SiteSettings): Promise<void> {
       tax_enabled = $4,
       tax_rate = $5,
       tax_type = $6,
+      upi_enabled = $7,
+      upi_vpa = $8,
+      upi_payee_name = $9,
       updated_at = NOW()
     WHERE id = 1`,
     [
@@ -54,6 +68,9 @@ export async function updateSettings(settings: SiteSettings): Promise<void> {
       settings.tax.enabled,
       settings.tax.rate,
       settings.tax.type,
+      settings.upi?.enabled ?? false,
+      settings.upi?.vpa || null,
+      settings.upi?.payee_name || null,
     ]
   );
 }

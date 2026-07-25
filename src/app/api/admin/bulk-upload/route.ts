@@ -1,34 +1,58 @@
 /**
  * Admin API: Bulk product upload via CSV
- * GET  — download CSV template
+ * GET  — download CSV template (columns match templatev1.xlsx; variant columns dynamic from DB)
  * POST — parse CSV and create products with variants (status: draft)
+ *
+ * Column layout (mirrors templatev1.xlsx row 4):
+ *   Product Name | Description | Regular Price | Sale Price | Categories | Brand |
+ *   Delivery Time | Product Highlights | Rich Description | FAQs |
+ *   Warranty, Return & Exchange Policy |
+ *   [active variant types from DB…] |
+ *   SKU | Price | Variant Sale Price | HSN Code | Supplier Price | Stock
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { createProduct, generateUniqueSlug, deleteProduct } from '@/lib/db/products';
+import { createProduct, generateUniqueSlug, deleteProduct, getProductByName, setProductCategories } from '@/lib/db/products';
+import { getCategoryByName } from '@/lib/db/categories';
 import {
-  findOrCreateVariantOptionType,
+  getVariantOptionTypes,
+  getVariantOptionsByType,
   findOrCreateVariantOption,
   createProductVariant,
   findVariantByOptions,
 } from '@/lib/db/variants';
 import { ok, badRequest, unauthorized, forbidden, serverError } from '@/lib/api-response';
 import { toErrorMessage } from '@/lib/error-utils';
-import type { VariantOptionType, VariantOption } from '@/types';
+import type { VariantOption } from '@/types';
+
+/** True when `err` is a Postgres unique-violation (duplicate key) error. */
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23505';
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type CSVRow = Record<string, string> & { _row: number };
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Column layout ────────────────────────────────────────────────────────────
 
-const VARIANT_COLS = ['color', 'size', 'thickness', 'material'] as const;
+// Fixed product-level columns (before variant columns)
+const PRODUCT_COLS = [
+  'Product Name',
+  'Description',
+  'Regular Price',
+  'Sale Price',
+  'Categories',
+  'Brand',
+  'Delivery Time',
+  'Product Highlights',
+  'Rich Description',
+  'FAQs',
+  'Warranty, Return & Exchange Policy',
+];
 
-const TEMPLATE_CSV = [
-  'name,description,brand,category,subcategory,price,sale_price,sku,stock_quantity,delivery_time,highlights,hsn_code,supplier_price,color,size,thickness,material',
-  '"Luxury Wallpaper","Modern geometric design",BrandX,Wallpapers,Geometric,2500,2200,WP-GEO-BLK-SM,50,3-5 days,,,,Black,Small,,',
-  '"Luxury Wallpaper","Modern geometric design",BrandX,Wallpapers,Geometric,2600,2300,WP-GEO-GRY-SM,40,3-5 days,,,,Grey,Small,,',
-].join('\n');
+// Fixed per-variant columns (after variant columns)
+const PRICING_COLS = ['SKU', 'Price', 'Variant Sale Price', 'HSN Code', 'Supplier Price', 'Stock'];
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
@@ -74,12 +98,73 @@ function parseCSV(text: string): CSVRow[] {
 // ─── Template download ────────────────────────────────────────────────────────
 
 export async function GET() {
-  return new NextResponse(TEMPLATE_CSV, {
-    headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
-    },
-  });
+  try {
+    const optionTypes = await getVariantOptionTypes(); // active types only
+    const variantColNames = optionTypes.map(t => t.name);
+    const allCols = [...PRODUCT_COLS, ...variantColNames, ...PRICING_COLS];
+    const header = allCols.join(',');
+
+    // Fetch sample values for each active type to populate example rows
+    const optionValuesList = await Promise.all(
+      optionTypes.map(t => getVariantOptionsByType(t.id))
+    );
+
+    // Build a CSV-safe example row. Wrap values containing commas in quotes.
+    const q = (v: string) => v.includes(',') ? `"${v}"` : v;
+    const makeRow = (sku: string, price: string, variantVals: string[]) =>
+      [
+        '"Sample Product"',       // Product Name
+        '"Sample description"',   // Description
+        price,                    // Regular Price
+        '',                       // Sale Price
+        'Category',               // Categories
+        'BrandName',              // Brand
+        '3-5 days',               // Delivery Time
+        '',                       // Product Highlights
+        '',                       // Rich Description
+        '',                       // FAQs
+        '',                       // Warranty, Return & Exchange Policy
+        ...variantVals.map(q),    // variant columns
+        sku,                      // SKU
+        price,                    // Price (variant-level)
+        '',                       // Variant Sale Price
+        '',                       // HSN Code
+        '',                       // Supplier Price
+        '10',                     // Stock
+      ].join(',');
+
+    const rows = [header];
+
+    const varVals1 = optionTypes.map((_, i) => optionValuesList[i][0]?.display_value ?? '');
+    rows.push(makeRow('SKU-001', '1000', varVals1));
+
+    // Row 2: vary the first option type if it has a second value (shows per-variant grouping)
+    if (optionTypes.length > 0 && optionValuesList[0].length > 1) {
+      const varVals2 = optionTypes.map((_, i) =>
+        (i === 0 ? optionValuesList[0][1] : optionValuesList[i][0])?.display_value ?? ''
+      );
+      rows.push(makeRow('SKU-002', '1100', varVals2));
+    }
+
+    return new NextResponse(rows.join('\n'), {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
+      },
+    });
+  } catch {
+    // Fallback: minimal template without variant columns if DB is unavailable
+    const fallbackCols = [...PRODUCT_COLS, ...PRICING_COLS].join(',');
+    return new NextResponse(
+      fallbackCols + '\n"Sample Product","Sample description",1000,,Category,BrandName,3-5 days,,,,,SKU-001,1000,,,, 10',
+      {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="product-upload-template.csv"',
+        },
+      }
+    );
+  }
 }
 
 // ─── Upload ───────────────────────────────────────────────────────────────────
@@ -100,10 +185,15 @@ export async function POST(request: NextRequest) {
     const rows = parseCSV(text);
     if (rows.length === 0) return badRequest('CSV is empty or has no data rows');
 
+    // Load active variant option types once for this request.
+    // Only columns matching these types are treated as variant dimensions;
+    // inactive or unknown columns are silently ignored.
+    const activeOptionTypes = await getVariantOptionTypes();
+
     // Group rows by product name, preserving CSV order
     const groups = new Map<string, CSVRow[]>();
     for (const row of rows) {
-      const key = (row['name'] ?? '').toLowerCase();
+      const key = (row['product name'] ?? '').toLowerCase();
       if (!key) continue;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(row);
@@ -114,90 +204,137 @@ export async function POST(request: NextRequest) {
     let createdVariants = 0;
     const isAdmin = session.role === 'admin';
 
-    // Request-scoped caches: avoid O(rows × cols) repeated DB lookups for the same
-    // option type / option value across all rows in the upload.
-    const optionTypeCache = new Map<string, VariantOptionType>();
+    // Cache option values to avoid repeated DB hits for the same type/value across rows
     const optionValueCache = new Map<string, VariantOption>();
 
     for (const groupRows of groups.values()) {
       const first = groupRows[0];
 
-      // Validate required product fields from the first row of the group
-      if (!first['name'] || !first['description'] || !first['price']) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: 'Missing required field(s): name, description, price' }));
-        continue;
-      }
-
-      const basePrice = parseFloat(first['price']);
-      if (isNaN(basePrice)) {
-        groupRows.forEach(r => errors.push({ row: r._row, error: 'Invalid price — skipping product group' }));
-        continue;
-      }
-
-      // Create the product (draft, no image required)
+      // If a product with this name already exists, add these rows as new variants
+      // to it instead of creating a duplicate product. Product-level fields in the
+      // CSV (description, price, categories, etc.) are ignored in that case — only
+      // edit those from the Products page.
+      const existingProduct = await getProductByName(first['product name']);
       let productId: number;
-      try {
-        const slug = await generateUniqueSlug(first['name']);
-        const product = await createProduct({
-          name: first['name'],
-          description: first['description'],
-          price: basePrice,
-          sale_price: first['sale_price'] ? parseFloat(first['sale_price']) : undefined,
-          category: first['category'] || undefined,
-          subcategory: first['subcategory'] || undefined,
-          brand: first['brand'] || undefined,
-          delivery_time: first['delivery_time'] || undefined,
-          highlights: first['highlights'] || undefined,
-          slug,
-          status: 'draft',
-        });
-        productId = parseInt(product.id, 10);
-        createdProducts++;
-      } catch (err) {
-        groupRows.forEach(r => errors.push({
-          row: r._row,
-          error: `Failed to create product: ${toErrorMessage(err)}`,
-        }));
-        continue;
+      const isNewProduct = !existingProduct;
+
+      if (existingProduct) {
+        productId = parseInt(existingProduct.id, 10);
+      } else {
+        // Validate required product fields — report exactly which are missing
+        const missing = (
+          [['product name', 'Product Name'], ['description', 'Description'], ['regular price', 'Regular Price']] as [string, string][]
+        ).filter(([key]) => !first[key]).map(([, label]) => label);
+        if (missing.length > 0) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Missing required field(s): ${missing.join(', ')}` }));
+          continue;
+        }
+
+        const basePrice = parseFloat(first['regular price']);
+        if (isNaN(basePrice)) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Regular Price" "${first['regular price']}" — must be a number` }));
+          continue;
+        }
+
+        const baseSalePrice = first['sale price'] ? parseFloat(first['sale price']) : undefined;
+        if (baseSalePrice !== undefined && isNaN(baseSalePrice)) {
+          groupRows.forEach(r => errors.push({ row: r._row, error: `Invalid "Sale Price" "${first['sale price']}" — must be a number` }));
+          continue;
+        }
+
+        // Create the product (draft, no image required)
+        try {
+          const slug = await generateUniqueSlug(first['product name']);
+          const product = await createProduct({
+            name: first['product name'],
+            description: first['description'],
+            price: basePrice,
+            sale_price: baseSalePrice,
+            category: first['categories'] || undefined,
+            brand: first['brand'] || undefined,
+            delivery_time: first['delivery time'] || undefined,
+            highlights: first['product highlights'] || undefined,
+            description_html: first['rich description'] || undefined,
+            faqs_html: first['faqs'] || undefined,
+            warranty_policy: first['warranty, return & exchange policy'] || undefined,
+            slug,
+            status: 'draft',
+          });
+          productId = parseInt(product.id, 10);
+          createdProducts++;
+        } catch (err) {
+          groupRows.forEach(r => errors.push({
+            row: r._row,
+            error: `Failed to create product: ${toErrorMessage(err)}`,
+          }));
+          continue;
+        }
+
+        // Resolve the "Categories" column (comma-separated names) against the real
+        // categories table so the product actually shows up under category filters —
+        // matching how the normal product form assigns categories. Unmatched names
+        // don't block product creation; they're reported so the admin can fix them.
+        const categoryNames = (first['categories'] || '')
+          .split(',')
+          .map(c => c.trim())
+          .filter(Boolean);
+        if (categoryNames.length > 0) {
+          const categoryIds: number[] = [];
+          const unmatched: string[] = [];
+          for (const name of categoryNames) {
+            const cat = await getCategoryByName(name);
+            if (cat) categoryIds.push(cat.id);
+            else unmatched.push(name);
+          }
+          if (categoryIds.length > 0) await setProductCategories(String(productId), categoryIds);
+          if (unmatched.length > 0) {
+            errors.push({
+              row: first._row,
+              error: `Categor${unmatched.length > 1 ? 'ies' : 'y'} not found: ${unmatched.join(', ')} — product created without ${unmatched.length > 1 ? 'them' : 'it'}`,
+            });
+          }
+        }
       }
 
       // Create a variant for each row in the group
-      const variantsCreatedForProduct: number[] = []; // track count for orphan cleanup
+      const variantsCreatedForProduct: number[] = []; // track for orphan cleanup
       for (const row of groupRows) {
         const varPrice = parseFloat(row['price']);
         if (isNaN(varPrice)) {
-          errors.push({ row: row._row, error: 'Invalid price — variant skipped' });
+          errors.push({ row: row._row, error: `Invalid "Price" "${row['price']}" — must be a number` });
+          continue;
+        }
+
+        if (row['variant sale price'] && isNaN(parseFloat(row['variant sale price']))) {
+          errors.push({ row: row._row, error: `Invalid "Variant Sale Price" "${row['variant sale price']}" — must be a number` });
           continue;
         }
 
         try {
-          // Resolve variant option IDs (auto-create unknown values).
-          // Cache results to avoid repeat DB hits for the same col/value across rows.
+          // Resolve variant option IDs for active types only.
+          // New option values (e.g. a new colour) are created automatically.
           const optionIds: number[] = [];
-          for (const col of VARIANT_COLS) {
-            const val = row[col];
+          for (const optType of activeOptionTypes) {
+            const val = row[optType.name.toLowerCase()];
             if (!val) continue;
 
-            let optType = optionTypeCache.get(col);
-            if (!optType) {
-              optType = await findOrCreateVariantOptionType(col);
-              optionTypeCache.set(col, optType);
-            }
-
-            const valueKey = `${col}:${val.toLowerCase()}`;
+            const valueKey = `${optType.name}:${val.toLowerCase()}`;
             let opt = optionValueCache.get(valueKey);
             if (!opt) {
               opt = await findOrCreateVariantOption(optType.id, val);
               optionValueCache.set(valueKey, opt);
             }
-
             optionIds.push(opt.id);
           }
 
           // Skip duplicate variant combinations within this product
           const dup = await findVariantByOptions(productId, optionIds);
           if (dup) {
-            errors.push({ row: row._row, error: 'Duplicate variant combination — skipped' });
+            const variantDesc = activeOptionTypes
+              .filter(t => row[t.name.toLowerCase()])
+              .map(t => `${t.display_name}=${row[t.name.toLowerCase()]}`)
+              .join(', ');
+            errors.push({ row: row._row, error: `Duplicate variant${variantDesc ? ` [${variantDesc}]` : ''} — already defined for this product` });
             continue;
           }
 
@@ -206,25 +343,26 @@ export async function POST(request: NextRequest) {
             varPrice,
             optionIds,
             row['sku'] || undefined,
-            row['sale_price'] ? parseFloat(row['sale_price']) : undefined,
-            row['stock_quantity'] ? parseInt(row['stock_quantity'], 10) : 0,
-            isAdmin && row['hsn_code'] ? row['hsn_code'] : undefined,
-            isAdmin && row['supplier_price'] ? parseFloat(row['supplier_price']) : undefined,
+            row['variant sale price'] ? parseFloat(row['variant sale price']) : undefined,
+            row['stock'] ? parseInt(row['stock'], 10) : 0,
+            isAdmin && row['hsn code'] ? row['hsn code'] : undefined,
+            isAdmin && row['supplier price'] ? parseFloat(row['supplier price']) : undefined,
           );
           createdVariants++;
           variantsCreatedForProduct.push(productId);
         } catch (err) {
-          errors.push({
-            row: row._row,
-            error: `Failed to create variant: ${toErrorMessage(err)}`,
-          });
+          const error = isUniqueViolation(err)
+            ? `SKU "${row['sku']}" already exists — SKUs must be unique across the entire catalog, not just this product`
+            : `Failed to create variant: ${toErrorMessage(err)}`;
+          errors.push({ row: row._row, error });
         }
       }
 
-      // If every variant row failed, remove the orphan product so the catalog
-      // stays clean. Draft products with no variants are unreachable by customers
-      // but would still clutter the admin dashboard.
-      if (variantsCreatedForProduct.length === 0) {
+      // If every variant row failed for a product we just created, remove the orphan
+      // so the catalog stays clean. Draft products with no variants are unreachable
+      // by customers but would still clutter the admin dashboard. Never delete a
+      // pre-existing product just because its new variant rows failed.
+      if (isNewProduct && variantsCreatedForProduct.length === 0) {
         await deleteProduct(String(productId));
         createdProducts--;
         groupRows.forEach(r => errors.push({

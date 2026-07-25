@@ -4,6 +4,7 @@ import type { SiteSettings } from '@/lib/db/settings';
 const DEFAULTS: SiteSettings = {
   shipping: { enabled: true, flat_rate: 1500, min_order_amount: 50000 },
   tax: { enabled: false, rate: 0, type: 'percentage' },
+  upi: { enabled: false, vpa: '', payee_name: '' },
 };
 
 // Module-level cache: all hook consumers share one fetch result.

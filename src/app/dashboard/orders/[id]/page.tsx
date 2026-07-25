@@ -35,6 +35,7 @@ interface Order {
   tax_amount?: string | number | null;
   status: string;
   payment_status?: string;
+  payment_method?: string;
   payment_id?: string;
   shipping_address?: any;
   billing_address?: any;
@@ -64,6 +65,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [carrier, setCarrier] = useState('');
@@ -167,6 +169,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       alert(err.message || 'Failed to update order status');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const confirmUpiPayment = async () => {
+    if (!orderId) return;
+    if (!confirm('Confirm that you have verified this UPI payment in your bank/UPI account? This will move the order to Processing and deduct stock.')) return;
+
+    try {
+      setConfirmingPayment(true);
+      const res = await fetch(`/api/orders/${orderId}/confirm-payment`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        fetchOrderDetails();
+      } else {
+        alert(data.error || 'Failed to confirm payment');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to confirm payment');
+    } finally {
+      setConfirmingPayment(false);
     }
   };
 
@@ -467,9 +489,29 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <div className="od-kv"><b>Date</b>{new Date(order.created_at).toLocaleString()}</div>
               <div className="od-kv"><b>Customer</b>{order.user_name || order.user_email || 'N/A'}</div>
               <div className="od-kv"><b>Email</b><span style={{ wordBreak: 'break-all' }}>{order.user_email || 'N/A'}</span></div>
+              {order.payment_method && <div className="od-kv"><b>Payment Method</b>{order.payment_method === 'upi_qr' ? 'UPI Scan & Pay' : 'Razorpay'}</div>}
               {order.payment_id && <div className="od-kv"><b>Payment ID</b><span style={{ wordBreak: 'break-all' }}>{order.payment_id}</span></div>}
               {order.payment_status && <div className="od-kv"><b>Payment</b>{order.payment_status}</div>}
             </div>
+
+            {/* UPI payment verification */}
+            {order.payment_method === 'upi_qr' && order.payment_status === 'awaiting_verification' && (
+              <div className="od-card od-no-print">
+                <p className="od-card-title">Verify UPI Payment</p>
+                <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px' }}>
+                  This order was placed via Scan &amp; Pay. Check your bank/UPI account for the payment,
+                  then confirm it here to move the order to Processing.
+                </p>
+                <button
+                  onClick={confirmUpiPayment}
+                  disabled={confirmingPayment}
+                  className="btn primary"
+                  style={{ fontSize: '13px', width: '100%' }}
+                >
+                  {confirmingPayment ? 'Confirming…' : '✓ Confirm Payment Received'}
+                </button>
+              </div>
+            )}
 
             {/* Update Status */}
             <div className="od-card od-no-print">

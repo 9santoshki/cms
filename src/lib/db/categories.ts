@@ -76,6 +76,18 @@ export async function getCategoryById(id: number): Promise<Category | null> {
 }
 
 /**
+ * Find an active category by exact name, case-insensitive.
+ * Used by bulk upload to resolve the CSV "Categories" column to a category_id.
+ */
+export async function getCategoryByName(name: string): Promise<Category | null> {
+  const result = await query(
+    'SELECT * FROM categories WHERE LOWER(name) = LOWER($1) AND is_active = TRUE LIMIT 1',
+    [name]
+  );
+  return result.rows[0] || null;
+}
+
+/**
  * Get a single category by slug.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
