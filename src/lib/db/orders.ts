@@ -7,6 +7,8 @@ export interface Order {
   subtotal_amount?: number | null;
   shipping_amount?: number | null;
   tax_amount?: number | null;
+  /** Online-payment convenience fee charged on top of the total (0 for UPI QR orders) */
+  convenience_fee_amount?: number | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'returned';
   payment_id?: string;
   payment_status?: string;
@@ -25,6 +27,12 @@ export interface OrderItem {
   quantity: number;
   price: number;
   created_at?: string;
+  variant_id?: string | null;
+  variant_name?: string | null;
+  /** HSN code, GST rate (%), and tax amount snapshotted for this line at time of purchase — null on orders placed before this was tracked. */
+  hsn_code?: string | null;
+  gst_rate?: number | null;
+  tax_amount?: number | null;
 }
 
 export async function createOrder(

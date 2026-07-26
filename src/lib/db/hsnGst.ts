@@ -73,6 +73,24 @@ export async function getHsnGstRateById(id: number): Promise<HsnGstRate | null> 
   return res.rows[0] ? normalise(res.rows[0]) : null;
 }
 
+/**
+ * Batch-resolve active GST rates for a set of HSN codes (single round trip).
+ * Used to compute real per-item tax for a cart/order — codes with no active
+ * mapping are simply absent from the returned map, letting the caller fall
+ * back to the site-wide rate.
+ */
+export async function getGstRatesForHsnCodes(hsnCodes: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (hsnCodes.length === 0) return map;
+
+  const res = await query(
+    `SELECT hsn_code, gst_rate FROM hsn_gst_rates WHERE hsn_code = ANY($1) AND is_active = true`,
+    [hsnCodes]
+  );
+  for (const row of res.rows) map.set(row.hsn_code, parseFloat(row.gst_rate));
+  return map;
+}
+
 export async function createHsnGstRate(
   hsn_code: string,
   gst_rate: number,

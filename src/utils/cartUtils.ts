@@ -46,6 +46,20 @@ export const backComputeTaxAmount = (
   return inclusiveTotal * taxRate / (100 + taxRate);
 };
 
+// Online (gateway) payments — card/netbanking/UPI via Razorpay — carry a 1%
+// convenience fee; the "Scan & Pay" UPI QR path is free. Shown as its own
+// line item (added on top, not baked into item prices like tax is) so it's
+// transparent to the customer before they pay.
+export const CONVENIENCE_FEE_RATE = 1;
+
+export const calculateConvenienceFee = (
+  amount: number,
+  paymentMethod: 'razorpay' | 'upi_qr'
+): number => {
+  if (paymentMethod !== 'razorpay' || amount <= 0) return 0;
+  return Math.round(amount * CONVENIENCE_FEE_RATE) / 100;
+};
+
 // Get tax amount based on subtotal and configured tax settings
 export const calculateTaxAmount = (
   subtotal: number,

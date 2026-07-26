@@ -8,6 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 interface UploadResult {
   created_products: number;
   created_variants: number;
+  updated_variants: number;
   errors: { row: number; error: string }[];
 }
 
@@ -170,6 +171,12 @@ const BulkUploadPage = () => {
               <div style={{ fontSize: 28, fontWeight: 700, color: '#2563eb' }}>{result.created_variants}</div>
               <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Variants created</div>
             </div>
+            {result.updated_variants > 0 && (
+              <div style={{ padding: '14px 20px', background: '#fef3c7', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 8, textAlign: 'center', minWidth: 120 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: '#d97706' }}>{result.updated_variants}</div>
+                <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Variants updated (existing SKU)</div>
+              </div>
+            )}
             {result.errors.length > 0 && (
               <div style={{ padding: '14px 20px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, textAlign: 'center', minWidth: 120 }}>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#dc2626' }}>{result.errors.length}</div>

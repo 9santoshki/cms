@@ -1,7 +1,11 @@
 /**
  * Admin API: Bulk product upload via CSV
  * GET  — download CSV template (columns match templatev1.xlsx; variant columns dynamic from DB)
- * POST — parse CSV and create products with variants (status: draft)
+ * POST — parse CSV and create products with variants (status: draft).
+ *        A row whose SKU already exists anywhere in the catalog is treated
+ *        as a re-upload: price, stock, and supplier price are updated on the
+ *        existing variant in place (options/HSN/product stay untouched)
+ *        instead of failing on the SKU unique constraint.
  *
  * Column layout (mirrors templatev1.xlsx row 4):
  *   Product Name | Description | Regular Price | Sale Price | Categories | Brand |
@@ -20,6 +24,8 @@ import {
   findOrCreateVariantOption,
   createProductVariant,
   findVariantByOptions,
+  getVariantBySku,
+  updateProductVariant,
 } from '@/lib/db/variants';
 import { ok, badRequest, unauthorized, forbidden, serverError } from '@/lib/api-response';
 import { toErrorMessage } from '@/lib/error-utils';
@@ -253,6 +259,7 @@ export async function POST(request: NextRequest) {
 
     let createdProducts = 0;
     let createdVariants = 0;
+    let updatedVariants = 0;
     const isAdmin = session.role === 'admin';
 
     // Cache option values to avoid repeated DB hits for the same type/value across rows
@@ -368,6 +375,7 @@ export async function POST(request: NextRequest) {
 
       // Create a variant for each row in the group
       const variantsCreatedForProduct: number[] = []; // track for orphan cleanup
+      let variantsUpdatedForProduct = 0; // an existing-SKU update also means the product isn't an orphan
       for (const row of groupRows) {
         // Checks run left-to-right in the same order the columns appear in the
         // sheet (SKU, Price, Variant Sale Price, HSN Code, Supplier Price,
@@ -460,6 +468,26 @@ export async function POST(request: NextRequest) {
         }
 
         try {
+          // Re-uploading a SKU that already exists (anywhere in the catalog,
+          // not just this product) is treated as a price/stock/supplier-price
+          // refresh rather than a failed insert: update those fields in place
+          // and leave everything else about the variant — its options, HSN
+          // code, which product it's attached to — untouched.
+          const existingVariant = await getVariantBySku(row['sku']);
+          if (existingVariant) {
+            // supplier_price is only ever parsed for admins (moderators can't
+            // see/set it); passing undefined here leaves it untouched rather
+            // than clearing it when a moderator re-uploads the same SKU.
+            await updateProductVariant(existingVariant.id, {
+              price: varPrice,
+              stock_quantity: varStock,
+              supplier_price: varSupplierPrice,
+            });
+            updatedVariants++;
+            variantsUpdatedForProduct++;
+            continue;
+          }
+
           // Resolve variant option IDs for active types only.
           // New option values (e.g. a new colour) are created automatically.
           const optionIds: number[] = [];
@@ -510,21 +538,25 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If every variant row failed for a product we just created, remove the orphan
-      // so the catalog stays clean. Draft products with no variants are unreachable
-      // by customers but would still clutter the admin dashboard. Never delete a
-      // pre-existing product just because its new variant rows failed.
+      // If the product we just created ends up with none of its own variants,
+      // remove the orphan so the catalog stays clean — draft products with no
+      // variants are unreachable by customers but would still clutter the
+      // admin dashboard. Never delete a pre-existing product just because its
+      // new variant rows failed. This also covers the case where every row's
+      // SKU already existed under a *different* product: nothing was actually
+      // created for this one, even though those rows succeeded (as updates
+      // elsewhere) rather than failed — hence the two different messages.
       if (isNewProduct && variantsCreatedForProduct.length === 0) {
         await deleteProduct(String(productId));
         createdProducts--;
-        groupRows.forEach(r => errors.push({
-          row: r._row,
-          error: 'All variants failed — product creation rolled back',
-        }));
+        const message = variantsUpdatedForProduct > 0
+          ? 'Product not created — its SKU(s) already existed elsewhere in the catalog and were updated there instead'
+          : 'All variants failed — product creation rolled back';
+        groupRows.forEach(r => errors.push({ row: r._row, error: message }));
       }
     }
 
-    return ok({ created_products: createdProducts, created_variants: createdVariants, errors });
+    return ok({ created_products: createdProducts, created_variants: createdVariants, updated_variants: updatedVariants, errors });
   } catch (err) {
     console.error('Bulk upload error:', err);
     return serverError('Bulk upload failed');

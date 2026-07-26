@@ -254,8 +254,23 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const result = await query('DELETE FROM products WHERE id = $1', [id]);
-  return result.rowCount ? result.rowCount > 0 : false;
+  try {
+    const result = await query('DELETE FROM products WHERE id = $1', [id]);
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (err: unknown) {
+    // Postgres foreign_key_violation: product has past order_items (no ON DELETE CASCADE there by design)
+    if ((err as { code?: string }).code === '23503') {
+      const countResult = await query(
+        'SELECT COUNT(*) FROM order_items WHERE product_id = $1',
+        [id]
+      );
+      const count = parseInt(countResult.rows[0].count, 10);
+      throw new Error(
+        `Cannot delete: this product is part of ${count} past order${count === 1 ? '' : 's'}. Archive it instead of deleting.`
+      );
+    }
+    throw err;
+  }
 }
 
 /**

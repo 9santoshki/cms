@@ -190,6 +190,12 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: 'Product deleted successfully' });
   } catch (err: unknown) {
     console.error('Error deleting product:', err);
+    if (err instanceof Error && err.message.startsWith('Cannot delete:')) {
+      return NextResponse.json(
+        { success: false, error: err.message },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -33,6 +33,7 @@ interface Order {
   subtotal_amount?: string | number | null;
   shipping_amount?: string | number | null;
   tax_amount?: string | number | null;
+  convenience_fee_amount?: string | number | null;
   status: string;
   payment_status?: string;
   payment_method?: string;
@@ -301,6 +302,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const subtotalAmount = order.subtotal_amount != null ? parseFloat(String(order.subtotal_amount)) : null;
   const shippingAmt = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : null;
   const taxAmt = order.tax_amount != null ? parseFloat(String(order.tax_amount)) : null;
+  const convenienceFeeAmt = order.convenience_fee_amount != null ? parseFloat(String(order.convenience_fee_amount)) : null;
   // Derive subtotal from items when not stored (older orders)
   const itemsSubtotal = order.items
     ? order.items.reduce((sum: number, it: any) => sum + parseFloat(String(it.price ?? 0)) * (it.quantity || 1), 0)
@@ -434,6 +436,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
                         <span>Tax (GST, incl.)</span>
                         <span>₹{taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    {convenienceFeeAmt != null && convenienceFeeAmt > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', padding: '4px 0' }}>
+                        <span>Convenience Fee</span>
+                        <span>₹{convenienceFeeAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
                   </div>

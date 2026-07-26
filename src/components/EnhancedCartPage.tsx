@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '../store/cartStore';
 import Header from './Header';
 import Footer from './Footer';
-import { calculateCartTotal, calculateShippingCost, backComputeTaxAmount } from '../utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost } from '../utils/cartUtils';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useCartTax } from '../hooks/useCartTax';
 import { OrderSummaryRows } from './OrderSummaryRows';
 import {
   CartContainer,
@@ -70,7 +71,7 @@ const EnhancedCartPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
+  const { tax, taxRate } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
   const total = subtotal + shipping;
 
   const handleCheckout = () => {
@@ -300,7 +301,7 @@ const EnhancedCartPage = () => {
             </SummaryItemsList>
 
             <SummaryDetails>
-              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} />
             </SummaryDetails>
 
             <SummaryActions>

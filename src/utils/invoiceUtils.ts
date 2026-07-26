@@ -13,11 +13,14 @@ interface AddrObj {
 interface InvoiceItem {
   product_name?: string; name?: string;
   quantity: number; price: number | string; hsn_code?: string;
+  /** GST rate (%) and tax amount snapshotted for this line at purchase time — absent on orders placed before per-item tax tracking, in which case the order-level blended rate is used instead. */
+  gst_rate?: number | string | null;
 }
 interface InvoiceOrder {
   id: number | string; created_at?: string;
   total_amount: number | string; tax_amount?: number | string | null;
   shipping_amount?: number | string | null;
+  convenience_fee_amount?: number | string | null;
   payment_id?: string;
   shipping_address?: any; billing_address?: any; customer?: any;
   items?: InvoiceItem[];
@@ -32,6 +35,13 @@ function parseAddr(raw: any): AddrObj | null {
 
 function fmt(n: number): string {
   return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// A blended/back-computed rate can carry long float tails (e.g. a rate
+// derived from division); a snapshotted rate is already clean. Round either
+// way so the printed "%" label never shows float noise.
+function fmtRate(n: number): string {
+  return String(Math.round(n * 100) / 100);
 }
 
 function addrBlock(addr: AddrObj | null): string {
@@ -50,9 +60,12 @@ function addrBlock(addr: AddrObj | null): string {
 export function generateInvoiceHTML(order: InvoiceOrder): string {
   const DEFAULT_GST_RATE = 18; // Site-configured standard rate
 
-  const items          = order.items || [];
-  const total          = parseFloat(String(order.total_amount ?? 0));
-  const shippingAmount = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : 0;
+  const items             = order.items || [];
+  const total             = parseFloat(String(order.total_amount ?? 0));
+  const shippingAmount    = order.shipping_amount != null ? parseFloat(String(order.shipping_amount)) : 0;
+  // Convenience fee is a payment-processing charge, not part of GST-inclusive
+  // pricing — shown as its own line, same as shipping, not run through tax math.
+  const convenienceFee    = order.convenience_fee_amount != null ? parseFloat(String(order.convenience_fee_amount)) : 0;
 
   // Prices are GST-inclusive. When tax_amount is stored and non-zero use it directly;
   // for older orders (tax_amount null or 0), back-compute from total at default rate.
@@ -61,11 +74,12 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
     ? storedTax
     : total > 0 ? total * DEFAULT_GST_RATE / (100 + DEFAULT_GST_RATE) : 0;
 
-  // Back-compute the effective rate (will equal DEFAULT_GST_RATE for fallback orders)
-  const gstRate = taxTotal > 0 && total > taxTotal
+  // Back-compute a blended rate as the fallback for lines with no snapshotted
+  // gst_rate — i.e. orders placed before per-item tax tracking existed. Will
+  // equal DEFAULT_GST_RATE for orders that also predate tax_amount itself.
+  const blendedFallbackRate = taxTotal > 0 && total > taxTotal
     ? (taxTotal / (total - taxTotal)) * 100
     : 0;
-  const hasTax = gstRate > 0;
 
   // Same state (Karnataka) → CGST + SGST; different state → IGST.
   const shipAddr     = parseAddr(order.shipping_address) || parseAddr(order.customer) || null;
@@ -79,58 +93,89 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
     : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
   // ── Per-item rows ─────────────────────────────────────────────────────────
+  // Each item gets its own GST rate: the rate snapshotted on the order_item
+  // at purchase time (resolved from its HSN code), or blendedFallbackRate for
+  // older orders placed before that snapshot existed. Summary totals below
+  // are summed from these per-line amounts, so mixed rates across items in
+  // the same order are handled correctly rather than assuming one rate.
+  let taxableTotalSum = 0, cgstSum = 0, sgstSum = 0, igstSum = 0;
+
   const itemRows = items.map((item, i) => {
     const unitInclusive = parseFloat(String(item.price ?? 0));
     const qty           = item.quantity || 1;
     const lineTotal     = unitInclusive * qty;
 
-    // Taxable value = Price × 100 / (100 + gstRate)
-    const taxableLine = hasTax ? lineTotal * 100 / (100 + gstRate) : lineTotal;
-    const unitRate    = hasTax ? unitInclusive * 100 / (100 + gstRate) : unitInclusive;
+    const lineGstRate = item.gst_rate != null ? parseFloat(String(item.gst_rate)) : blendedFallbackRate;
+    const hasLineTax   = lineGstRate > 0;
 
-    // Intra: CGST = taxable × (gstRate/2) / 100,  SGST = same,  IGST = 0
-    // Inter: IGST = taxable × gstRate / 100,       CGST = 0,     SGST = 0
-    const cgst = isIntraState ? taxableLine * (gstRate / 2) / 100 : 0;
-    const sgst = isIntraState ? taxableLine * (gstRate / 2) / 100 : 0;
-    const igst = isIntraState ? 0 : taxableLine * gstRate / 100;
+    // Taxable value = Price × 100 / (100 + lineGstRate)
+    const taxableLine = hasLineTax ? lineTotal * 100 / (100 + lineGstRate) : lineTotal;
+    const unitRate    = hasLineTax ? unitInclusive * 100 / (100 + lineGstRate) : unitInclusive;
+
+    // Intra: CGST = taxable × (rate/2) / 100,  SGST = same,  IGST = 0
+    // Inter: IGST = taxable × rate / 100,       CGST = 0,     SGST = 0
+    const cgst = isIntraState && hasLineTax ? taxableLine * (lineGstRate / 2) / 100 : 0;
+    const sgst = isIntraState && hasLineTax ? taxableLine * (lineGstRate / 2) / 100 : 0;
+    const igst = !isIntraState && hasLineTax ? taxableLine * lineGstRate / 100 : 0;
+
+    taxableTotalSum += taxableLine;
+    cgstSum += cgst;
+    sgstSum += sgst;
+    igstSum += igst;
 
     return `
       <tr>
         <td style="text-align:center">${i + 1}</td>
         <td>${item.product_name || item.name || 'Product'}</td>
         <td style="text-align:center">${item.hsn_code || '—'}</td>
+        <td style="text-align:center">${hasLineTax ? `${fmtRate(lineGstRate)}%` : '—'}</td>
         <td style="text-align:center">${qty}</td>
         <td style="text-align:right">₹${fmt(unitRate)}</td>
         <td style="text-align:right">₹${fmt(taxableLine)}</td>
-        <td style="text-align:right">${hasTax ? `₹${fmt(cgst)}` : '—'}</td>
-        <td style="text-align:right">${hasTax ? `₹${fmt(sgst)}` : '—'}</td>
-        <td style="text-align:right">${hasTax ? `₹${fmt(igst)}` : '—'}</td>
-        <td style="text-align:right">${hasTax ? `₹${fmt(cgst + sgst + igst)}` : '—'}</td>
+        <td style="text-align:right">${hasLineTax ? `₹${fmt(cgst)}` : '—'}</td>
+        <td style="text-align:right">${hasLineTax ? `₹${fmt(sgst)}` : '—'}</td>
+        <td style="text-align:right">${hasLineTax ? `₹${fmt(igst)}` : '—'}</td>
+        <td style="text-align:right">${hasLineTax ? `₹${fmt(cgst + sgst + igst)}` : '—'}</td>
         <td style="text-align:right">₹${fmt(lineTotal)}</td>
       </tr>`;
   }).join('');
 
   // ── Tax summary ───────────────────────────────────────────────────────────
-  const taxableTotal = total - taxTotal;
-  const halfRate     = gstRate / 2;
-  const cgstTotal    = isIntraState ? taxTotal / 2 : 0;
-  const sgstTotal    = isIntraState ? taxTotal / 2 : 0;
-  const igstTotal    = isIntraState ? 0 : taxTotal;
+  const taxSum = cgstSum + sgstSum + igstSum;
+  const hasTax = taxSum > 0;
 
   const shippingRow = shippingAmount > 0
     ? `<tr><td>Shipping</td><td style="text-align:right">₹${fmt(shippingAmount)}</td></tr>`
     : '';
+  const convenienceFeeRow = convenienceFee > 0
+    ? `<tr><td>Convenience Fee</td><td style="text-align:right">₹${fmt(convenienceFee)}</td></tr>`
+    : '';
+
+  // Rate labels only make sense as a single number when every item shares
+  // one rate; with mixed HSN rates the summary just shows amounts.
+  const allSameRate = items.every(item => {
+    const r = item.gst_rate != null ? parseFloat(String(item.gst_rate)) : blendedFallbackRate;
+    return r === (items[0]?.gst_rate != null ? parseFloat(String(items[0].gst_rate)) : blendedFallbackRate);
+  });
+  const singleRate = allSameRate && items.length > 0
+    ? (items[0].gst_rate != null ? parseFloat(String(items[0].gst_rate)) : blendedFallbackRate)
+    : null;
+  const cgstLabel = singleRate != null ? `CGST (${fmtRate(singleRate / 2)}%)` : 'CGST';
+  const sgstLabel = singleRate != null ? `SGST (${fmtRate(singleRate / 2)}%)` : 'SGST';
+  const igstLabel = singleRate != null ? `IGST (${isIntraState ? 0 : fmtRate(singleRate)}%)` : 'IGST';
 
   const taxSummaryRows = hasTax ? `
-    <tr><td>Taxable Value</td><td style="text-align:right"><strong>₹${fmt(taxableTotal)}</strong></td></tr>
-    <tr><td>CGST (${halfRate}%)</td><td style="text-align:right">₹${fmt(cgstTotal)}</td></tr>
-    <tr><td>SGST (${halfRate}%)</td><td style="text-align:right">₹${fmt(sgstTotal)}</td></tr>
-    <tr><td>IGST (${isIntraState ? 0 : gstRate}%)</td><td style="text-align:right">₹${fmt(igstTotal)}</td></tr>
-    <tr><td><strong>Total Tax</strong></td><td style="text-align:right"><strong>₹${fmt(taxTotal)}</strong></td></tr>
+    <tr><td>Taxable Value</td><td style="text-align:right"><strong>₹${fmt(taxableTotalSum)}</strong></td></tr>
+    <tr><td>${cgstLabel}</td><td style="text-align:right">₹${fmt(cgstSum)}</td></tr>
+    <tr><td>${sgstLabel}</td><td style="text-align:right">₹${fmt(sgstSum)}</td></tr>
+    <tr><td>${igstLabel}</td><td style="text-align:right">₹${fmt(igstSum)}</td></tr>
+    <tr><td><strong>Total Tax</strong></td><td style="text-align:right"><strong>₹${fmt(taxSum)}</strong></td></tr>
     ${shippingRow}
+    ${convenienceFeeRow}
     <tr style="background:#f0f0f0"><td><strong>Grand Total</strong></td><td style="text-align:right"><strong>₹${fmt(total)}</strong></td></tr>
   ` : `
     ${shippingRow}
+    ${convenienceFeeRow}
     <tr style="background:#f0f0f0"><td><strong>Grand Total</strong></td><td style="text-align:right"><strong>₹${fmt(total)}</strong></td></tr>
   `;
 
@@ -200,6 +245,7 @@ export function generateInvoiceHTML(order: InvoiceOrder): string {
       <th style="width:32px;text-align:center">Sr.</th>
       <th>Description</th>
       <th style="width:54px;text-align:center">HSN</th>
+      <th style="width:44px;text-align:center">GST%</th>
       <th style="width:40px;text-align:center">Qty</th>
       <th style="width:80px;text-align:right">Rate</th>
       <th style="width:90px;text-align:right">Taxable Value</th>

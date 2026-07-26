@@ -258,6 +258,17 @@ export async function getAllVariants(): Promise<ProductVariant[]> {
   return variants;
 }
 
+/** Get variant by SKU (exact match, catalog-wide — sku is UNIQUE). Used by bulk
+ *  upload to detect a re-uploaded SKU so its price/stock can be updated instead
+ *  of failing on the unique constraint. */
+export async function getVariantBySku(sku: string): Promise<ProductVariant | null> {
+  const result = await query(
+    `SELECT * FROM product_variants WHERE sku = $1 LIMIT 1`,
+    [sku]
+  );
+  return result.rows[0] || null;
+}
+
 /** Get variant by ID with option details */
 export async function getProductVariantById(variantId: number): Promise<ProductVariant | null> {
   const result = await query(
@@ -464,6 +475,21 @@ export async function findOrCreateVariantOption(optionTypeId: number, value: str
     [optionTypeId, normalizedValue]
   );
   return selectRes.rows[0];
+}
+
+/** Batch-fetch hsn_code for a set of variant IDs (single round trip). Used to
+ *  resolve real per-item GST rates for a cart/order without trusting the
+ *  client for HSN data. */
+export async function getHsnCodesForVariants(variantIds: number[]): Promise<Map<number, string | null>> {
+  const map = new Map<number, string | null>();
+  if (variantIds.length === 0) return map;
+
+  const result = await query(
+    `SELECT id, hsn_code FROM product_variants WHERE id = ANY($1)`,
+    [variantIds]
+  );
+  for (const row of result.rows) map.set(row.id, row.hsn_code);
+  return map;
 }
 
 /** Check if product has variants */

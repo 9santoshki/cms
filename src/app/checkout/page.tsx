@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { useCartStore } from '@/store/cartStore';
 import { apiClient } from '@/lib/api';
-import { calculateCartTotal, calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
+import { calculateCartTotal, calculateShippingCost, calculateConvenienceFee, CONVENIENCE_FEE_RATE } from '@/utils/cartUtils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useCartTax } from '@/hooks/useCartTax';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { OrderSummaryRows } from '@/components/OrderSummaryRows';
@@ -71,8 +72,10 @@ const CheckoutPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const tax = backComputeTaxAmount(subtotal + shipping, siteSettings.tax.rate, siteSettings.tax.enabled);
-  const total = subtotal + shipping;
+  const { tax, taxRate } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
+  const total = subtotal + shipping; // payable before any payment-method fee; also the UPI QR amount, since UPI is free
+  const convenienceFee = calculateConvenienceFee(total, paymentMethod);
+  const payableTotal = total + convenienceFee; // what's actually charged for the selected payment method
 
   // Fetch the UPI QR code whenever "Scan & Pay" is selected — the QR encodes
   // the live cart total so the customer's UPI app pre-fills the amount.
@@ -610,7 +613,7 @@ const CheckoutPage = () => {
             </OrderItemsList>
 
             <OrderSummaryDetails>
-              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={siteSettings.tax.rate} />
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} convenienceFee={convenienceFee} />
             </OrderSummaryDetails>
 
             {siteSettings.upi.enabled && (
@@ -620,11 +623,15 @@ const CheckoutPage = () => {
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `1.5px solid ${paymentMethod === 'razorpay' ? '#c19a6b' : '#e8d5c4'}`, borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: paymentMethod === 'razorpay' ? 'rgba(193,154,107,0.06)' : 'white' }}>
                   <input type="radio" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
-                  <span style={{ fontSize: '13px', color: '#333' }}>Card / Netbanking / UPI (via Razorpay)</span>
+                  <span style={{ fontSize: '13px', color: '#333' }}>
+                    Card / Netbanking / UPI (via Razorpay) <span style={{ color: '#888' }}>(+{CONVENIENCE_FEE_RATE}% convenience fee)</span>
+                  </span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `1.5px solid ${paymentMethod === 'upi_qr' ? '#c19a6b' : '#e8d5c4'}`, borderRadius: '8px', cursor: 'pointer', background: paymentMethod === 'upi_qr' ? 'rgba(193,154,107,0.06)' : 'white' }}>
                   <input type="radio" checked={paymentMethod === 'upi_qr'} onChange={() => setPaymentMethod('upi_qr')} />
-                  <span style={{ fontSize: '13px', color: '#333' }}>Scan &amp; Pay (UPI QR code)</span>
+                  <span style={{ fontSize: '13px', color: '#333' }}>
+                    Scan &amp; Pay (UPI QR code) <span style={{ color: '#16a34a' }}>(no extra fee)</span>
+                  </span>
                 </label>
               </div>
             )}
@@ -665,7 +672,7 @@ const CheckoutPage = () => {
               ) : paymentMethod === 'upi_qr' ? (
                 `I've Paid — Place Order (₹${total.toLocaleString()})`
               ) : (
-                `Pay ₹${total.toLocaleString()}`
+                `Pay ₹${payableTotal.toLocaleString()}`
               )}
             </PayButton>
 

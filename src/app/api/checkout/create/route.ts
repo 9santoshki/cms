@@ -3,8 +3,10 @@ import Razorpay from 'razorpay';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { query, getClient } from '@/lib/db/connection';
 import { checkVariantStock } from '@/lib/db/suppliers';
+import { getHsnCodesForVariants } from '@/lib/db/variants';
 import { getSettings } from '@/lib/db/settings';
-import { calculateShippingCost, backComputeTaxAmount } from '@/utils/cartUtils';
+import { computeCartTax, type TaxLine } from '@/lib/db/tax';
+import { calculateShippingCost, calculateConvenienceFee } from '@/utils/cartUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -133,8 +135,34 @@ export async function POST(request: NextRequest) {
     }
 
     const shipping = calculateShippingCost(subtotal, settings.shipping.flat_rate, settings.shipping.min_order_amount);
-    const tax = backComputeTaxAmount(subtotal + shipping, settings.tax.rate, settings.tax.enabled);
-    const totalAmount = subtotal + shipping; // tax is already included in listing prices
+
+    // Resolve each item's own GST rate from its variant's HSN code (never
+    // trusted from the client) rather than applying one flat rate to the
+    // whole order. Shipping has no HSN of its own, so it's taxed at the
+    // site-wide fallback rate via a synthetic line with hsn_code: null.
+    const itemVariantIds = [...new Set(
+      items
+        .map((item: Record<string, unknown>) => item.variant_id)
+        .filter((v: unknown): v is number => typeof v === 'number')
+    )];
+    const hsnByVariant = await getHsnCodesForVariants(itemVariantIds);
+
+    const itemTaxLines: TaxLine[] = items.map((item: Record<string, unknown>) => ({
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 0,
+      hsn_code: typeof item.variant_id === 'number' ? hsnByVariant.get(item.variant_id) ?? null : null,
+    }));
+    const taxLines: TaxLine[] = shipping > 0
+      ? [...itemTaxLines, { price: shipping, quantity: 1, hsn_code: null }]
+      : itemTaxLines;
+
+    const taxResult = await computeCartTax(taxLines, settings.tax.rate, settings.tax.enabled);
+    const tax = taxResult.tax;
+    const preFeeTotal = subtotal + shipping; // tax is already included in listing prices
+    // 1% convenience fee for online (gateway) payments — free for UPI QR.
+    // Computed on the amount payable before the fee itself, and added on top.
+    const convenienceFee = calculateConvenienceFee(preFeeTotal, paymentMethod);
+    const totalAmount = preFeeTotal + convenienceFee;
 
     // Create the Razorpay order first (gateway path only) so we have its ID to store.
     // UPI QR orders skip the gateway entirely — payment_id stays null until an admin
@@ -151,11 +179,11 @@ export async function POST(request: NextRequest) {
 
     // Create order in our database
     const orderResult = await query(
-      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, status, payment_id, payment_status, payment_method, shipping_address, billing_address, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10, NOW())
+      `INSERT INTO orders (user_id, total_amount, subtotal_amount, shipping_amount, tax_amount, convenience_fee_amount, status, payment_id, payment_status, payment_method, shipping_address, billing_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, $9, $10, $11, NOW())
        RETURNING id`,
       [
-        userId, totalAmount, subtotal, shipping, tax,
+        userId, totalAmount, subtotal, shipping, tax, convenienceFee,
         razorpayOrder?.id || null,
         paymentMethod === 'upi_qr' ? 'awaiting_verification' : null,
         paymentMethod,
@@ -171,10 +199,14 @@ export async function POST(request: NextRequest) {
     try {
       await itemClient.query('BEGIN');
       await Promise.all(
-        items.map((item: Record<string, unknown>) =>
-          itemClient.query(
-            `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price, variant_name)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
+        items.map((item: Record<string, unknown>, idx: number) => {
+          // itemTaxLines[idx] / taxResult.lines[idx] correspond 1:1 to items[idx] —
+          // itemTaxLines was built directly from items before the shipping line
+          // (if any) was appended after it.
+          const lineTax = taxResult.lines[idx];
+          return itemClient.query(
+            `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price, variant_name, hsn_code, gst_rate, tax_amount)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
               orderId,
               item.product_id,
@@ -182,9 +214,12 @@ export async function POST(request: NextRequest) {
               item.quantity,
               item.price,
               item.variant_name || null,
+              itemTaxLines[idx].hsn_code,
+              lineTax.gstRate,
+              lineTax.tax,
             ]
-          )
-        )
+          );
+        })
       );
       await itemClient.query('COMMIT');
     } catch (insertErr) {
@@ -204,6 +239,7 @@ export async function POST(request: NextRequest) {
         subtotal,
         shipping,
         tax,
+        convenience_fee: convenienceFee,
         total_amount: totalAmount,
         order_id: orderId,
       }

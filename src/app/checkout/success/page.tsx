@@ -238,6 +238,9 @@ const CheckoutSuccessContent = () => {
                   {order.tax_amount != null && parseFloat(order.tax_amount) > 0 && (
                     <div style={summaryRow}><span>GST (incl.)</span><span>₹{fmtAmt(order.tax_amount)}</span></div>
                   )}
+                  {order.convenience_fee_amount != null && parseFloat(order.convenience_fee_amount) > 0 && (
+                    <div style={summaryRow}><span>Convenience Fee</span><span>₹{fmtAmt(order.convenience_fee_amount)}</span></div>
+                  )}
                   {order.payment_id && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#999', marginBottom: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
                       <span>Payment ID</span><span style={{ fontFamily: 'monospace' }}>{order.payment_id}</span>
