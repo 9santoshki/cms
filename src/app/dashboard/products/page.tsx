@@ -278,6 +278,34 @@ const DashboardProductsPage = () => {
             Bulk Upload
           </button>
           <button
+            onClick={() => { window.location.href = '/api/admin/products/export'; }}
+            style={{
+              padding: '8px 16px',
+              background: 'white',
+              color: '#c19a6b',
+              border: '1px solid #e8d5c4',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#c19a6b';
+              e.currentTarget.style.background = 'rgba(193,154,107,0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e8d5c4';
+              e.currentTarget.style.background = 'white';
+            }}
+          >
+            <i className="fas fa-file-export"></i>
+            Export
+          </button>
+          <button
             onClick={() => router.push('/dashboard/products/new')}
             style={{
               padding: '8px 16px',
