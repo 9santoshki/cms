@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromCookieWithDB } from '@/lib/db/auth';
+import { getProductsWithImages, createProduct, generateUniqueSlug, setProductCategories } from '@/lib/db/products';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || searchParams.get('q') || '';
+    const category = searchParams.get('category') || '';
+    const subcategory = searchParams.get('subcategory') || '';
+    const minPrice = searchParams.get('minPrice')
+      ? parseFloat(searchParams.get('minPrice')!)
+      : undefined;
+    const maxPrice = searchParams.get('maxPrice')
+      ? parseFloat(searchParams.get('maxPrice')!)
+      : undefined;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+
+    const result = await getProductsWithImages({
+      search,
+      category,
+      subcategory,
+      minPrice,
+      maxPrice,
+      page,
+      limit,
+      // Storefront always shows published products only.
+      // Admins use /api/admin/products to see all statuses.
+      publishedOnly: true,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        products: result.products,
+        pagination: result.pagination,
+      },
+    });
+  } catch (err: unknown) {
+    console.error('[products GET] Error:', err);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSessionFromCookieWithDB();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    if (session.role !== 'admin' && session.role !== 'moderator') {
+      return NextResponse.json(
+        { success: false, error: 'Admin or moderator access required' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const {
+      name, description, price, sale_price, image_url, category, subcategory, stock_quantity, status,
+      brand, delivery_time, highlights, description_html, faqs_html, warranty_policy,
+      category_ids,
+    } = body;
+
+    if (!name || !description || !price || price <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Name, description, and price are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status if provided
+    const validStatuses = ['draft', 'published', 'archived'];
+    const productStatus: 'draft' | 'published' | 'archived' =
+      validStatuses.includes(status) ? status : 'draft';
+
+    // Generate a clean, unique, SEO-friendly slug
+    const slug = await generateUniqueSlug(name);
+
+    const product = await createProduct({
+      name,
+      description,
+      price,
+      sale_price,
+      image_url,
+      category,
+      subcategory,
+      stock_quantity,
+      slug,
+      status: productStatus,
+      brand: brand || null,
+      delivery_time: delivery_time || null,
+      highlights: highlights || null,
+      description_html: description_html || null,
+      faqs_html: faqs_html || null,
+      warranty_policy: warranty_policy || null,
+    });
+
+    if (Array.isArray(category_ids) && category_ids.length > 0) {
+      await setProductCategories(String(product.id), category_ids);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...product,
+          images: [],
+          primary_image: product.image_url,
+          message:
+            productStatus === 'draft'
+              ? 'Product saved as draft. Publish it once images and variants are ready.'
+              : 'Product created. Upload images using /api/products/images/upload',
+        },
+      },
+      { status: 201 }
+    );
+  } catch (err: unknown) {
+    console.error('[products POST] Error:', err);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

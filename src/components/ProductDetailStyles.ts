@@ -1,0 +1,154 @@
+import styled from 'styled-components';
+import { theme } from '../styles/theme';
+
+export const ProductDetailOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+`;
+
+export const ProductDetailContainer = styled.div`
+  position: relative;
+  background-color: white;
+  color: #1f2937;
+  border-radius: 0;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 0 1rem;
+
+  @media (min-width: ${theme.breakpoints.mobile}) {
+    padding: 0 1.5rem;
+  }
+`;
+
+export const CloseButton = styled.button`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: ${theme.colors.text};
+  cursor: pointer;
+  z-index: 10;
+  padding: 5px;
+
+  &:hover {
+    color: ${theme.colors.primary};
+  }
+`;
+
+export const ProductDetailContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  @media (min-width: ${theme.breakpoints.mobile}) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+`;
+
+export const ProductDetailImage = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['imageClass', 'imageUrl'].includes(prop),
+})<{ imageClass?: string; imageUrl?: string }>`
+  width: 100%;
+  height: 100%;
+  background-color: #f0f0f0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: block;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+
+  &:hover {
+    transform: scale(1.03);
+  }
+
+  /* Handle specific imageClass values - fallback if no imageUrl */
+  ${props => {
+    if (props.imageUrl) {
+      return `background-image: url("${props.imageUrl}");`;
+    } else if (props.imageClass === 'modern') {
+      return `background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');`;
+    } else if (props.imageClass === 'classic') {
+      return `background-image: url('https://images.unsplash.com/photo-1615529162924-f8605388463a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');`;
+    } else if (props.imageClass === 'coastal') {
+      return `background-image: url('https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');`;
+    } else if (props.imageClass === 'office') {
+      return `background-image: url('https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');`;
+    } else if (props.imageClass === 'hotel') {
+      return `background-image: url('https://images.unsplash.com/photo-1629131726692-1acfc596acd5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');`;
+    } else if (props.imageClass === 'restaurant') {
+      return `background-image: url('https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');`;
+    } else {
+      return `background-image: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80');`; // default image
+    }
+  }}
+`;
+
+export const ProductDetailInfo = styled.div`
+  padding: 12px 0;
+
+  @media (min-width: ${theme.breakpoints.mobile}) {
+    width: 50%;
+    padding: 16px 0;
+  }
+`;
+
+export const ProductDetailTitle = styled.h2`
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: ${theme.colors.textDark};
+  font-weight: 300;
+  letter-spacing: -0.5px;
+
+  @media (min-width: ${theme.breakpoints.mobile}) {
+    font-size: 1.625rem;
+  }
+`;
+
+export const ProductDetailPrice = styled.div`
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: ${theme.colors.primary};
+  margin-bottom: 0;
+  letter-spacing: -0.5px;
+`;
+
+export const ProductDetailDescription = styled.p`
+  color: ${theme.colors.textSecondary};
+  margin-bottom: 10px;
+  line-height: 1.55;
+  font-size: 0.875rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+export const ProductDetailActions = styled.div`
+  margin-top: 20px;
+`;
+
+export const ErrorMessage = styled.div`
+  color: #e74c3c;
+  background-color: #fdf2f2;
+  padding: 15px 20px;
+  border-left: 4px solid #e74c3c;
+  margin-bottom: 20px;
+  font-family: ${theme.fonts.secondary};
+  font-size: 14px;
+  border-radius: 0 4px 4px 0;
+`;

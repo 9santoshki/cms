@@ -1,0 +1,529 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useCartStore } from '@/store/cartStore';
+import LoginModal from './LoginModal';
+import MiniCartPopup from './MiniCartPopup';
+import { NavIcon, CartCount } from '../styles/HeaderStyles';
+
+interface UserMenuProps {
+  onNavigate: (path: string) => void;
+}
+
+const UserMenu: React.FC<UserMenuProps> = ({ onNavigate }) => {
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Force re-render cart count with local state
+  const [cartCount, setCartCount] = useState(0);
+  const [showMiniCart, setShowMiniCart] = useState(false);
+  const miniCartTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+
+  // Reset the broken-image fallback whenever the avatar URL itself changes
+  // (e.g. a different user logs in), so a stale error doesn't stick around.
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar]);
+
+  // Subscribe to cart store changes — drives both the badge count and the mini-cart popup
+  useEffect(() => {
+    let prevTotal = useCartStore.getState().items.reduce((s, i) => s + i.quantity, 0);
+
+    const unsubscribe = useCartStore.subscribe(
+      state => state.items,
+      (items) => {
+        const total = items.reduce((s, i) => s + i.quantity, 0);
+        setCartCount(total);
+
+        // Open/reset mini-cart whenever total quantity goes up
+        if (total > prevTotal) {
+          setShowMiniCart(true);
+          if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current);
+          miniCartTimerRef.current = setTimeout(() => setShowMiniCart(false), 5000);
+        }
+        prevTotal = total;
+      },
+      { fireImmediately: true }
+    );
+
+    return () => {
+      unsubscribe();
+      if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current);
+    };
+  }, []);
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('pendingCartAction');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    onNavigate('/');
+    setIsDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleShowLoginModal = () => {
+      setIsAuthModalOpen(true);
+    };
+
+    window.addEventListener('showLoginModal', handleShowLoginModal);
+    return () => {
+      window.removeEventListener('showLoginModal', handleShowLoginModal);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const pendingAction = localStorage.getItem('pendingCartAction');
+      if (pendingAction) {
+        try {
+          const { product, quantity } = JSON.parse(pendingAction);
+
+          import('@/store/cartStore').then((module) => {
+            module.useCartStore.getState().addItem({
+              id: Date.now(),
+              product_id: product.id,
+              quantity: quantity || 1,
+              name: product.name,
+              price: product.price,
+              image_url: product.primary_image || product.image_url,
+            });
+          });
+
+          localStorage.removeItem('pendingCartAction');
+        } catch {
+        }
+      }
+    }
+  }, [user]);
+const renderUserAccountIcon = () => {
+  if (user) {
+    return (
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }} ref={dropdownRef}>
+        <NavIcon onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0 }}>
+          {user.avatar && !avatarError ? (
+            <img
+              src={user.avatar}
+              style={{
+                width: '24px',
+                height: '24px',
+                display: 'block',
+                borderRadius: '50%',
+                objectFit: 'cover'
+              }}
+              className="user-avatar-icon"
+              alt="avatar"
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <i className="fas fa-user"></i>
+          )}
+        </NavIcon>
+
+        {/* Dropdown - positioned absolutely, won't affect header height */}
+        {isDropdownOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              right: 0,
+              width: '280px',
+              backgroundColor: 'white',
+              border: '1px solid #e8d5c4',
+              boxShadow: '0 10px 30px rgba(193, 154, 107, 0.15)',
+              zIndex: 9999,
+              overflow: 'hidden',
+              animation: 'slideDown 0.2s ease-out'
+            }}
+            className="user-dropdown"
+          >
+            <style jsx>{`
+              @keyframes slideDown {
+                from {
+                  opacity: 0;
+                  transform: translateY(-10px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+
+              @media (max-width: 768px) {
+                .user-dropdown {
+                  position: fixed !important;
+                  top: 65px !important;
+                  right: 12px !important;
+                  bottom: auto !important;
+                  left: auto !important;
+                  width: calc(100vw - 24px) !important;
+                  max-width: 280px !important;
+                  max-height: 80vh;
+                  overflow-y: auto;
+                  border-radius: 12px !important;
+                  animation: slideDown 0.2s ease-out !important;
+                }
+              }
+
+              @media (max-width: 480px) {
+                .user-dropdown {
+                  top: 58px !important;
+                }
+              }
+            `}</style>
+
+            {/* User Header */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, #f8f4f0 0%, #efe9e3 100%)',
+                borderBottom: '1px solid #e8d5c4'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      objectFit: 'cover',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                    alt={user.name}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      e.currentTarget.style.display = 'none';
+                      if (parent) {
+                        const fallback = document.createElement('div');
+                        fallback.style.cssText = 'width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg, #e8d5c4, #c19a6b);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:400;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:var(--font-playfair),"Playfair Display",serif';
+                        fallback.textContent = user.name?.charAt(0)?.toUpperCase() || 'U';
+                        parent.appendChild(fallback);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #e8d5c4, #c19a6b)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    fontWeight: '400',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    fontFamily: 'var(--font-playfair), "Playfair Display", serif'
+                  }}>
+                    {user.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                )}
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontWeight: '600',
+                    color: '#222',
+                    fontSize: '15px',
+                    marginBottom: '3px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                  }}>
+                    {user.name}
+                  </p>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                  }}>
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+
+              {/* Role Badge */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '5px 14px',
+                fontSize: '10px',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                color: user.role === 'admin' ? '#991b1b' : user.role === 'moderator' ? '#92400e' : '#065f46',
+                background: user.role === 'admin' ? '#fee2e2' : user.role === 'moderator' ? '#fef3c7' : '#d1fae5',
+                border: `1px solid ${user.role === 'admin' ? '#fecaca' : user.role === 'moderator' ? '#fde68a' : '#a7f3d0'}`,
+                fontFamily: 'var(--font-montserrat), Montserrat, sans-serif',
+                alignSelf: 'flex-start'
+              }}>
+                {user.role}
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div style={{ padding: '8px 0' }}>
+              <button
+                onClick={() => { onNavigate("/account"); setIsDropdownOpen(false); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  color: '#333',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                  e.currentTarget.style.color = '#c19a6b';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#333';
+                }}
+              >
+                <i className="fas fa-user-circle" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
+                <span>Account Settings</span>
+              </button>
+
+              <button
+                onClick={() => { onNavigate("/orders"); setIsDropdownOpen(false); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  color: '#333',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                  e.currentTarget.style.color = '#c19a6b';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#333';
+                }}
+              >
+                <i className="fas fa-history" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
+                <span>Order History</span>
+              </button>
+
+              {(user.role === "admin" || user.role === "moderator") && (
+                <>
+                  <div style={{ height: '1px', background: '#f0f0f0', margin: '8px 20px' }}></div>
+                  <button
+                    onClick={() => { onNavigate("/dashboard"); setIsDropdownOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 20px',
+                      fontSize: '14px',
+                      color: '#333',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                      e.currentTarget.style.color = '#c19a6b';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#333';
+                    }}
+                  >
+                    <i className="fas fa-tachometer-alt" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
+                    <span>Admin Dashboard</span>
+                  </button>
+                </>
+              )}
+
+              {user.role === "supplier" && (
+                <>
+                  <div style={{ height: '1px', background: '#f0f0f0', margin: '8px 20px' }}></div>
+                  <button
+                    onClick={() => { onNavigate("/supplier"); setIsDropdownOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 20px',
+                      fontSize: '14px',
+                      color: '#333',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(193, 154, 107, 0.08)';
+                      e.currentTarget.style.color = '#c19a6b';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#333';
+                    }}
+                  >
+                    <i className="fas fa-truck" style={{ width: '18px', textAlign: 'center', color: '#c19a6b' }}></i>
+                    <span>Supplier Dashboard</span>
+                  </button>
+                </>
+              )}
+
+              <div style={{ height: '1px', background: '#f0f0f0', margin: '8px 20px' }}></div>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  color: '#dc2626',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'var(--font-montserrat), Montserrat, sans-serif'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <i className="fas fa-sign-out-alt" style={{ width: '18px', textAlign: 'center', color: '#dc2626' }}></i>
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // NOT LOGGED IN
+  return (
+    <NavIcon onClick={() => setIsAuthModalOpen(true)}>
+      <i className="fas fa-user text-xl"></i>
+    </NavIcon>
+  );
+};
+
+  return (
+    <>
+      <style jsx>{`
+        .user-avatar-icon {
+          width: 24px;
+          height: 24px;
+          display: block;
+        }
+
+        @media (max-width: 480px) {
+          .user-avatar-icon {
+            width: 20px !important;
+            height: 20px !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .user-avatar-icon {
+            width: 18px !important;
+            height: 18px !important;
+          }
+        }
+      `}</style>
+
+      {user && (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <NavIcon onClick={() => onNavigate('/cart')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0 }}>
+            <i className="fas fa-shopping-cart"></i>
+          </NavIcon>
+          {cartCount > 0 && <CartCount>{cartCount}</CartCount>}
+          <MiniCartPopup
+            open={showMiniCart}
+            onClose={() => { setShowMiniCart(false); if (miniCartTimerRef.current) clearTimeout(miniCartTimerRef.current); }}
+            onGoToCart={() => { setShowMiniCart(false); onNavigate('/cart'); }}
+          />
+        </div>
+      )}
+
+      {renderUserAccountIcon()}
+
+      {/* Authentication Modal - Positioned relative to the account icon */}
+      {isAuthModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '60px',  // Position below the header
+          right: '20px',  // Position on the right side of the screen
+          zIndex: 10000
+        }}>
+          <LoginModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
+        </div>
+      )}
+    </>
+  );
+};
+
+export default UserMenu;

@@ -1,0 +1,406 @@
+import styled from 'styled-components';
+
+// Main consultation container
+export const ConsultationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%);
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+`;
+
+// Hero section
+export const ConsultationHero = styled.section`
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+              url('/api/images/product_images%2F1767928644452-6a7vh9bf8fn-consultation-hero.jpg');
+  background-size: cover;
+  background-position: center;
+  height: 28vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  margin: 40px 0 0 0;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(193, 154, 107, 0.15) 0%, transparent 70%);
+    z-index: 0;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    padding: 0 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  p {
+    font-size: 0.9rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  @media (max-width: 768px) {
+    height: 22vh;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    p {
+      font-size: 0.8rem;
+    }
+  }
+`;
+
+// Benefits section
+export const BenefitsSection = styled.section`
+  padding: 30px 0;
+  background: white;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #222;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 2px;
+      background: linear-gradient(to right, transparent, #c19a6b, transparent);
+      margin: 8px auto;
+    }
+  }
+`;
+
+export const BenefitsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  justify-items: center;
+`;
+
+export const BenefitCard = styled.div`
+  text-align: center;
+  padding: 20px;
+
+  .icon {
+    font-size: 2rem;
+    color: #c19a6b;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: #222;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+  }
+
+  p {
+    color: #666;
+    line-height: 1.5;
+    font-size: 13px;
+    margin: 0;
+  }
+`;
+
+// Booking section
+export const BookingSection = styled.section`
+  padding: 30px 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+`;
+
+export const BookingCard = styled.div`
+  background: white;
+  border-radius: 0;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+`;
+
+export const BookingHeader = styled.div`
+  background: linear-gradient(135deg, #c19a6b, #a8825f);
+  color: white;
+  padding: 20px;
+  text-align: center;
+
+  h2 {
+    font-size: 1.3rem;
+    margin: 0 0 4px 0;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  p {
+    font-size: 0.85rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+`;
+
+export const BookingForm = styled.form`
+  padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+export const FormGroup = styled.div`
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  input[type="date"],
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    font-size: 14px;
+    font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #c19a6b;
+      box-shadow: 0 0 0 2px rgba(193, 154, 107, 0.1);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+`;
+
+export const TimeSlotGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+`;
+
+export const TimeSlotButton = styled.button<{ $selected?: boolean }>`
+  padding: 8px;
+  border: 2px solid ${props => props.$selected ? '#c19a6b' : '#e0e0e0'};
+  background: ${props => props.$selected ? '#c19a6b' : 'white'};
+  color: ${props => props.$selected ? 'white' : '#333'};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+
+  &:hover {
+    border-color: #c19a6b;
+    background: ${props => props.$selected ? '#a8825f' : 'rgba(193, 154, 107, 0.1)'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+`;
+
+export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
+  flex: 1;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+
+  ${props => props.$variant === 'primary' ? `
+    background: #c19a6b;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #a8825f;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(193, 154, 107, 0.3);
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+  ` : `
+    background: #f0f0f0;
+    color: #333;
+
+    &:hover {
+      background: #e0e0e0;
+    }
+  `}
+`;
+
+export const SuccessMessage = styled.div`
+  text-align: center;
+  padding: 30px 20px;
+
+  .icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: white;
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    color: #222;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 16px;
+  }
+`;
+
+export const ErrorAlert = styled.div`
+  padding: 10px 14px;
+  background: #fee;
+  border: 2px solid #fcc;
+  color: #c33;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 500;
+`;
+
+export const LoadingSpinner = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+
+  &::after {
+    content: '';
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(193, 154, 107, 0.2);
+    border-top: 5px solid #c19a6b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Trust section
+export const TrustSection = styled.section`
+  padding: 30px 0;
+  background: white;
+  text-align: center;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #222;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+  }
+`;
+
+export const TrustStats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+`;
+
+export const TrustStat = styled.div`
+  .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #c19a6b;
+    margin-bottom: 6px;
+    font-family: var(--font-playfair), 'Playfair Display', serif;
+  }
+
+  .label {
+    font-size: 0.85rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+`;

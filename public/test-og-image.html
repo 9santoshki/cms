@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OG Image Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    .image-container {
+      margin: 20px 0;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .info {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .info h3 {
+      margin-top: 0;
+    }
+    .instructions {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      border-left: 4px solid #2196F3;
+    }
+    canvas {
+      border: 2px solid #ddd;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>OG Image Preview - Colour My Space</h1>
+
+    <div class="instructions">
+      <h3>📸 How to Convert to PNG:</h3>
+      <ol>
+        <li>The PNG image will be generated automatically below</li>
+        <li>Right-click on the PNG image → "Save Image As..."</li>
+        <li>Save it as <code>og-image.png</code> in the <code>public/</code> folder</li>
+        <li>Or simply click the "Download PNG" button below</li>
+      </ol>
+    </div>
+
+    <div class="info">
+      <h3>SVG Source</h3>
+      <p>Dimensions: 1200 x 630 pixels (recommended for social media)</p>
+    </div>
+
+    <div class="image-container">
+      <img src="/og-image.svg" alt="OG Image SVG" id="svgImage">
+    </div>
+
+    <h2>Converted PNG (Right-click to save)</h2>
+    <div class="info">
+      <p>This is the PNG version that will be used for social media sharing.</p>
+      <button onclick="downloadPng()" style="padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+        ⬇️ Download PNG
+      </button>
+    </div>
+
+    <canvas id="canvas" width="1200" height="630"></canvas>
+  </div>
+
+  <script>
+    // Convert SVG to PNG using canvas
+    const img = document.getElementById('svgImage');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = function() {
+      // Draw the SVG image onto canvas
+      ctx.drawImage(img, 0, 0, 1200, 630);
+
+      console.log('✅ SVG converted to PNG on canvas');
+    };
+
+    // If image is already loaded (cached)
+    if (img.complete) {
+      ctx.drawImage(img, 0, 0, 1200, 630);
+    }
+
+    function downloadPng() {
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'og-image.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert('✅ PNG downloaded! Save it to public/og-image.png');
+      }, 'image/png');
+    }
+  </script>
+</body>
+</html>
