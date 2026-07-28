@@ -14,7 +14,7 @@
  * (used by the shop page for URL sync).
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ProductCardWithVariant from './ProductCardWithVariant';
 import { getDisplayPrice } from '@/lib/utils';
 import {
@@ -118,6 +118,32 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     ...initialFilters,
   });
   const [currentPage, setCurrentPage] = useState(1);
+
+  // initialFilters only seeds useState on the very first mount — it does NOT
+  // get re-applied when the prop changes later. On the shop page that prop
+  // is derived from the URL, and the URL changes on every click in the
+  // persistent top nav (CategoryNav) without unmounting this component
+  // (client-side navigation within the same /shop route). Without this
+  // effect, clicking a different category/subcategory in the nav while
+  // already on /shop silently did nothing — the grid kept showing the
+  // previous category. Re-sync whenever the URL-derived values actually
+  // change (compared by value, not by the new object identity the parent
+  // creates on every render).
+  const initCategory = initialFilters?.category ?? DEFAULT_FILTERS.category;
+  const initSubcategory = initialFilters?.subcategory ?? DEFAULT_FILTERS.subcategory;
+  const initBrand = initialFilters?.brand ?? DEFAULT_FILTERS.brand;
+  const initPriceRange = initialFilters?.priceRange ?? DEFAULT_FILTERS.priceRange;
+  const initSortBy = initialFilters?.sortBy ?? DEFAULT_FILTERS.sortBy;
+  useEffect(() => {
+    setFilters({
+      category: initCategory,
+      subcategory: initSubcategory,
+      brand: initBrand,
+      priceRange: initPriceRange,
+      sortBy: initSortBy,
+    });
+    setCurrentPage(1);
+  }, [initCategory, initSubcategory, initBrand, initPriceRange, initSortBy]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(showAllCategoriesInitially);
   const [collapsedSections, setCollapsedSections] = useState({
@@ -152,81 +178,69 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     filters.brand !== 'All' ||
     filters.priceRange !== 'All';
 
+  // ── Shared match predicates ─────────────────────────────────────────────────
+  //
+  // Single source of truth for "does this product belong to the current
+  // category/subcategory selection" — used by every facet count below AND by
+  // filteredProducts (the actual grid). They used to be three separate,
+  // hand-copied implementations that had drifted apart: the counts silently
+  // excluded products whose category/subcategory value didn't match a
+  // currently-listed admin category (e.g. one that was renamed/deleted since
+  // the product was created), while the grid did not. That made the sidebar
+  // undercount relative to what was actually shown — sometimes even showing
+  // 0 next to a filter that DID have matching results. Deriving both from
+  // the same predicate makes that class of drift impossible going forward.
+
+  const isPublished = (p: Product) => !p.status || p.status === 'published';
+  const matchesCategory = (p: Product) => filters.category === 'All' || p.category === filters.category;
+  const matchesSubcategory = (p: Product) => filters.subcategory === 'All' || p.subcategory === filters.subcategory;
+  const matchesBrand = (p: Product) => filters.brand === 'All' || p.brand === filters.brand;
+  const matchesPriceRange = (p: Product) => {
+    if (filters.priceRange === 'All') return true;
+    const price = getDisplayPrice(p);
+    if (filters.priceRange === 'Under ₹5,000') return price < 5000;
+    if (filters.priceRange === '₹5,000 - ₹15,000') return price >= 5000 && price <= 15000;
+    return price > 15000; // 'Over ₹15,000'
+  };
+
   // ── Counts (same logic as NewShopPage) ────────────────────────────────────
 
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const counts: Record<string, number> = { All: 0 };
     for (const p of products) {
-      if (p.status && p.status !== 'published') continue;
+      if (!isPublished(p)) continue;
       if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
+      counts['All']++;
     }
-    const listed = new Set(categories.map(c => c.name));
-    counts['All'] = Object.entries(counts)
-      .filter(([cat]) => listed.has(cat))
-      .reduce((sum, [, n]) => sum + n, 0);
     return counts;
-  }, [products, categories]);
+  }, [products]);
 
   const subcategoryCounts = useMemo(() => {
     if (filters.category === 'All') return {} as Record<string, number>;
-    const counts: Record<string, number> = {};
+    const counts: Record<string, number> = { All: 0 };
     for (const p of products) {
-      if (p.status && p.status !== 'published') continue;
-      if (p.category === filters.category && p.subcategory) {
-        counts[p.subcategory] = (counts[p.subcategory] || 0) + 1;
-      }
+      if (!isPublished(p) || p.category !== filters.category) continue;
+      if (p.subcategory) counts[p.subcategory] = (counts[p.subcategory] || 0) + 1;
+      counts['All']++;
     }
-    const cat = categories.find(c => c.name === filters.category);
-    const listed = new Set((cat?.children ?? []).map(c => c.name));
-    counts['All'] = Object.entries(counts)
-      .filter(([sub]) => listed.has(sub))
-      .reduce((sum, [, n]) => sum + n, 0);
     return counts;
-  }, [products, filters.category, categories]);
+  }, [products, filters.category]);
 
   const brandCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const listedCats = new Set(categories.map(c => c.name));
-    const activeCat = categories.find(c => c.name === filters.category);
-    const listedSubs = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
-
     for (const p of products) {
-      if (p.status && p.status !== 'published') continue;
-      if (!p.brand) continue;
-      if (filters.category === 'All') {
-        if (!listedCats.has(p.category ?? '')) continue;
-      } else {
-        if (p.category !== filters.category) continue;
-        if (filters.subcategory !== 'All') {
-          if (p.subcategory !== filters.subcategory) continue;
-        } else if (listedSubs) {
-          if (!p.subcategory || !listedSubs.has(p.subcategory)) continue;
-        }
-      }
+      if (!isPublished(p) || !p.brand) continue;
+      if (!matchesCategory(p) || !matchesSubcategory(p)) continue;
       counts[p.brand] = (counts[p.brand] || 0) + 1;
     }
     return counts;
-  }, [products, filters.category, filters.subcategory, categories]);
+  }, [products, filters.category, filters.subcategory]);
 
   const priceRangeCounts = useMemo(() => {
     const counts: Record<string, number> = { All: 0, 'Under ₹5,000': 0, '₹5,000 - ₹15,000': 0, 'Over ₹15,000': 0 };
-    const listedCats = new Set(categories.map(c => c.name));
-    const activeCat = categories.find(c => c.name === filters.category);
-    const listedSubs = activeCat ? new Set((activeCat.children ?? []).map(c => c.name)) : null;
-
     for (const p of products) {
-      if (p.status && p.status !== 'published') continue;
-      if (filters.category === 'All') {
-        if (!listedCats.has(p.category ?? '')) continue;
-      } else {
-        if (p.category !== filters.category) continue;
-        if (filters.subcategory !== 'All') {
-          if (p.subcategory !== filters.subcategory) continue;
-        } else if (listedSubs) {
-          if (!p.subcategory || !listedSubs.has(p.subcategory)) continue;
-        }
-      }
-      if (filters.brand !== 'All' && p.brand !== filters.brand) continue;
+      if (!isPublished(p)) continue;
+      if (!matchesCategory(p) || !matchesSubcategory(p) || !matchesBrand(p)) continue;
       const price = getDisplayPrice(p);
       if (price < 5000) counts['Under ₹5,000']++;
       else if (price <= 15000) counts['₹5,000 - ₹15,000']++;
@@ -234,27 +248,15 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       counts['All']++;
     }
     return counts;
-  }, [products, filters.category, filters.subcategory, filters.brand, categories]);
+  }, [products, filters.category, filters.subcategory, filters.brand]);
 
   // ── Filtered + sorted products ─────────────────────────────────────────────
 
   const filteredProducts = useMemo(() => {
     return products
-      .filter(p => {
-        if (p.status && p.status !== 'published') return false;
-        if (filters.category !== 'All') {
-          if (p.category !== filters.category) return false;
-          if (filters.subcategory !== 'All' && p.subcategory !== filters.subcategory) return false;
-        }
-        if (filters.brand !== 'All' && p.brand !== filters.brand) return false;
-        if (filters.priceRange !== 'All') {
-          const price = getDisplayPrice(p);
-          if (filters.priceRange === 'Under ₹5,000' && price >= 5000) return false;
-          if (filters.priceRange === '₹5,000 - ₹15,000' && (price < 5000 || price > 15000)) return false;
-          if (filters.priceRange === 'Over ₹15,000' && price <= 15000) return false;
-        }
-        return true;
-      })
+      .filter(p =>
+        isPublished(p) && matchesCategory(p) && matchesSubcategory(p) && matchesBrand(p) && matchesPriceRange(p)
+      )
       .sort((a, b) => {
         if (filters.sortBy === 'price-low') return getDisplayPrice(a) - getDisplayPrice(b);
         if (filters.sortBy === 'price-high') return getDisplayPrice(b) - getDisplayPrice(a);
@@ -275,14 +277,22 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     return ['All', ...cat.children.filter(c => c.is_active).map(c => c.name)];
   };
 
-  const visibleCategories = showAllCategories
-    ? ['All', ...categories.map(c => c.name)]
-    : ['All', ...categories.slice(0, INITIAL_CATEGORY_COUNT).map(c => c.name)];
-
   // On pages that show all categories initially (e.g. search), bypass the
   // zero-count filter so every active category is always visible as a filter option.
   const categoryVisible = (cat: string) =>
     cat === 'All' || showAllCategoriesInitially || (categoryCounts[cat] || 0) > 0;
+
+  // Filter out zero-count categories BEFORE truncating to the initial N —
+  // otherwise a zero-count category occupying one of the first N slots could
+  // make the collapsed view show fewer options than expected, or show a
+  // "See more" button that reveals nothing new when expanded. Computed once
+  // and shared by both the desktop sidebar and mobile panel so the two
+  // surfaces can't show a different category list for the same state.
+  const filterableCategories = ['All', ...categories.map(c => c.name)].filter(categoryVisible);
+  const visibleCategories = showAllCategories
+    ? filterableCategories
+    : filterableCategories.slice(0, INITIAL_CATEGORY_COUNT + 1);
+  const hasMoreCategories = filterableCategories.length > INITIAL_CATEGORY_COUNT + 1;
 
   // ── Loading / error states ─────────────────────────────────────────────────
 
@@ -362,17 +372,14 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         {/* Mobile Category */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
           <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#c19a6b', marginBottom: '10px' }}>Department</h4>
-          {['All', ...categories.map(c => c.name)]
-            .filter(categoryVisible)
-            .slice(0, showAllCategories ? undefined : INITIAL_CATEGORY_COUNT + 1)
-            .map(cat => (
+          {visibleCategories.map(cat => (
               <div key={cat} onClick={() => handleFilterChange('category', cat)} style={{ padding: '10px 8px', fontSize: '14px', color: filters.category === cat ? '#c19a6b' : '#333', fontWeight: filters.category === cat ? 600 : 400, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {cat !== 'All' && CATEGORY_ICONS[cat] && <i className={`fas ${CATEGORY_ICONS[cat]}`} style={{ fontSize: '12px' }}></i>}
                 <span style={{ flex: 1 }}>{cat}</span>
                 <span style={{ color: '#888', fontSize: '12px' }}>{categoryCounts[cat] || 0}</span>
               </div>
             ))}
-          {categories.length > INITIAL_CATEGORY_COUNT && (
+          {hasMoreCategories && (
             <button onClick={() => setShowAllCategories(v => !v)} style={{ padding: '8px', background: 'transparent', border: 'none', color: '#007185', fontSize: '12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
               {showAllCategories ? 'Show less' : 'Show more'}
             </button>
@@ -450,7 +457,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
             <i className="fas fa-chevron-down toggle-icon"></i>
           </FilterHeader>
           <FilterContent $collapsed={collapsedSections.category}>
-            {visibleCategories.filter(categoryVisible).map(cat => (
+            {visibleCategories.map(cat => (
               <FilterOption key={cat} $active={filters.category === cat} onClick={() => handleFilterChange('category', cat)}>
                 {cat !== 'All' && CATEGORY_ICONS[cat] && (
                   <i className={`fas ${CATEGORY_ICONS[cat]}`} style={{ fontSize: '11px', color: '#888' }}></i>
@@ -459,7 +466,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
                 <span style={{ color: '#888', fontSize: '11px' }}>{categoryCounts[cat] || 0}</span>
               </FilterOption>
             ))}
-            {categories.length > INITIAL_CATEGORY_COUNT && (
+            {hasMoreCategories && (
               <button onClick={() => setShowAllCategories(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 12px', background: 'transparent', border: 'none', color: '#007185', fontSize: '12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                 <i className={`fas fa-chevron-${showAllCategories ? 'up' : 'down'}`} style={{ fontSize: '10px' }}></i>
                 {showAllCategories ? 'See less' : 'See more'}
