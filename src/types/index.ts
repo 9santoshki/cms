@@ -217,6 +217,8 @@ export interface CartItem {
   variant_id?: number;
   quantity: number;
   name?: string;
+  /** Product page slug (e.g. order-history items link to /products/[slug]) */
+  slug?: string;
   description?: string;
   image_url?: string;
   imageClass?: string;

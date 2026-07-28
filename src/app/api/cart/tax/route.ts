@@ -19,6 +19,8 @@ interface TaxLineInput {
   price?: unknown;
   quantity?: unknown;
   variant_id?: unknown;
+  /** True for the synthetic shipping line — its price is exclusive of tax (GST added on top), unlike product prices. */
+  isShipping?: unknown;
 }
 
 export async function POST(request: NextRequest) {
@@ -40,10 +42,11 @@ export async function POST(request: NextRequest) {
       price: Number(i.price) || 0,
       quantity: Number(i.quantity) || 0,
       hsn_code: typeof i.variant_id === 'number' ? hsnByVariant.get(i.variant_id) ?? null : null,
+      taxMode: i.isShipping ? 'exclusive' : undefined,
     }));
 
     const result = await computeCartTax(lines, settings.tax.rate, settings.tax.enabled);
-    return ok({ tax: result.tax, taxRate: result.taxRate });
+    return ok({ tax: result.tax, taxRate: result.taxRate, additiveTax: result.additiveTax });
   } catch (err) {
     console.error('[cart/tax] Error:', err);
     return serverError('Failed to compute tax');

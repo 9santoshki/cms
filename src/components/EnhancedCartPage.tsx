@@ -71,8 +71,8 @@ const EnhancedCartPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const { tax, taxRate } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
-  const total = subtotal + shipping;
+  const { tax, taxRate, additiveTax } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
+  const total = subtotal + shipping + additiveTax;
 
   const handleCheckout = () => {
     if (cartItems.length > 0) {
@@ -301,7 +301,7 @@ const EnhancedCartPage = () => {
             </SummaryItemsList>
 
             <SummaryDetails>
-              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} />
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} additiveTax={additiveTax} />
             </SummaryDetails>
 
             <SummaryActions>

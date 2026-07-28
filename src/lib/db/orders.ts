@@ -94,6 +94,7 @@ export async function getOrderItems(orderId: string): Promise<OrderItem[]> {
     `SELECT
       oi.*,
       p.name,
+      p.slug,
       COALESCE(
         (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1),
         p.image_url
@@ -117,6 +118,7 @@ export async function getOrderItemsBatch(orderIds: string[]): Promise<Map<string
     `SELECT
       oi.*,
       p.name,
+      p.slug,
       COALESCE(
         (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1),
         p.image_url

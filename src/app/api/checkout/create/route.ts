@@ -141,6 +141,10 @@ export async function POST(request: NextRequest) {
     // trusted from the client) rather than applying one flat rate to the
     // whole order. Shipping has no HSN of its own, so it's taxed at the
     // site-wide fallback rate via a synthetic line with hsn_code: null.
+    // Unlike product prices (already GST-inclusive, MRP-style), the shipping
+    // flat rate is a pre-tax base freight cost — GST on it is computed
+    // additively (taxMode: 'exclusive') and added to the order total below,
+    // rather than backed out of the configured flat rate.
     const itemVariantIds = [...new Set(
       items
         .map((item: Record<string, unknown>) => item.variant_id)
@@ -154,12 +158,14 @@ export async function POST(request: NextRequest) {
       hsn_code: typeof item.variant_id === 'number' ? hsnByVariant.get(item.variant_id) ?? null : null,
     }));
     const taxLines: TaxLine[] = shipping > 0
-      ? [...itemTaxLines, { price: shipping, quantity: 1, hsn_code: null }]
+      ? [...itemTaxLines, { price: shipping, quantity: 1, hsn_code: null, taxMode: 'exclusive' }]
       : itemTaxLines;
 
     const taxResult = await computeCartTax(taxLines, settings.tax.rate, settings.tax.enabled);
     const tax = taxResult.tax;
-    const preFeeTotal = subtotal + shipping; // tax is already included in listing prices
+    // Product tax is already included in listing prices; shipping tax is not
+    // (shipping is exclusive-of-tax) and must be added on top here.
+    const preFeeTotal = subtotal + shipping + taxResult.additiveTax;
     // 1% convenience fee for online (gateway) payments — free for UPI QR.
     // Computed on the amount payable before the fee itself, and added on top.
     const convenienceFee = calculateConvenienceFee(preFeeTotal, paymentMethod);

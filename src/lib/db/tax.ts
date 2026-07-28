@@ -3,24 +3,38 @@ import { getGstRatesForHsnCodes } from './hsnGst';
 /**
  * A taxable line — a cart/order item, or a synthetic line for shipping
  * (hsn_code null, since shipping isn't a product and has no HSN mapping).
- * `price` is the tax-inclusive unit price, matching how prices are stored
- * and displayed across the app.
+ * `price` is a unit price; whether it already includes tax depends on
+ * `taxMode`.
  */
 export interface TaxLine {
   price: number;
   quantity: number;
   hsn_code?: string | null;
+  /**
+   * 'inclusive' (default): `price` already includes GST — tax is backed out
+   * of it for display, not added to the payable total. This is how product
+   * prices work (MRP-style).
+   * 'exclusive': `price` excludes GST — tax is computed on top and must be
+   * ADDED to the payable total. This is how the shipping flat-rate works
+   * (freight/logistics GST is charged in addition to the base rate).
+   */
+  taxMode?: 'inclusive' | 'exclusive';
 }
 
 export interface LineTaxResult {
   /** Rate actually applied — from the item's HSN mapping, or the fallback rate. */
   gstRate: number;
-  /** Tax amount for this line (already included in price × quantity). */
+  /** Tax amount for this line. Included in price × quantity when inclusive; additional to it when exclusive. */
   tax: number;
+  /** True when this line's tax was computed additively (on top of price) rather than backed out of an inclusive price. */
+  exclusive: boolean;
 }
 
 export interface CartTaxResult {
+  /** Total tax across all lines — combined product + shipping tax, for display (e.g. the "Tax" row). */
   tax: number;
+  /** Portion of `tax` that comes from exclusive lines and must be ADDED to subtotal+shipping to get the true payable total (product tax is already embedded in its price and isn't part of this). */
+  additiveTax: number;
   /** Blended effective rate across all lines, for display only (e.g. "Tax (12.4%)") — not an input rate, since lines may carry different HSN rates. */
   taxRate: number;
   taxableTotal: number;
@@ -44,9 +58,10 @@ export async function computeCartTax(
   if (!taxEnabled) {
     return {
       tax: 0,
+      additiveTax: 0,
       taxRate: 0,
       taxableTotal: inclusiveTotal,
-      lines: lines.map(() => ({ gstRate: 0, tax: 0 })),
+      lines: lines.map(() => ({ gstRate: 0, tax: 0, exclusive: false })),
     };
   }
 
@@ -58,13 +73,22 @@ export async function computeCartTax(
       ? rateByHsn.get(line.hsn_code)!
       : fallbackRate;
     const lineTotal = line.price * line.quantity;
-    const tax = gstRate > 0 ? lineTotal * gstRate / (100 + gstRate) : 0;
-    return { gstRate, tax };
+    const exclusive = line.taxMode === 'exclusive';
+    const tax = gstRate > 0
+      ? (exclusive ? lineTotal * gstRate / 100 : lineTotal * gstRate / (100 + gstRate))
+      : 0;
+    return { gstRate, tax, exclusive };
   });
 
   const tax = lineResults.reduce((sum, l) => sum + l.tax, 0);
-  const taxableTotal = inclusiveTotal - tax;
+  const additiveTax = lineResults.reduce((sum, l) => sum + (l.exclusive ? l.tax : 0), 0);
+  // Taxable base per line: an exclusive line's price already excludes tax
+  // (it *is* the base); an inclusive line's tax must be subtracted out of it.
+  const taxableTotal = lines.reduce((sum, line, i) => {
+    const lineTotal = line.price * line.quantity;
+    return sum + (lineResults[i].exclusive ? lineTotal : lineTotal - lineResults[i].tax);
+  }, 0);
   const taxRate = taxableTotal > 0 ? (tax / taxableTotal) * 100 : 0;
 
-  return { tax, taxRate, taxableTotal, lines: lineResults };
+  return { tax, additiveTax, taxRate, taxableTotal, lines: lineResults };
 }

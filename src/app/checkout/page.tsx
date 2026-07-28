@@ -73,8 +73,8 @@ const CheckoutPage = () => {
 
   const subtotal = calculateCartTotal(cartItems);
   const shipping = calculateShippingCost(subtotal, siteSettings.shipping.flat_rate, siteSettings.shipping.min_order_amount);
-  const { tax, taxRate } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
-  const total = subtotal + shipping; // payable before any payment-method fee; also the UPI QR amount, since UPI is free
+  const { tax, taxRate, additiveTax } = useCartTax(cartItems, subtotal, shipping, siteSettings.tax);
+  const total = subtotal + shipping + additiveTax; // payable before any payment-method fee; also the UPI QR amount, since UPI is free
   const convenienceFee = calculateConvenienceFee(total, paymentMethod);
   const payableTotal = total + convenienceFee; // what's actually charged for the selected payment method
 
@@ -129,15 +129,37 @@ const CheckoutPage = () => {
     if (!user) return;
     apiClient.getAddresses('shipping').then(res => {
       if (res.success && res.data && res.data.length > 0) {
-        setSavedShippingAddr(res.data[0]);
+        const addr = res.data[0];
+        setSavedShippingAddr(addr);
         setShippingMode('saved');
+        // Pre-fill the (always-editable) form so the saved address is shown
+        // in full and can be tweaked for this order without retyping it.
+        setShippingAddress(prev => ({
+          ...prev,
+          name: addr.name || prev.name,
+          phone: addr.phone || '',
+          address: addr.address,
+          city: addr.city || '',
+          state: addr.state || '',
+          zipCode: addr.zipCode || '',
+          country: addr.country || 'India',
+        }));
       }
     }).catch(() => {});
     apiClient.getAddresses('billing').then(res => {
       if (res.success && res.data && res.data.length > 0) {
-        setSavedBillingAddr(res.data[0]);
+        const addr = res.data[0];
+        setSavedBillingAddr(addr);
         setBillingMode('saved');
         setBillingSameAsShipping(false);
+        setBillingAddress({
+          name: addr.name || '',
+          address: addr.address,
+          city: addr.city || '',
+          state: addr.state || '',
+          zipCode: addr.zipCode || '',
+          country: addr.country || 'India',
+        });
       }
     }).catch(() => {});
   }, [user]);
@@ -181,21 +203,12 @@ const CheckoutPage = () => {
 
       const u = user as any;
 
-      // Resolve effective addresses. savedShippingAddr/savedBillingAddr come
-      // from the address book (id, user_id, last_used_at, ...) — pick just
-      // the address fields so that metadata doesn't leak into the order's
-      // stored shipping_address/billing_address snapshot.
-      const addressFields = (a: typeof savedShippingAddr) =>
-        a ? { address: a.address, city: a.city, state: a.state, zipCode: a.zipCode, country: a.country } : null;
-      const contactFields = { name: shippingAddress.name, email: shippingAddress.email, phone: shippingAddress.phone };
-      const effectiveShipping = shippingMode === 'saved' && savedShippingAddr
-        ? { ...addressFields(savedShippingAddr), ...contactFields }
-        : shippingAddress;
-      const effectiveBilling = billingSameAsShipping
-        ? effectiveShipping
-        : billingMode === 'saved' && savedBillingAddr
-          ? { ...addressFields(savedBillingAddr), name: savedBillingAddr.name || shippingAddress.name }
-          : billingAddress;
+      // shippingAddress/billingAddress are always kept in sync with the
+      // selected option — pre-filled from the address book when 'saved' is
+      // picked, blank when 'new' is — and are directly editable either way,
+      // so they're already the effective address to submit.
+      const effectiveShipping = shippingAddress;
+      const effectiveBilling = billingSameAsShipping ? effectiveShipping : billingAddress;
 
       // Persist GSTIN to profile (fire-and-forget). Addresses are no longer
       // patched here — checkout/create records the shipping/billing address
@@ -348,10 +361,26 @@ const CheckoutPage = () => {
           <h2>Shipping Information</h2>
 
           <form onSubmit={handleSubmit}>
-            {/* Saved shipping address picker */}
+            {/* Saved shipping address picker — selecting it pre-fills the
+                form below, which stays fully editable either way, so the
+                saved address is shown in full and can be corrected for this
+                order without retyping it or leaving the address book itself
+                untouched. */}
             {savedShippingAddr?.address && (
               <div style={{ marginBottom: '16px' }}>
-                <label style={addrCardStyle(shippingMode === 'saved')} onClick={() => setShippingMode('saved')}>
+                <label style={addrCardStyle(shippingMode === 'saved')} onClick={() => {
+                  setShippingMode('saved');
+                  setShippingAddress(prev => ({
+                    ...prev,
+                    name: savedShippingAddr.name || prev.name,
+                    phone: savedShippingAddr.phone || '',
+                    address: savedShippingAddr.address,
+                    city: savedShippingAddr.city || '',
+                    state: savedShippingAddr.state || '',
+                    zipCode: savedShippingAddr.zipCode || '',
+                    country: savedShippingAddr.country || 'India',
+                  }));
+                }}>
                   <input type="radio" readOnly checked={shippingMode === 'saved'} style={{ marginTop: '2px', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '13px', color: '#333', marginBottom: '2px' }}>{(user as any).name}</div>
@@ -360,15 +389,19 @@ const CheckoutPage = () => {
                     </div>
                   </div>
                 </label>
-                <label style={addrCardStyle(shippingMode === 'new')} onClick={() => setShippingMode('new')}>
+                <label style={addrCardStyle(shippingMode === 'new')} onClick={() => {
+                  setShippingMode('new');
+                  setShippingAddress(prev => ({ ...prev, phone: '', address: '', city: '', state: '', zipCode: '', country: 'India' }));
+                }}>
                   <input type="radio" readOnly checked={shippingMode === 'new'} style={{ marginTop: '2px', flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', color: '#555' }}>Use a different address</span>
                 </label>
               </div>
             )}
 
-            {/* Shipping address form — always shown when no saved address, or when 'new' is selected */}
-            {(shippingMode === 'new' || !savedShippingAddr?.address) && <FormGrid>
+            {/* Shipping address form — always shown and editable, whether
+                pre-filled from a saved address or started blank */}
+            <FormGrid>
               <FormField>
                 <label htmlFor="name">Full Name *</label>
                 <input
@@ -466,7 +499,7 @@ const CheckoutPage = () => {
                   readOnly
                 />
               </FormField>
-            </FormGrid>}
+            </FormGrid>
 
             {/* Billing Address */}
             <div style={{ marginTop: '24px' }}>
@@ -482,10 +515,21 @@ const CheckoutPage = () => {
               </label>
 
               {!billingSameAsShipping && (<>
-                {/* Saved billing address picker */}
+                {/* Saved billing address picker — selecting it pre-fills the
+                    form below, which stays fully editable either way */}
                 {savedBillingAddr?.address && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={addrCardStyle(billingMode === 'saved')} onClick={() => setBillingMode('saved')}>
+                    <label style={addrCardStyle(billingMode === 'saved')} onClick={() => {
+                      setBillingMode('saved');
+                      setBillingAddress({
+                        name: savedBillingAddr.name || '',
+                        address: savedBillingAddr.address,
+                        city: savedBillingAddr.city || '',
+                        state: savedBillingAddr.state || '',
+                        zipCode: savedBillingAddr.zipCode || '',
+                        country: savedBillingAddr.country || 'India',
+                      });
+                    }}>
                       <input type="radio" readOnly checked={billingMode === 'saved'} style={{ marginTop: '2px', flexShrink: 0 }} />
                       <div>
                         <div style={{ fontWeight: 600, fontSize: '13px', color: '#333', marginBottom: '2px' }}>{savedBillingAddr.name || (user as any).name}</div>
@@ -494,16 +538,19 @@ const CheckoutPage = () => {
                         </div>
                       </div>
                     </label>
-                    <label style={addrCardStyle(billingMode === 'new')} onClick={() => setBillingMode('new')}>
+                    <label style={addrCardStyle(billingMode === 'new')} onClick={() => {
+                      setBillingMode('new');
+                      setBillingAddress({ name: '', address: '', city: '', state: '', zipCode: '', country: 'India' });
+                    }}>
                       <input type="radio" readOnly checked={billingMode === 'new'} style={{ marginTop: '2px', flexShrink: 0 }} />
                       <span style={{ fontSize: '13px', color: '#555' }}>Use a different billing address</span>
                     </label>
                   </div>
                 )}
 
-                {/* Billing form — shown when no saved billing or 'new' is selected */}
-                {(billingMode === 'new' || !savedBillingAddr?.address) && (
-                  <FormGrid>
+                {/* Billing form — always shown and editable, whether
+                    pre-filled from a saved address or started blank */}
+                <FormGrid>
                     <FormField $fullWidth>
                       <label htmlFor="billing_name">Full Name *</label>
                       <input type="text" name="name" id="billing_name" value={billingAddress.name} onChange={handleBillingInputChange} required />
@@ -528,8 +575,7 @@ const CheckoutPage = () => {
                       <label htmlFor="billing_country">Country</label>
                       <input type="text" name="country" id="billing_country" value={billingAddress.country} onChange={handleBillingInputChange} required readOnly />
                     </FormField>
-                  </FormGrid>
-                )}
+                </FormGrid>
               </>)}
             </div>
 
@@ -629,7 +675,7 @@ const CheckoutPage = () => {
             </OrderItemsList>
 
             <OrderSummaryDetails>
-              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} convenienceFee={convenienceFee} paymentMethod={paymentMethod} />
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} additiveTax={additiveTax} convenienceFee={convenienceFee} paymentMethod={paymentMethod} />
             </OrderSummaryDetails>
 
             {siteSettings.upi.enabled && (

@@ -4,7 +4,8 @@
  * POST — parse CSV and create products with variants (status: draft).
  *        A row whose SKU already exists anywhere in the catalog is treated
  *        as a re-upload: price, stock, and supplier price are updated on the
- *        existing variant in place (options/HSN/product stay untouched)
+ *        existing variant in place (options/HSN stay untouched), and Regular
+ *        Price/Sale Price are refreshed on that variant's parent product,
  *        instead of failing on the SKU unique constraint.
  *
  * Column layout (mirrors templatev1.xlsx row 4):
@@ -16,7 +17,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { createProduct, generateUniqueSlug, deleteProduct, getProductByName, setProductCategories } from '@/lib/db/products';
+import { createProduct, updateProduct, generateUniqueSlug, deleteProduct, getProductByName, setProductCategories } from '@/lib/db/products';
 import { getCategoryByName } from '@/lib/db/categories';
 import {
   getVariantOptionTypes,
@@ -41,6 +42,46 @@ function isUniqueViolation(err: unknown): boolean {
 // and product_variants) — max representable value is 99999999.99. Catches a
 // mistyped extra digit before it becomes a raw "numeric field overflow" error.
 const MAX_DECIMAL_10_2 = 99999999.99;
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// "Product Highlights" / "Rich Description" / "FAQs" / "Warranty..." are
+// stored as raw HTML (the single-product admin form uses a WYSIWYG editor
+// that produces real <ul>/<li>/<p> markup, and the storefront renders these
+// fields via dangerouslySetInnerHTML). CSV/Excel cells only ever carry plain
+// text, so a bulk-uploaded cell with manually typed bullets or blank-line
+// paragraphs would otherwise render as one flat, unformatted run of text.
+// This converts that plain-text authoring convention into equivalent HTML:
+//   - blank-line-separated blocks become <p> paragraphs
+//   - a block whose every line starts with -, • or * becomes a <ul>
+//   - a block whose every line starts with "1." / "1)" becomes an <ol>
+// If the cell already contains real HTML tags (an admin who typed markup
+// directly), it's passed through unchanged rather than escaped/re-wrapped.
+function plainTextToHtml(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  if (/<\/?[a-z][\s\S]*>/i.test(trimmed)) return trimmed;
+
+  const bulletRe = /^[-•*]\s+(.*)$/;
+  const numberedRe = /^\d+[.)]\s+(.*)$/;
+
+  return trimmed
+    .split(/\n\s*\n/)
+    .map(block => block.split('\n').map(l => l.trim()).filter(Boolean))
+    .filter(lines => lines.length > 0)
+    .map(lines => {
+      if (lines.every(l => bulletRe.test(l))) {
+        return `<ul>${lines.map(l => `<li>${escapeHtml(l.match(bulletRe)![1])}</li>`).join('')}</ul>`;
+      }
+      if (lines.every(l => numberedRe.test(l))) {
+        return `<ol>${lines.map(l => `<li>${escapeHtml(l.match(numberedRe)![1])}</li>`).join('')}</ol>`;
+      }
+      return `<p>${lines.map(escapeHtml).join('<br>')}</p>`;
+    })
+    .join('');
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -330,10 +371,10 @@ export async function POST(request: NextRequest) {
             category: first['categories'] || undefined,
             brand: first['brand'] || undefined,
             delivery_time: first['delivery time'] || undefined,
-            highlights: first['product highlights'] || undefined,
-            description_html: first['rich description'] || undefined,
-            faqs_html: first['faqs'] || undefined,
-            warranty_policy: first['warranty, return & exchange policy'] || undefined,
+            highlights: first['product highlights'] ? plainTextToHtml(first['product highlights']) : undefined,
+            description_html: first['rich description'] ? plainTextToHtml(first['rich description']) : undefined,
+            faqs_html: first['faqs'] ? plainTextToHtml(first['faqs']) : undefined,
+            warranty_policy: first['warranty, return & exchange policy'] ? plainTextToHtml(first['warranty, return & exchange policy']) : undefined,
             slug,
             status: 'draft',
           });
@@ -488,6 +529,47 @@ export async function POST(request: NextRequest) {
             });
             updatedVariants++;
             variantsUpdatedForProduct++;
+
+            // Also refresh Regular Price/Sale Price on the variant's actual
+            // parent product (existingVariant.product_id — not necessarily
+            // this row-group's productId, since the SKU can already belong
+            // to a differently named product). Same "blank = leave
+            // untouched" rule as above; values come from the group's first
+            // row since these are product-level columns.
+            let refreshPrice: number | undefined;
+            if (first['regular price']) {
+              refreshPrice = parseFloat(first['regular price']);
+              if (isNaN(refreshPrice)) {
+                errors.push({ row: row._row, error: `Invalid "Regular Price" "${first['regular price']}" — must be a number` });
+                refreshPrice = undefined;
+              } else if (refreshPrice < 0) {
+                errors.push({ row: row._row, error: `Invalid "Regular Price" "${first['regular price']}" — cannot be negative` });
+                refreshPrice = undefined;
+              } else if (refreshPrice > MAX_DECIMAL_10_2) {
+                errors.push({ row: row._row, error: `Invalid "Regular Price" "${first['regular price']}" — exceeds the maximum allowed value (${MAX_DECIMAL_10_2})` });
+                refreshPrice = undefined;
+              }
+            }
+
+            let refreshSalePrice: number | undefined;
+            if (first['sale price']) {
+              refreshSalePrice = parseFloat(first['sale price']);
+              if (isNaN(refreshSalePrice)) {
+                errors.push({ row: row._row, error: `Invalid "Sale Price" "${first['sale price']}" — must be a number` });
+                refreshSalePrice = undefined;
+              } else if (refreshSalePrice < 0) {
+                errors.push({ row: row._row, error: `Invalid "Sale Price" "${first['sale price']}" — cannot be negative` });
+                refreshSalePrice = undefined;
+              }
+            }
+
+            if (refreshPrice !== undefined || refreshSalePrice !== undefined) {
+              await updateProduct(String(existingVariant.product_id), {
+                price: refreshPrice,
+                sale_price: refreshSalePrice,
+              });
+            }
+
             continue;
           }
 

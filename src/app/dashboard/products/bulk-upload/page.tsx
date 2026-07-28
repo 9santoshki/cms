@@ -106,6 +106,11 @@ const BulkUploadPage = () => {
           <li>Variant columns appear between the product fields and the pricing columns — they reflect the types currently active in the system. Leave any blank if not applicable.</li>
           <li>Products are created in <strong>draft</strong> status. Upload images and publish them from the Products page.</li>
           <li>New variant values (e.g. a new colour) are created automatically. Variant <em>types</em> must already be enabled in the dictionary.</li>
+          <li>
+            <strong>Rich Description / FAQs / Warranty Policy / Product Highlights</strong> support basic formatting from
+            plain text — no HTML needed. Leave a blank line between paragraphs, and start a line with <code>-</code> for a
+            bullet list or <code>1.</code> for a numbered list.
+          </li>
         </ol>
         <a
           href="/api/admin/bulk-upload"

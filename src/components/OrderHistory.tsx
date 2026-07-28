@@ -115,7 +115,8 @@ const OrderHistory = () => {
           </EmptyOrdersSection>
         ) : (
           <OrdersList>
-            {[...orders].reverse().map((order, index) => {
+            {/* orders already come back newest-first (ORDER BY created_at DESC) */}
+            {orders.map((order, index) => {
               const orderId = order.id || index + 1;
               const orderDate = formatDateLocal(order.created_at);
               const totalAmount = order.total_amount ?? 0;
@@ -164,8 +165,14 @@ const OrderHistory = () => {
                         : parseFloat(item.price || '0');
                       const itemTotal = itemPrice * (item.quantity || 1);
 
+                      const productHref = item.product_id ? `/products/${item.slug || item.product_id}` : null;
+
                       return (
-                        <OrderItem key={item.id || itemIndex}>
+                        <OrderItem
+                          key={item.id || itemIndex}
+                          onClick={productHref ? () => navigate(productHref) : undefined}
+                          style={productHref ? { cursor: 'pointer' } : undefined}
+                        >
                           <ItemImage $imageUrl={item.image_url}>
                             {!item.image_url && <i className="fas fa-image" />}
                           </ItemImage>
