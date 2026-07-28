@@ -59,12 +59,6 @@ const SelectedVariantInfo = styled.div`
   align-items: center;
 `;
 
-const VariantPrice = styled.div`
-  font-size: 1rem;
-  font-weight: 600;
-  color: #166534;
-`;
-
 const VariantStock = styled.div`
   font-size: 0.75rem;
   color: #4ade80;
@@ -269,19 +263,6 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({ productId, onVariantC
               {selectedVariant.stock_quantity > 0 ? '✓ In Stock' : '⚠ Out of Stock'}
             </VariantStock>
           </div>
-          <VariantPrice>
-            ₹{(selectedVariant.sale_price || selectedVariant.price).toLocaleString()}
-            {selectedVariant.sale_price && (
-              <span style={{
-                marginLeft: '0.5rem',
-                fontSize: '0.875rem',
-                color: '#9ca3af',
-                textDecoration: 'line-through'
-              }}>
-                ₹{selectedVariant.price.toLocaleString()}
-              </span>
-            )}
-          </VariantPrice>
         </SelectedVariantInfo>
       )}
 

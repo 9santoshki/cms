@@ -983,16 +983,21 @@ const ProductDetailDisplay: React.FC<ProductDetailDisplayProps> = ({ product }) 
   const baseHasDiscount = baseOriginalPrice > 0 && baseOriginalPrice > baseDisplayPrice;
   const baseDiscountPercentage = baseHasDiscount ? getDiscountPercentage(baseOriginalPrice, baseDisplayPrice) : 0;
 
-  // Override with variant price if variant is selected
+  // Override with variant price if variant is selected.
+  // Variant price/sale_price come from the API as strings (Postgres DECIMAL),
+  // so they must go through parsePrice() before being compared or displayed —
+  // comparing the raw strings (e.g. "900.00" < "1000.00") sorts lexicographically
+  // and silently returns the wrong answer whenever the two prices have a
+  // different number of digits.
+  const variantPrice = selectedVariant ? parsePrice(selectedVariant.price) : 0;
+  const variantSalePrice = selectedVariant ? parsePrice(selectedVariant.sale_price) : 0;
+  const variantHasDiscount = variantSalePrice > 0 && variantSalePrice < variantPrice;
+
   const displayPrice = selectedVariant
-    ? (selectedVariant.sale_price || selectedVariant.price)
+    ? (variantHasDiscount ? variantSalePrice : variantPrice)
     : baseDisplayPrice;
-  const originalPrice = selectedVariant
-    ? (selectedVariant.sale_price ? selectedVariant.price : baseOriginalPrice)
-    : baseOriginalPrice;
-  const hasDiscount = selectedVariant
-    ? (selectedVariant.sale_price !== undefined && selectedVariant.sale_price < selectedVariant.price)
-    : baseHasDiscount;
+  const originalPrice = selectedVariant ? variantPrice : baseOriginalPrice;
+  const hasDiscount = selectedVariant ? variantHasDiscount : baseHasDiscount;
   const discountPercentage = hasDiscount ? getDiscountPercentage(originalPrice, displayPrice) : 0;
 
   const handleVariantChange = useCallback((variant: ProductVariant | null, label?: string) => {
