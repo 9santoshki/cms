@@ -159,19 +159,9 @@ run_migration "$APP_DIR/scripts/migrations/fix_order_16_stock_deduction.sql"    
 run_migration "$APP_DIR/scripts/migrations/add_hsn_gst_rates.sql"                 "add_hsn_gst_rates"
 run_migration "$APP_DIR/scripts/migrations/add_order_item_tax_snapshot.sql"       "add_order_item_tax_snapshot"
 run_migration "$APP_DIR/scripts/migrations/add_convenience_fee.sql"               "add_convenience_fee"
+run_migration "$APP_DIR/scripts/migrations/add_product_status_history.sql"        "add_product_status_history"
+run_migration "$APP_DIR/scripts/migrations/add_user_address_book.sql"             "add_user_address_book"
 echo "✅ Migrations complete"
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 2b: Seed mock products (idempotent)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if [ -f "$APP_DIR/scripts/seed_mock_products.sql" ]; then
-    echo "  Seeding mock products..."
-    psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f "$APP_DIR/scripts/seed_mock_products.sql" -v ON_ERROR_STOP=1
-    echo "  ✅ Mock products seeded"
-else
-    echo "  ⚠️  seed_mock_products.sql not found, skipping"
-fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

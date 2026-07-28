@@ -211,36 +211,26 @@ run_migration "$APP_DIR/scripts/migrations/fix_order_16_stock_deduction.sql"    
 run_migration "$APP_DIR/scripts/migrations/add_hsn_gst_rates.sql"                 "add_hsn_gst_rates"
 run_migration "$APP_DIR/scripts/migrations/add_order_item_tax_snapshot.sql"       "add_order_item_tax_snapshot"
 run_migration "$APP_DIR/scripts/migrations/add_convenience_fee.sql"               "add_convenience_fee"
+run_migration "$APP_DIR/scripts/migrations/add_product_status_history.sql"        "add_product_status_history"
+run_migration "$APP_DIR/scripts/migrations/add_user_address_book.sql"             "add_user_address_book"
 echo "✅ Migrations complete"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 4: Seed mock products (idempotent)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if [ -f "$APP_DIR/scripts/seed_mock_products.sql" ]; then
-    echo "  Seeding mock products..."
-    psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f "$APP_DIR/scripts/seed_mock_products.sql" -v ON_ERROR_STOP=1
-    echo "  ✅ Mock products seeded"
-else
-    echo "  ⚠️  seed_mock_products.sql not found, skipping"
-fi
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 5: Configure environment"
+echo "  STEP 4: Configure environment"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Environment ready (.env.production)"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 6: Install production dependencies"
+echo "  STEP 5: Install production dependencies"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 npm install --production --prefer-offline
 echo "✅ Dependencies installed"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 7: Restart application"
+echo "  STEP 6: Restart application"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if pm2 list | grep -q "cms-app-prod"; then
     pm2 restart cms-app-prod
