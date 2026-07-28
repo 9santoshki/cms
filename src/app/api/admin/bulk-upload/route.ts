@@ -469,17 +469,20 @@ export async function POST(request: NextRequest) {
 
         try {
           // Re-uploading a SKU that already exists (anywhere in the catalog,
-          // not just this product) is treated as a price/stock/supplier-price
-          // refresh rather than a failed insert: update those fields in place
-          // and leave everything else about the variant — its options, HSN
-          // code, which product it's attached to — untouched.
+          // not just this product) is treated as a price/sale-price/stock/
+          // supplier-price refresh rather than a failed insert: update those
+          // fields in place and leave everything else about the variant —
+          // its options, HSN code, which product it's attached to —
+          // untouched.
           const existingVariant = await getVariantBySku(row['sku']);
           if (existingVariant) {
-            // supplier_price is only ever parsed for admins (moderators can't
-            // see/set it); passing undefined here leaves it untouched rather
-            // than clearing it when a moderator re-uploads the same SKU.
+            // sale_price/supplier_price are only set when the CSV cell is
+            // non-blank (see parsing above); passing undefined here leaves
+            // the existing value untouched rather than clearing it when the
+            // column is left blank on re-upload.
             await updateProductVariant(existingVariant.id, {
               price: varPrice,
+              sale_price: varSalePrice,
               stock_quantity: varStock,
               supplier_price: varSupplierPrice,
             });
