@@ -1,126 +1,116 @@
 import React from 'react';
-import { render, waitFor, screen, fireEvent } from '@testing-library/react';
-import { AppProvider, useAppContext } from '@/context/AppContext';
+import { render, waitFor, fireEvent, act } from '@testing-library/react';
+import { UIProvider } from '@/context/UIContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { ProductProvider, useProduct } from '@/context/ProductContext';
+import { useCartStore } from '@/store/cartStore';
 
-// Mock the apiClient module
+// Mirrors the AppContext test fix: useAppContext() (the legacy combined
+// facade) doesn't expose per-domain loading/error for cart or orders — cart
+// state lives in the Zustand store (useCartStore, no loading flag around
+// individual add/update/remove — those are optimistic, fire-and-forget from
+// the UI's perspective) and order-creation loading lives on ProductContext's
+// own `loading` (a single shared flag, not `.orders`-namespaced). These
+// tests now exercise those real, current state owners directly.
+
 jest.mock('@/lib/api', () => ({
   apiClient: {
-    getProducts: jest.fn(() => Promise.resolve({ success: true, data: [{ id: 1, name: 'Test Product', price: 100 }] })),
-    login: jest.fn(() => Promise.resolve({ success: true, data: { user: { id: 1, name: 'test' }, token: 'fake-token' } })),
-    getCartItems: jest.fn(() => Promise.resolve({ success: true, data: [] })),
-    addToCart: jest.fn(() => Promise.resolve({ success: true, data: { id: 1, quantity: 1 } })),
-    getOrders: jest.fn(() => Promise.resolve({ success: true, data: [] })),
     createOrder: jest.fn(() => Promise.resolve({ success: true, data: { id: 1 } })),
-    updateCartItem: jest.fn(() => Promise.resolve({ success: true, data: { id: 1, quantity: 2 } })),
-    removeFromCart: jest.fn(() => Promise.resolve({ success: true })),
-    clearCart: jest.fn(() => Promise.resolve({ success: true })),
-    register: jest.fn(() => Promise.resolve({ success: true, data: { user: { id: 1, name: 'test' }, token: 'fake-token' } })),
-  }
+  },
 }));
 
-// Increase test timeout
-jest.setTimeout(30000); // Max timeout
+jest.mock('@/lib/auth/client', () => ({
+  signInWithGoogle: jest.fn(() => Promise.resolve()),
+  signOut: jest.fn(() => Promise.resolve({ success: true })),
+  getCurrentUser: jest.fn(() => Promise.resolve(null)),
+  onAuthStateChange: jest.fn(() => ({ unsubscribe: jest.fn() })),
+}));
 
-// Test component for cart operations
-const CartTestComponent = () => {
-  const { loading, error, addToCart, products } = useAppContext();
-  
-  const handleAddToCart = async () => {
-    if (products.length > 0) {
-      await addToCart(products[0], 1);
-    }
-  };
+jest.setTimeout(15000);
 
-  return (
-    <div>
-      <button onClick={handleAddToCart} disabled={loading.cart}>
-        {loading.cart ? 'Adding...' : 'Add to Cart'}
-      </button>
-      <div data-testid="cart-loading">{loading.cart ? 'Cart Loading' : 'Cart Ready'}</div>
-      <div data-testid="cart-error">{error.cart || 'No Cart Error'}</div>
-    </div>
-  );
-};
+const Providers = ({ children }: { children: React.ReactNode }) => (
+  <UIProvider>
+    <AuthProvider>
+      <ProductProvider>{children}</ProductProvider>
+    </AuthProvider>
+  </UIProvider>
+);
 
-describe('Cart Operations', () => {
-  test('should handle adding to cart with max timeout', async () => {
-    const { getByText, getByTestId } = render(
-      <AppProvider>
-        <CartTestComponent />
-      </AppProvider>
-    );
+describe('Cart operations (Zustand store)', () => {
+  const originalFetch = global.fetch;
 
-    // Initially cart should be ready
-    expect(getByTestId('cart-loading')).toHaveTextContent('Cart Ready');
-    
-    // Click the add to cart button
-    fireEvent.click(getByText('Add to Cart'));
-    
-    // Check that loading state is activated
-    expect(getByTestId('cart-loading')).toHaveTextContent('Cart Loading');
-    expect(getByText('Adding...')).toBeInTheDocument();
-    
-    // Wait for the operation to complete (with max timeout)
-    await waitFor(() => {
-      expect(getByTestId('cart-loading')).toHaveTextContent('Cart Ready');
-    }, {
-      timeout: 15000 // Max timeout for cart operation
+  beforeEach(() => {
+    useCartStore.setState({ items: [], isLoading: false });
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ success: true }) })
+    ) as unknown as typeof fetch;
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  test('addItem optimistically updates local state and syncs to the server', async () => {
+    await act(async () => {
+      await useCartStore.getState().addItem({
+        product_id: 1,
+        quantity: 1,
+        name: 'Test Product',
+        price: 100,
+      });
     });
-    
-    // Verify no error occurred
-    expect(getByTestId('cart-error')).toHaveTextContent('No Cart Error');
+
+    expect(useCartStore.getState().items).toEqual([
+      expect.objectContaining({ product_id: 1, quantity: 1, name: 'Test Product' }),
+    ]);
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/cart',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 });
 
-// Test component for order operations
-const OrderTestComponent = () => {
-  const { loading, error, createOrder } = useAppContext();
-  
-  const handleCreateOrder = async () => {
-    try {
-      await createOrder({ items: [{ id: 1, quantity: 1 }] });
-    } catch (err) {
-      // Error is handled by context
-    }
+describe('Order operations (ProductContext)', () => {
+  const OrderTestComponent = () => {
+    const { loading, error, createOrder } = useProduct();
+
+    const handleCreateOrder = async () => {
+      try {
+        await createOrder({ items: [{ id: 1, quantity: 1 }] } as never);
+      } catch {
+        // Error is surfaced via context state, not re-thrown to the caller here
+      }
+    };
+
+    return (
+      <div>
+        <button onClick={handleCreateOrder} disabled={loading}>
+          {loading ? 'Processing...' : 'Create Order'}
+        </button>
+        <div data-testid="orders-loading">{loading ? 'Orders Loading' : 'Orders Ready'}</div>
+        <div data-testid="orders-error">{error || 'No Orders Error'}</div>
+      </div>
+    );
   };
 
-  return (
-    <div>
-      <button onClick={handleCreateOrder} disabled={loading.orders}>
-        {loading.orders ? 'Processing...' : 'Create Order'}
-      </button>
-      <div data-testid="orders-loading">{loading.orders ? 'Orders Loading' : 'Orders Ready'}</div>
-      <div data-testid="orders-error">{error.orders || 'No Orders Error'}</div>
-    </div>
-  );
-};
-
-describe('Order Operations', () => {
-  test('should handle order creation with max timeout', async () => {
+  test('createOrder drives ProductContext.loading through a full cycle', async () => {
     const { getByText, getByTestId } = render(
-      <AppProvider>
+      <Providers>
         <OrderTestComponent />
-      </AppProvider>
+      </Providers>
     );
 
-    // Initially orders should be ready
     expect(getByTestId('orders-loading')).toHaveTextContent('Orders Ready');
-    
-    // Click the create order button
+
     fireEvent.click(getByText('Create Order'));
-    
-    // Check that loading state is activated
+
     expect(getByTestId('orders-loading')).toHaveTextContent('Orders Loading');
     expect(getByText('Processing...')).toBeInTheDocument();
-    
-    // Wait for the operation to complete (with max timeout)
+
     await waitFor(() => {
       expect(getByTestId('orders-loading')).toHaveTextContent('Orders Ready');
-    }, {
-      timeout: 20000 // Max timeout for order operation
     });
-    
-    // Verify no error occurred
+
     expect(getByTestId('orders-error')).toHaveTextContent('No Orders Error');
   });
 });

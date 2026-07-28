@@ -1,49 +1,47 @@
-
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { AppContext } from '@/context/AppContext';
+import { render, screen } from '@testing-library/react';
 import AccountPage from '@/app/account/page';
-import { SessionProvider } from 'next-auth/react';
+import { AuthContext, AuthContextValue } from '@/context/AuthContext';
+import { User } from '@/types';
 
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-  }),
-}));
+// See AccountPage.test.tsx for why this needed rewriting (stale AppContext +
+// next-auth references from a pre-refactor version of the app).
 
-const mockUser = {
-  id: '1',
+jest.mock('@/components/Header', () => () => <div data-testid="header" />);
+jest.mock('@/components/Footer', () => () => <div data-testid="footer" />);
+jest.mock('@/components/SavedAddressesSection', () => () => <div data-testid="saved-addresses" />);
+
+const mockUser: User = {
+  id: 1,
   name: 'Test User',
   email: 'test@example.com',
-  role: 'user',
+  role: 'customer',
   created_at: new Date().toISOString(),
 };
 
 describe('AccountPageSimple', () => {
-  it('displays user profile when authenticated', async () => {
-    const providerProps = {
+  it('displays user profile when authenticated', () => {
+    const fullValue: AuthContextValue = {
       user: mockUser,
       token: 'test-token',
-      loading: { user: false },
-      fetchUserProfile: jest.fn(),
-      setError: jest.fn(),
+      loading: false,
+      error: null,
+      setUser: jest.fn(),
+      setToken: jest.fn(),
       setLoading: jest.fn(),
-      session: { data: { user: mockUser }, status: 'authenticated' },
-      cartItems: [],
+      setError: jest.fn(),
+      signInWithGoogle: jest.fn(),
+      logout: jest.fn(),
     };
 
     render(
-      <SessionProvider session={providerProps.session}>
-        <AppContext.Provider value={providerProps}>
-          <AccountPage />
-        </AppContext.Provider>
-      </SessionProvider>
+      <AuthContext.Provider value={fullValue}>
+        <AccountPage />
+      </AuthContext.Provider>
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /profile settings/i })).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Test User')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('test@example.com')).toBeInTheDocument();
-    });
+    expect(screen.getByRole('heading', { name: /account settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test User' })).toBeInTheDocument();
+    expect(screen.getAllByText('test@example.com').length).toBeGreaterThan(0);
   });
 });

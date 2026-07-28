@@ -41,6 +41,8 @@ jest.mock('@/lib/db/variants', () => ({
   findOrCreateVariantOption: jest.fn(),
   createProductVariant: jest.fn(),
   findVariantByOptions: jest.fn(),
+  getVariantBySku: jest.fn(),
+  updateProductVariant: jest.fn(),
 }));
 
 import { GET, POST } from '@/app/api/admin/bulk-upload/route';
@@ -52,6 +54,7 @@ import {
   findVariantByOptions,
   getVariantOptionsByType,
   getVariantOptionTypes,
+  getVariantBySku,
 } from '@/lib/db/variants';
 
 const mockSession = getSessionFromCookieWithDB as jest.Mock;
@@ -63,6 +66,7 @@ const mockGetVariantOptionsByType = getVariantOptionsByType as jest.Mock;
 const mockFindOrCreateVariantOption = findOrCreateVariantOption as jest.Mock;
 const mockFindVariantByOptions = findVariantByOptions as jest.Mock;
 const mockCreateProductVariant = createProductVariant as jest.Mock;
+const mockGetVariantBySku = getVariantBySku as jest.Mock;
 
 // Mirrors the corrupted production data: `name` is a garbage internal slug,
 // `display_name` is the clean label admins actually configured.
@@ -98,6 +102,7 @@ beforeEach(() => {
   mockSession.mockResolvedValue({ role: 'admin' });
   mockFindVariantByOptions.mockResolvedValue(null);
   mockCreateProductVariant.mockResolvedValue({ id: 1 });
+  mockGetVariantBySku.mockResolvedValue(null);
   mockGetProductByName.mockResolvedValue(null);
   mockGenerateUniqueSlug.mockResolvedValue('new-product');
   mockCreateProduct.mockResolvedValue({ id: '1' });

@@ -50,12 +50,14 @@ jest.mock('@/lib/db/variants', () => ({
   findOrCreateVariantOption: jest.fn(),
   createProductVariant: jest.fn(),
   findVariantByOptions: jest.fn(),
+  getVariantBySku: jest.fn(),
+  updateProductVariant: jest.fn(),
 }));
 
 import { POST } from '@/app/api/admin/bulk-upload/route';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { createProduct, deleteProduct, generateUniqueSlug, getProductByName, setProductCategories } from '@/lib/db/products';
-import { createProductVariant, findVariantByOptions, getVariantOptionTypes } from '@/lib/db/variants';
+import { createProductVariant, findVariantByOptions, getVariantOptionTypes, getVariantBySku } from '@/lib/db/variants';
 
 const mockSession = getSessionFromCookieWithDB as jest.Mock;
 const mockGetProductByName = getProductByName as jest.Mock;
@@ -65,6 +67,7 @@ const mockDeleteProduct = deleteProduct as jest.Mock;
 const mockGetVariantOptionTypes = getVariantOptionTypes as jest.Mock;
 const mockFindVariantByOptions = findVariantByOptions as jest.Mock;
 const mockCreateProductVariant = createProductVariant as jest.Mock;
+const mockGetVariantBySku = getVariantBySku as jest.Mock;
 
 const COLS = [
   'Product Name', 'Description', 'Regular Price', 'Sale Price', 'Categories', 'Brand',
@@ -102,6 +105,7 @@ beforeEach(() => {
   mockGetVariantOptionTypes.mockResolvedValue([]);
   mockFindVariantByOptions.mockResolvedValue(null);
   mockCreateProductVariant.mockResolvedValue({ id: 1 });
+  mockGetVariantBySku.mockResolvedValue(null);
   mockGetProductByName.mockResolvedValue(null);
   mockGenerateUniqueSlug.mockResolvedValue('new-product');
   mockCreateProduct.mockResolvedValue({ id: '1' });

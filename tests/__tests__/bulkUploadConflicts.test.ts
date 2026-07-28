@@ -42,13 +42,15 @@ jest.mock('@/lib/db/variants', () => ({
   findOrCreateVariantOption: jest.fn(),
   createProductVariant: jest.fn(),
   findVariantByOptions: jest.fn(),
+  getVariantBySku: jest.fn(),
+  updateProductVariant: jest.fn(),
 }));
 
 import { POST } from '@/app/api/admin/bulk-upload/route';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
 import { createProduct, deleteProduct, generateUniqueSlug, getProductByName, setProductCategories } from '@/lib/db/products';
 import { getCategoryByName } from '@/lib/db/categories';
-import { createProductVariant, findVariantByOptions, getVariantOptionTypes } from '@/lib/db/variants';
+import { createProductVariant, findVariantByOptions, getVariantOptionTypes, getVariantBySku } from '@/lib/db/variants';
 
 const mockSession = getSessionFromCookieWithDB as jest.Mock;
 const mockGetProductByName = getProductByName as jest.Mock;
@@ -60,6 +62,7 @@ const mockGetCategoryByName = getCategoryByName as jest.Mock;
 const mockGetVariantOptionTypes = getVariantOptionTypes as jest.Mock;
 const mockFindVariantByOptions = findVariantByOptions as jest.Mock;
 const mockCreateProductVariant = createProductVariant as jest.Mock;
+const mockGetVariantBySku = getVariantBySku as jest.Mock;
 
 // Fixed columns, no variant-dimension columns in these tests (getVariantOptionTypes -> [])
 const COLS = [
@@ -92,6 +95,10 @@ beforeEach(() => {
   mockGetVariantOptionTypes.mockResolvedValue([]);
   mockFindVariantByOptions.mockResolvedValue(null);
   mockCreateProductVariant.mockResolvedValue({ id: 1 });
+  // No existing variant with this SKU by default — exercises the
+  // create-new-variant path these tests are actually about. Individual
+  // tests that care about the re-upload/update path override this.
+  mockGetVariantBySku.mockResolvedValue(null);
 });
 
 describe('bulk upload — duplicate product name', () => {

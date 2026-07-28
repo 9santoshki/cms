@@ -1,175 +1,109 @@
-
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { AppContext } from '@/context/AppContext';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import AccountPage from '@/app/account/page';
-import { useRouter } from 'next/navigation';
-import { SessionProvider } from 'next-auth/react';
+import { AuthContext, AuthContextValue } from '@/context/AuthContext';
+import { User } from '@/types';
 
-// Mock the useRouter hook
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-}));
+// This test predates several architecture changes and no longer matched the
+// real app: it drove a raw `AppContext` (removed when auth/product/UI state
+// was split into separate contexts — see AppContext.test.tsx), wrapped
+// everything in next-auth's SessionProvider (this app has never used
+// next-auth for real auth — it's a custom Google OAuth + JWT-cookie system,
+// see AuthContext.tsx), expected a router.push() redirect for signed-out
+// users (the real page renders an inline sign-in prompt instead — no
+// redirect), and expected "Profile Settings" / form inputs to be visible by
+// default (the real page shows a read-only profile card by default; inputs
+// only appear after clicking "Edit Profile"). Rewritten against the actual
+// component below.
 
-jest.setTimeout(5000); // Max timeout for tests
+// Header/Footer pull in CategoryNav (fetches '/api/admin/categories' on
+// mount — no fetch polyfill in this jsdom setup) and LanguageContext, none
+// of which AccountPage's own logic depends on. Stubbed out the same way
+// ProductCardWithVariant is stubbed in ProductBrowserFilterSync.test.tsx.
+jest.mock('@/components/Header', () => () => <div data-testid="header" />);
+jest.mock('@/components/Footer', () => () => <div data-testid="footer" />);
+// Fetches the address book on mount (its own concern, covered separately) —
+// not relevant to what these tests exercise, and jsdom here has no fetch
+// polyfill to satisfy that call.
+jest.mock('@/components/SavedAddressesSection', () => () => <div data-testid="saved-addresses" />);
 
-const mockRouter = {
-  push: jest.fn(),
-};
-
-(useRouter as jest.Mock).mockReturnValue(mockRouter);
-
-const mockUser = {
-  id: '1',
+const mockUser: User = {
+  id: 1,
   name: 'Test User',
   email: 'test@example.com',
-  role: 'user',
+  role: 'customer',
   created_at: new Date().toISOString(),
 };
 
-const mockAdmin = {
-  id: '2',
+const mockAdmin: User = {
+  ...mockUser,
+  id: 2,
   name: 'Admin User',
   email: 'admin@example.com',
   role: 'admin',
-  created_at: new Date().toISOString(),
 };
 
-const renderWithContext = (
-  ui: React.ReactElement,
-  { providerProps, ...renderOptions }: { providerProps: any }
-) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <SessionProvider session={providerProps.session}>
-      <AppContext.Provider value={providerProps}>{children}</AppContext.Provider>
-    </SessionProvider>
-  );
-
-  const result = render(ui, { wrapper: Wrapper, ...renderOptions });
-  
-  return {
-    ...result,
-    rerender: (ui: React.ReactElement, newProviderProps: any) => {
-      const NewWrapper = ({ children }: { children: React.ReactNode }) => (
-        <SessionProvider session={newProviderProps.providerProps.session}>
-          <AppContext.Provider value={newProviderProps.providerProps}>{children}</AppContext.Provider>
-        </SessionProvider>
-      );
-      result.rerender(React.cloneElement(ui, { wrapper: NewWrapper }));
-    }
+function renderWithAuth(value: Partial<AuthContextValue>) {
+  const fullValue: AuthContextValue = {
+    user: null,
+    token: null,
+    loading: false,
+    error: null,
+    setUser: jest.fn(),
+    setToken: jest.fn(),
+    setLoading: jest.fn(),
+    setError: jest.fn(),
+    signInWithGoogle: jest.fn(),
+    logout: jest.fn(),
+    ...value,
   };
-};
+
+  return render(
+    <AuthContext.Provider value={fullValue}>
+      <AccountPage />
+    </AuthContext.Provider>
+  );
+}
 
 describe('AccountPage', () => {
-  it('shows loading state when context is loading', () => {
-    const providerProps = {
-      user: null,
-      token: null,
-      loading: { user: true },
-      fetchUserProfile: jest.fn(),
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: null, status: 'loading' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
-    expect(screen.getByText('Loading your profile...')).toBeInTheDocument();
+  it('shows a loading state while the session check is in progress', () => {
+    renderWithAuth({ loading: true, user: null });
+    expect(screen.getByText('Loading your account...')).toBeInTheDocument();
   });
 
-  it('redirects to auth page if not authenticated', async () => {
-    const providerProps = {
-      user: null,
-      token: null,
-      loading: { user: false },
-      fetchUserProfile: jest.fn(),
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: null, status: 'unauthenticated' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
-    await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/auth?redirect=%2F');
-    });
+  it('shows an inline sign-in prompt (no redirect) when not authenticated', () => {
+    renderWithAuth({ loading: false, user: null });
+
+    expect(screen.getByText('Account Access Required')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /sign in to account/i });
+    expect(link).toHaveAttribute('href', '/auth?redirect=/account');
   });
 
-  it('fetches user profile if authenticated but no user data', async () => {
-    const fetchUserProfile = jest.fn();
-    const providerProps = {
-      user: null,
-      token: 'test-token',
-      loading: { user: false },
-      fetchUserProfile,
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: { user: mockUser }, status: 'authenticated' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
-    await waitFor(() => {
-      expect(fetchUserProfile).toHaveBeenCalled();
-    });
+  it('displays the read-only profile card when authenticated', async () => {
+    renderWithAuth({ loading: false, user: mockUser });
+
+    expect(screen.getByRole('heading', { name: /account settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test User' })).toBeInTheDocument();
+    // Shown twice (header + detail list) in the read-only view
+    expect(screen.getAllByText('test@example.com').length).toBeGreaterThan(0);
+    // Not in edit mode by default — no form inputs yet
+    expect(screen.queryByLabelText(/full name/i)).not.toBeInTheDocument();
   });
 
-  it('displays user profile when authenticated', async () => {
-    const fetchUserProfile = jest.fn().mockResolvedValue(mockUser);
-    const providerProps = {
-      user: mockUser, // Set user directly here
-      token: 'test-token',
-      loading: { user: false },
-      fetchUserProfile,
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: { user: mockUser }, status: 'authenticated' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
+  it('shows editable form fields pre-filled with the current user after clicking Edit Profile', async () => {
+    renderWithAuth({ loading: false, user: mockUser });
 
-    expect(await screen.findByRole('heading', { name: /profile settings/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+
     expect(await screen.findByDisplayValue('Test User')).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('test@example.com')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('test@example.com')).toBeInTheDocument();
   });
 
-  it('displays admin user profile when authenticated as admin', async () => {
-    const fetchUserProfile = jest.fn().mockResolvedValue(mockAdmin);
-    const providerProps = {
-      user: mockAdmin, // Set user directly here
-      token: 'test-token',
-      loading: { user: false },
-      fetchUserProfile,
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: { user: mockAdmin }, status: 'authenticated' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
+  it('shows admin-specific dashboard access when authenticated as admin', async () => {
+    renderWithAuth({ loading: false, user: mockAdmin });
 
-    expect(await screen.findByRole('heading', { name: /profile settings/i })).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('Admin User')).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('admin@example.com')).toBeInTheDocument();
-    expect(await screen.findByText('admin')).toBeInTheDocument();
-  });
-
-  it('handles timeout when fetching user profile', async () => {
-    const fetchUserProfile = jest.fn(() => {
-      return new Promise(resolve => setTimeout(() => resolve(mockUser), 2000));
-    });
-    const providerProps = {
-      user: null,
-      token: 'test-token',
-      loading: { user: false },
-      fetchUserProfile,
-      setError: jest.fn(),
-      setLoading: jest.fn(),
-      session: { data: { user: mockUser }, status: 'authenticated' },
-      cartItems: [],
-    };
-    renderWithContext(<AccountPage />, { providerProps });
-
-    await waitFor(() => {
-      expect(fetchUserProfile).toHaveBeenCalled();
-    });
-
-    expect(await screen.findByRole('heading', { name: /profile settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Admin User' })).toBeInTheDocument();
+    expect(screen.getByText('You have management access to the platform.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /access dashboard/i })).toHaveAttribute('href', '/dashboard');
   });
 });

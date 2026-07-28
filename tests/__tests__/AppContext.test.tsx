@@ -1,105 +1,108 @@
 import React from 'react';
-import { render, waitFor, screen } from '@testing-library/react';
-import { AppProvider, useAppContext } from '@/context/AppContext';
+import { render, waitFor } from '@testing-library/react';
+import { UIProvider } from '@/context/UIContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ProductProvider, useProduct } from '@/context/ProductContext';
 
-// Mock the apiClient module
+// The app was refactored from one monolithic AppContext into separate
+// AuthContext / ProductContext / UIContext (+ the Zustand cart store), with
+// useAppContext() (CombinedAppContext) as a read-mostly facade over them for
+// legacy callers. That facade does NOT re-expose ProductContext's own
+// loading/error state (it only forwards UIContext's — which nothing in
+// ProductContext actually writes to), and there's no email/password login
+// anymore (Google OAuth only). This test now exercises the real, current
+// state owners directly instead of the pre-refactor shape.
+
 jest.mock('@/lib/api', () => ({
   apiClient: {
     getProducts: jest.fn(() => Promise.resolve({ success: true, data: [] })),
-    login: jest.fn(() => Promise.resolve({ success: true, data: { user: { id: 1, name: 'test' }, token: 'fake-token' } })),
-    getCartItems: jest.fn(() => Promise.resolve({ success: true, data: [] })),
-    addToCart: jest.fn(() => Promise.resolve({ success: true, data: {} })),
-    getOrders: jest.fn(() => Promise.resolve({ success: true, data: [] })),
-    createOrder: jest.fn(() => Promise.resolve({ success: true, data: { id: 1 } })),
-    updateCartItem: jest.fn(() => Promise.resolve({ success: true, data: {} })),
-    removeFromCart: jest.fn(() => Promise.resolve({ success: true })),
-    clearCart: jest.fn(() => Promise.resolve({ success: true })),
-    register: jest.fn(() => Promise.resolve({ success: true, data: { user: { id: 1, name: 'test' }, token: 'fake-token' } })),
-  }
+  },
 }));
 
-// Increase test timeout to maximum for slow systems
-jest.setTimeout(30000); // 30 seconds max timeout
+jest.mock('@/lib/auth/client', () => ({
+  signInWithGoogle: jest.fn(() => Promise.resolve()),
+  signOut: jest.fn(() => Promise.resolve({ success: true })),
+  getCurrentUser: jest.fn(() => Promise.resolve(null)),
+  onAuthStateChange: jest.fn(() => ({ unsubscribe: jest.fn() })),
+}));
 
-// Component to test the context
-const TestComponent = () => {
-  const { loading, error, fetchProducts } = useAppContext();
-  
-  React.useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+import { signInWithGoogle as mockGoogleSignIn } from '@/lib/auth/client';
 
-  return (
-    <div>
-      <div data-testid="loading-products">{loading.products ? 'Loading' : 'Loaded'}</div>
-      <div data-testid="error-products">{error.products || 'No Error'}</div>
-    </div>
-  );
-};
+jest.setTimeout(15000);
 
-// Test suite for AppContext
-describe('AppContext', () => {
-  test('should handle loading state correctly with timeout', async () => {
-    const { getByTestId } = render(
-      <AppProvider>
-        <TestComponent />
-      </AppProvider>
-    );
+// Same provider composition as AppProvider, minus CategoriesProvider — that
+// context fetches '/api/admin/categories' on mount and isn't relevant to
+// either test below; jsdom here has no global `fetch` polyfill, so pulling
+// it in would fail these tests on something unrelated to what they cover.
+const Providers = ({ children }: { children: React.ReactNode }) => (
+  <UIProvider>
+    <AuthProvider>
+      <ProductProvider>{children}</ProductProvider>
+    </AuthProvider>
+  </UIProvider>
+);
 
-    // Check initial loading state
-    expect(getByTestId('loading-products')).toHaveTextContent('Loading');
-    
-    // Wait for loading to finish (with increased timeout)
-    await waitFor(() => {
-      expect(getByTestId('loading-products')).toHaveTextContent('Loaded');
-    }, { 
-      timeout: 10000 // Use max timeout for this test
-    });
+describe('AppContext (post-refactor: Auth/Product/UI contexts)', () => {
+  test('ProductContext.loading/error go through a fetch cycle correctly', async () => {
+    const ProductsTestComponent = () => {
+      const { loading, error, fetchProducts } = useProduct();
 
-    // Verify no error occurred
-    expect(getByTestId('error-products')).toHaveTextContent('No Error');
-  });
-
-  test('should handle login with timeout', async () => {
-    const LoginTestComponent = () => {
-      const { loading, error, login } = useAppContext();
-      
       React.useEffect(() => {
-        const performLogin = async () => {
-          try {
-            await login({ email: 'test@example.com', password: 'password' });
-          } catch (err) {
-            // Error is handled by context
-          }
-        };
-        performLogin();
-      }, [login]);
+        fetchProducts();
+      }, [fetchProducts]);
 
       return (
         <div>
-          <div data-testid="loading-auth">{loading.auth ? 'Loading' : 'Loaded'}</div>
-          <div data-testid="error-auth">{error.auth || 'No Error'}</div>
+          <div data-testid="loading-products">{loading ? 'Loading' : 'Loaded'}</div>
+          <div data-testid="error-products">{error || 'No Error'}</div>
         </div>
       );
     };
 
     const { getByTestId } = render(
-      <AppProvider>
-        <LoginTestComponent />
-      </AppProvider>
+      <Providers>
+        <ProductsTestComponent />
+      </Providers>
     );
 
-    // Check initial loading state
-    expect(getByTestId('loading-auth')).toHaveTextContent('Loading');
-    
-    // Wait for loading to finish (with max timeout)
+    expect(getByTestId('loading-products')).toHaveTextContent('Loading');
+
     await waitFor(() => {
-      expect(getByTestId('loading-auth')).toHaveTextContent('Loaded');
-    }, { 
-      timeout: 15000 // Use max timeout for this test
+      expect(getByTestId('loading-products')).toHaveTextContent('Loaded');
     });
 
-    // Verify no error occurred
+    expect(getByTestId('error-products')).toHaveTextContent('No Error');
+  });
+
+  test('AuthContext.loading goes through a Google sign-in cycle correctly', async () => {
+    const LoginTestComponent = () => {
+      const { loading, error, signInWithGoogle } = useAuth();
+
+      React.useEffect(() => {
+        signInWithGoogle().catch(() => {
+          // Error is surfaced via context state, not re-thrown to the caller here
+        });
+      }, [signInWithGoogle]);
+
+      return (
+        <div>
+          <div data-testid="loading-auth">{loading ? 'Loading' : 'Loaded'}</div>
+          <div data-testid="error-auth">{error || 'No Error'}</div>
+        </div>
+      );
+    };
+
+    const { getByTestId } = render(
+      <Providers>
+        <LoginTestComponent />
+      </Providers>
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('loading-auth')).toHaveTextContent('Loaded');
+    });
+
     expect(getByTestId('error-auth')).toHaveTextContent('No Error');
+    expect(mockGoogleSignIn).toHaveBeenCalledTimes(1);
   });
 });
