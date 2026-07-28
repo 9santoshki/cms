@@ -8,18 +8,16 @@ interface Props {
   taxRate: number;
   /** Online-payment convenience fee (0 for UPI QR / when not applicable) — added on top of the total, not baked into item prices like tax. */
   convenienceFee?: number;
+  /** When provided (checkout, once a method is selectable), makes it explicit that the fee doesn't apply to UPI QR rather than just omitting the row. Omit on pages with no payment method chosen yet (e.g. the cart page). */
+  paymentMethod?: 'razorpay' | 'upi_qr';
 }
 
-export const OrderSummaryRows: React.FC<Props> = ({ subtotal, shipping, tax, taxRate, convenienceFee = 0 }) => {
+export const OrderSummaryRows: React.FC<Props> = ({ subtotal, shipping, tax, taxRate, convenienceFee = 0, paymentMethod }) => {
   const total = subtotal + shipping + convenienceFee;
   // When tax is back-computed, display ex-tax amounts so summary rows are not inclusive of tax
   const factor = tax > 0 && taxRate > 0 ? 100 / (100 + taxRate) : 1;
   const subtotalDisplay = subtotal * factor;
   const shippingDisplay = shipping * factor;
-  // taxRate may now be a blended rate computed across items with different
-  // HSN-mapped GST rates (rather than one flat config value), so round it
-  // for a clean label instead of showing float precision noise.
-  const taxRateDisplay = Math.round(taxRate * 10) / 10;
 
   return (
     <>
@@ -33,14 +31,19 @@ export const OrderSummaryRows: React.FC<Props> = ({ subtotal, shipping, tax, tax
       </div>
       {tax > 0 && (
         <div className="summary-row">
-          <span>Tax ({taxRateDisplay}%)</span>
+          <span>Tax</span>
           <span>₹{Math.round(tax).toLocaleString()}</span>
         </div>
       )}
-      {convenienceFee > 0 && (
+      {convenienceFee > 0 ? (
         <div className="summary-row">
           <span>Convenience Fee ({CONVENIENCE_FEE_RATE}%)</span>
           <span>₹{Math.round(convenienceFee).toLocaleString()}</span>
+        </div>
+      ) : paymentMethod === 'upi_qr' && (
+        <div className="summary-row">
+          <span>Convenience Fee</span>
+          <span style={{ color: '#16a34a' }}>Not applicable for UPI</span>
         </div>
       )}
       <div className="summary-row total">

@@ -23,6 +23,7 @@ const ALLOWED_TABLES = [
   'product_variant_values',
   'temp_auth_tokens',
   'hsn_gst_rates',
+  'user_addresses',
 ];
 
 /**

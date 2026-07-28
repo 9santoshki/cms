@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { useCartStore } from '@/store/cartStore';
 import { apiClient } from '@/lib/api';
+import type { SavedAddress } from '@/types';
 import { calculateCartTotal, calculateShippingCost, calculateConvenienceFee, CONVENIENCE_FEE_RATE } from '@/utils/cartUtils';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useCartTax } from '@/hooks/useCartTax';
@@ -63,8 +64,8 @@ const CheckoutPage = () => {
     country: 'India'
   });
   // Saved addresses from profile (immutable snapshots)
-  const [savedShippingAddr, setSavedShippingAddr] = useState<any>(null);
-  const [savedBillingAddr, setSavedBillingAddr] = useState<any>(null);
+  const [savedShippingAddr, setSavedShippingAddr] = useState<SavedAddress | null>(null);
+  const [savedBillingAddr, setSavedBillingAddr] = useState<SavedAddress | null>(null);
   // 'saved' = use the profile card, 'new' = show the editable form
   const [shippingMode, setShippingMode] = useState<'saved' | 'new'>('new');
   const [billingMode, setBillingMode] = useState<'saved' | 'new'>('new');
@@ -106,11 +107,10 @@ const CheckoutPage = () => {
     }
   }, [user, router]);
 
-  // Load saved addresses and GSTIN from profile when user is available
+  // Pre-fill contact fields and GSTIN from profile when user is available
   useEffect(() => {
     if (user) {
       const u = user as any;
-      // Always pre-fill contact fields in the form
       setShippingAddress(prev => ({
         ...prev,
         name: u.name || prev.name,
@@ -118,17 +118,28 @@ const CheckoutPage = () => {
         phone: u.phone || prev.phone,
       }));
       if (u.gstin) setGstin(u.gstin);
-      // Snapshot saved addresses; switch to 'saved' mode when available
-      if (u.shipping_address?.address) {
-        setSavedShippingAddr(u.shipping_address);
+    }
+  }, [user]);
+
+  // Auto-populate the most recently used shipping/billing address from the
+  // user's address book (every distinct address they've checked out with —
+  // see src/lib/db/addresses.ts), not just whatever was saved last. The
+  // list is already ordered most-recently-used first, so [0] is "last used".
+  useEffect(() => {
+    if (!user) return;
+    apiClient.getAddresses('shipping').then(res => {
+      if (res.success && res.data && res.data.length > 0) {
+        setSavedShippingAddr(res.data[0]);
         setShippingMode('saved');
       }
-      if (u.billing_address?.address) {
-        setSavedBillingAddr(u.billing_address);
+    }).catch(() => {});
+    apiClient.getAddresses('billing').then(res => {
+      if (res.success && res.data && res.data.length > 0) {
+        setSavedBillingAddr(res.data[0]);
         setBillingMode('saved');
         setBillingSameAsShipping(false);
       }
-    }
+    }).catch(() => {});
   }, [user]);
 
   // Handle input changes for shipping address
@@ -170,26 +181,31 @@ const CheckoutPage = () => {
 
       const u = user as any;
 
-      // Resolve effective addresses
+      // Resolve effective addresses. savedShippingAddr/savedBillingAddr come
+      // from the address book (id, user_id, last_used_at, ...) — pick just
+      // the address fields so that metadata doesn't leak into the order's
+      // stored shipping_address/billing_address snapshot.
+      const addressFields = (a: typeof savedShippingAddr) =>
+        a ? { address: a.address, city: a.city, state: a.state, zipCode: a.zipCode, country: a.country } : null;
       const contactFields = { name: shippingAddress.name, email: shippingAddress.email, phone: shippingAddress.phone };
       const effectiveShipping = shippingMode === 'saved' && savedShippingAddr
-        ? { ...savedShippingAddr, ...contactFields }
+        ? { ...addressFields(savedShippingAddr), ...contactFields }
         : shippingAddress;
       const effectiveBilling = billingSameAsShipping
         ? effectiveShipping
         : billingMode === 'saved' && savedBillingAddr
-          ? { ...savedBillingAddr, name: savedBillingAddr.name || shippingAddress.name }
+          ? { ...addressFields(savedBillingAddr), name: savedBillingAddr.name || shippingAddress.name }
           : billingAddress;
 
-      // Persist addresses and GSTIN to profile (fire-and-forget)
+      // Persist GSTIN to profile (fire-and-forget). Addresses are no longer
+      // patched here — checkout/create records the shipping/billing address
+      // actually used into the user's address book once the order is
+      // confirmed, which is more reliable than this fire-and-forget call
+      // (it's tied to the real committed order, not a separate request that
+      // could silently fail) and is what checkout auto-populates from.
       if (gstin !== (u.gstin || '')) {
         apiClient.patchProfile({ gstin }).catch(() => {});
       }
-      const addrToSave = { address: effectiveShipping.address, city: effectiveShipping.city, state: effectiveShipping.state, zipCode: effectiveShipping.zipCode, country: effectiveShipping.country };
-      apiClient.patchProfile({
-        shipping_address: addrToSave,
-        billing_address: billingSameAsShipping ? null : { name: effectiveBilling.name, address: effectiveBilling.address, city: effectiveBilling.city, state: effectiveBilling.state, zipCode: effectiveBilling.zipCode, country: effectiveBilling.country },
-      }).catch(() => {});
 
       const cartItemsPayload = cartItems.map(item => ({
         product_id: item.product_id,
@@ -613,7 +629,7 @@ const CheckoutPage = () => {
             </OrderItemsList>
 
             <OrderSummaryDetails>
-              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} convenienceFee={convenienceFee} />
+              <OrderSummaryRows subtotal={subtotal} shipping={shipping} tax={tax} taxRate={taxRate} convenienceFee={convenienceFee} paymentMethod={paymentMethod} />
             </OrderSummaryDetails>
 
             {siteSettings.upi.enabled && (

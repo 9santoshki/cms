@@ -1,5 +1,5 @@
 // API utility functions for making requests to our Next.js API routes
-import type { CartItem, Order, Appointment, Product } from '@/types';
+import type { CartItem, Order, Appointment, Product, SavedAddress } from '@/types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -260,6 +260,24 @@ class ApiClient {
     return this.request<void>('/profile', {
       method: 'PUT',
       body: JSON.stringify(fields),
+    });
+  }
+
+  // Saved address book — see src/lib/db/addresses.ts
+  async getAddresses(type?: 'shipping' | 'billing') {
+    return this.request<SavedAddress[]>(`/profile/addresses${type ? `?type=${type}` : ''}`);
+  }
+
+  async updateAddress(id: number, fields: Partial<Omit<SavedAddress, 'id' | 'user_id' | 'type' | 'last_used_at' | 'created_at' | 'updated_at'>>) {
+    return this.request<SavedAddress>(`/profile/addresses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(fields),
+    });
+  }
+
+  async deleteAddress(id: number) {
+    return this.request<{ message: string }>(`/profile/addresses/${id}`, {
+      method: 'DELETE',
     });
   }
 }

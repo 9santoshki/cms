@@ -6,6 +6,7 @@ import { checkVariantStock } from '@/lib/db/suppliers';
 import { getHsnCodesForVariants } from '@/lib/db/variants';
 import { getSettings } from '@/lib/db/settings';
 import { computeCartTax, type TaxLine } from '@/lib/db/tax';
+import { recordUsedAddress } from '@/lib/db/addresses';
 import { calculateShippingCost, calculateConvenienceFee } from '@/utils/cartUtils';
 
 export async function POST(request: NextRequest) {
@@ -227,6 +228,17 @@ export async function POST(request: NextRequest) {
       throw insertErr;
     } finally {
       itemClient.release();
+    }
+
+    // Record these addresses in the user's address book (dedup'd by content,
+    // bumps last_used_at on repeat use) so checkout can auto-populate the
+    // most recently used address next time. Best-effort: the order is
+    // already committed above, so a failure here must never fail checkout.
+    try {
+      await recordUsedAddress(userId, 'shipping', shipping_address);
+      await recordUsedAddress(userId, 'billing', billing_address || shipping_address);
+    } catch (addrErr) {
+      console.error('[checkout/create] Failed to record address in address book:', addrErr);
     }
 
     return NextResponse.json({

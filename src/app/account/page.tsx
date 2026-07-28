@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SavedAddressesSection from '@/components/SavedAddressesSection';
 import {
   AccountContainer,
   AccountHeader,
@@ -332,6 +333,8 @@ const AccountPage = () => {
             )}
           </DashboardContent>
         </DashboardCard>
+
+        <SavedAddressesSection />
       </AccountContent>
 
       <Footer />

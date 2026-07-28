@@ -192,6 +192,23 @@ export interface Review {
   product_name?: string;
 }
 
+/** An address a user has previously used at checkout — see src/lib/db/addresses.ts */
+export interface SavedAddress {
+  id: number;
+  user_id: number;
+  type: 'shipping' | 'billing';
+  name: string | null;
+  phone: string | null;
+  address: string;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  country: string | null;
+  last_used_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CartItem {
   id?: number;
   user_id?: number;
