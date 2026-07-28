@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import {
   upsertUserFromGoogle,
   createSession,
   createSessionTokenWithDB
 } from '@/lib/db/auth';
+import { query } from '@/lib/db/connection';
 
 export async function GET(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
@@ -65,21 +67,28 @@ export async function GET(request: NextRequest) {
 
     const { dbSession } = await createSession(user, true);
     const sessionToken = createSessionTokenWithDB(user, dbSession.id);
-    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
 
-    // SECURITY: Do NOT include token in URL - it's already set in cookie below
-    // Token in URL would expose it to browser history, logs, and address bar
-    const response = NextResponse.redirect(new URL('/?login=success', appUrl));
+    // Don't set the session cookie directly on this response. This redirect
+    // is the landing point right after a cross-site bounce from
+    // accounts.google.com, and Safari's ITP unreliably persists cookies set
+    // at that exact point — the session cookie would silently fail to stick
+    // for some Safari users, forcing them to re-login every time (observed
+    // in prod: one Safari user re-authenticated 49 times in ~2 months while
+    // Chrome users averaged a handful).
+    //
+    // Instead: hand off through a short-lived, single-use temp token (NOT
+    // the real session token — that would expose a 30-day session if it
+    // leaked via browser history/referrer/logs). /auth/finalize exchanges
+    // it for the real session cookie via a same-origin fetch, well after
+    // the cross-site redirect has settled, which Safari handles reliably.
+    const tempToken = crypto.randomBytes(32).toString('hex');
+    await query(
+      `INSERT INTO temp_auth_tokens (temp_token, session_token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '2 minutes')`,
+      [tempToken, sessionToken]
+    );
 
-    response.cookies.set('cms-session', sessionToken, {
-      httpOnly: true,
-      secure: !isLocalhost, // true for HTTPS (UAT and production), false for localhost
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60
-    });
-
-    return response;
+    return NextResponse.redirect(new URL(`/auth/finalize?token=${tempToken}`, appUrl));
   } catch (err: unknown) {
     // Log full error server-side only — never expose internal details in redirect URL
     console.error('Error in OAuth callback:', err);
