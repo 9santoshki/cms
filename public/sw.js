@@ -17,6 +17,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // All requests pass through to the network — no caching.
+  // Only intercept GET requests. Re-wrapping a POST/PUT request via
+  // fetch(event.request) corrupts streaming bodies (e.g. multipart
+  // file uploads), causing "Failed to parse body as FormData" on the
+  // server. Chrome's installability check only needs the handler to
+  // exist and handle navigation, so non-GET requests are left alone
+  // (no respondWith call = browser sends them untouched).
+  if (event.request.method !== 'GET') {
+    return;
+  }
   event.respondWith(fetch(event.request));
 });
