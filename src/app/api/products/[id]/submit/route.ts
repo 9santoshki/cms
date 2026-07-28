@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductById, updateProduct } from '@/lib/db/products';
+import { getProductById, updateProduct, addProductStatusHistory } from '@/lib/db/products';
 
 // Maker submits a draft or rejected product for admin review
 export async function POST(
@@ -30,6 +30,7 @@ export async function POST(
     }
 
     await updateProduct(id, { status: 'pending_review', reviewer_comment: undefined });
+    await addProductStatusHistory(id, product.status, 'pending_review', session.userId, session.name, null);
 
     return NextResponse.json({ success: true, message: 'Product submitted for review' });
   } catch (err) {

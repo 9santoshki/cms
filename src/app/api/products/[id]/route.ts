@@ -9,6 +9,7 @@ import {
   deleteProduct,
   generateUniqueSlug,
   setProductCategories,
+  getProductStatusHistory,
 } from '@/lib/db/products';
 
 export async function GET(
@@ -48,7 +49,11 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ success: true, data: product });
+    // Status history (who submitted/approved/rejected, and when) is internal
+    // maker-checker detail — only fetched and exposed to admin/moderator.
+    const statusHistory = isAdmin ? await getProductStatusHistory(product.id.toString()) : undefined;
+
+    return NextResponse.json({ success: true, data: { ...product, statusHistory } });
   } catch (err: unknown) {
     console.error('Error fetching product:', err);
     return NextResponse.json(

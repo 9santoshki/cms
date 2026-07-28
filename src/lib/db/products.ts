@@ -253,6 +253,44 @@ export async function updateProduct(
   return queryResult.rows[0] || null;
 }
 
+// ============================================================================
+// Maker-checker status history (who submitted/approved/rejected, and when)
+// ============================================================================
+
+export interface ProductStatusHistoryEntry {
+  id: number;
+  product_id: number;
+  from_status: string | null;
+  to_status: string;
+  changed_by: number | null;
+  changed_by_name: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
+export async function addProductStatusHistory(
+  productId: string,
+  fromStatus: string | null,
+  toStatus: string,
+  changedById: string,
+  changedByName: string,
+  comment: string | null
+): Promise<void> {
+  await query(
+    `INSERT INTO product_status_history (product_id, from_status, to_status, changed_by, changed_by_name, comment)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [productId, fromStatus || null, toStatus, changedById, changedByName, comment || null]
+  );
+}
+
+export async function getProductStatusHistory(productId: string): Promise<ProductStatusHistoryEntry[]> {
+  const result = await query(
+    `SELECT * FROM product_status_history WHERE product_id = $1 ORDER BY created_at ASC`,
+    [productId]
+  );
+  return result.rows;
+}
+
 export async function deleteProduct(id: string): Promise<boolean> {
   try {
     const result = await query('DELETE FROM products WHERE id = $1', [id]);

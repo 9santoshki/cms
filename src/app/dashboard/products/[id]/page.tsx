@@ -25,6 +25,15 @@ interface Category {
   children?: Category[];
 }
 
+interface ProductStatusHistoryEntry {
+  id: number;
+  from_status: string | null;
+  to_status: string;
+  changed_by_name: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -38,6 +47,7 @@ interface Product {
   primary_image?: string;
   status?: 'draft' | 'pending_review' | 'published' | 'rejected' | 'archived';
   reviewer_comment?: string;
+  statusHistory?: ProductStatusHistoryEntry[];
   brand?: string;
   delivery_time?: string;
   highlights?: string;
@@ -89,6 +99,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     faqs: true,
     warranty: true,
     reviewer: true,
+    history: true,
     images: true,
     variants: true,
   });
@@ -1041,6 +1052,47 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     {product?.reviewer_comment || 'No reviewer comment yet.'}
                   </p>
                 ))}
+              </div>
+            )}
+
+            {/* Audit Log — who submitted/approved/rejected this product, and when */}
+            {productId !== 'new' && !!product?.statusHistory?.length && (
+              <div style={{
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '16px',
+              }}>
+                <div onClick={() => toggleSection('history')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', marginBottom: collapsed.history ? 0 : '12px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-history" style={{ color: '#6b7280' }}></i>
+                    Audit Log
+                    <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af' }}>
+                      — submit / approve / reject history
+                    </span>
+                  </h4>
+                  <i className={`fas fa-chevron-${collapsed.history ? 'down' : 'up'}`} style={{ color: '#6b7280', fontSize: '12px' }}></i>
+                </div>
+                {!collapsed.history && (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {[...product.statusHistory].reverse().map(entry => (
+                      <li key={entry.id} style={{ fontSize: '13px', color: '#374151', borderLeft: '2px solid #d1d5db', paddingLeft: '10px' }}>
+                        <div>
+                          <strong>{entry.changed_by_name || 'Unknown user'}</strong>
+                          {' '}changed status {entry.from_status ? `from "${entry.from_status}" ` : ''}to <strong>"{entry.to_status}"</strong>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                          {new Date(entry.created_at).toLocaleString()}
+                        </div>
+                        {entry.comment && (
+                          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontStyle: 'italic' }}>
+                            “{entry.comment}”
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

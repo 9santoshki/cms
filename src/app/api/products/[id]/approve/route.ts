@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductById, updateProduct } from '@/lib/db/products';
+import { getProductById, updateProduct, addProductStatusHistory } from '@/lib/db/products';
 
 // Checker (admin) approves and publishes a pending_review product
 export async function POST(
@@ -33,6 +33,7 @@ export async function POST(
     const comment = body.comment?.trim() || null;
 
     await updateProduct(id, { status: 'published', reviewer_comment: comment });
+    await addProductStatusHistory(id, product.status, 'published', session.userId, session.name, comment);
 
     return NextResponse.json({ success: true, message: 'Product approved and published' });
   } catch (err) {

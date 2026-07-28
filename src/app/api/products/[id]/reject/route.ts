@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromCookieWithDB } from '@/lib/db/auth';
-import { getProductById, updateProduct } from '@/lib/db/products';
+import { getProductById, updateProduct, addProductStatusHistory } from '@/lib/db/products';
 
 // Checker (admin) rejects a pending_review product with a mandatory comment
 export async function POST(
@@ -39,6 +39,7 @@ export async function POST(
     }
 
     await updateProduct(id, { status: 'rejected', reviewer_comment: comment });
+    await addProductStatusHistory(id, product.status, 'rejected', session.userId, session.name, comment);
 
     return NextResponse.json({ success: true, message: 'Product rejected' });
   } catch (err) {
