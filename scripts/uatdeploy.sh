@@ -4,10 +4,10 @@
 
 set -e
 
-DROPLET_IP="68.183.53.217"
+DROPLET_IP="2a01:4f9:c015:3132::1"
 APP_DIR="/home/cms/app"
-DB_NAME="cms_db"
-DB_USER="cms_user"
+DB_NAME="cms_uat_db"
+DB_USER="cms_uat_user"
 
 # Read DB password from .env.uat — never hardcode credentials in scripts
 if [ ! -f ".env.uat" ]; then
@@ -98,7 +98,9 @@ echo ""
 
 # Step 5: Deploy to server
 echo "🚀 Deploying to server..."
-scp /tmp/cms-deploy.tar.gz root@$DROPLET_IP:/tmp/
+# Note: scp's remote spec needs the IPv6 host bracketed ([addr]:/path);
+# ssh's plain "user@addr" form doesn't need brackets.
+scp /tmp/cms-deploy.tar.gz "root@[$DROPLET_IP]:/tmp/"
 
 ssh root@$DROPLET_IP bash << ENDSSH
 set -e
@@ -108,8 +110,11 @@ export PGPASSWORD
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 1: Extract deployment package"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-cd $APP_DIR
-tar -xzf /tmp/cms-deploy.tar.gz
+# App runs as the dedicated non-root 'cms' user on this shared server
+# (mirrors the isolation already used for other apps on this box) —
+# every app-level step (files, npm, pm2) runs as 'cms', not root.
+chmod 644 /tmp/cms-deploy.tar.gz
+sudo -u cms bash -c "cd $APP_DIR && tar -xzf /tmp/cms-deploy.tar.gz"
 rm /tmp/cms-deploy.tar.gz
 echo "✅ Extracted"
 
@@ -117,7 +122,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 1b: Prune old backups (keep last 3)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf
+sudo -u cms bash -c "ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs -r rm -rf"
 echo "✅ Old backups pruned"
 
 echo ""
@@ -168,7 +173,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  STEP 3: Configure environment"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ -f $APP_DIR/.env.uat ]; then
-    ln -sf $APP_DIR/.env.uat $APP_DIR/.env.local
+    sudo -u cms ln -sf $APP_DIR/.env.uat $APP_DIR/.env.local
     echo "✅ Environment configured (.env.local → .env.uat)"
 else
     echo "⚠️  Warning: .env.uat not found"
@@ -178,30 +183,32 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 4: Install production dependencies"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-cd $APP_DIR
-npm install --production --prefer-offline
+sudo -u cms bash -c "cd $APP_DIR && npm install --production --prefer-offline"
 echo "✅ Dependencies installed"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 5: Restart application"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if pm2 list | grep -q "cms-app"; then
-    pm2 restart cms-app
+# -H gives the 'cms' user its own \$HOME, so PM2's default
+# PM2_HOME=\$HOME/.pm2 resolves to /home/cms/.pm2 — the same daemon
+# managed by the pm2-cms systemd service.
+if sudo -u cms -H bash -lc "pm2 list" | grep -q "cms-app"; then
+    sudo -u cms -H bash -lc "pm2 restart cms-app"
     echo "✅ cms-app restarted"
 else
-    PORT=3000 pm2 start npm --name cms-app -- start
-    pm2 save
-    echo "✅ cms-app started (port 3000)"
+    sudo -u cms -H bash -lc "cd $APP_DIR && PORT=3001 pm2 start npm --name cms-app -- start"
+    sudo -u cms -H bash -lc "pm2 save"
+    echo "✅ cms-app started (port 3001)"
 fi
 
 echo ""
 echo "📊 Application status:"
-pm2 list | grep cms-app
+sudo -u cms -H bash -lc "pm2 list" | grep cms-app
 
 echo ""
 echo "📝 Recent logs:"
-pm2 logs cms-app --lines 10 --nostream
+sudo -u cms -H bash -lc "pm2 logs cms-app --lines 10 --nostream"
 
 echo ""
 echo "✅ Deployment complete!"

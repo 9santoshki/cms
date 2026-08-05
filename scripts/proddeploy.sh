@@ -5,10 +5,10 @@
 
 set -e
 
-DROPLET_IP="${PRODUCTION_SERVER_IP:-68.183.53.217}"
+DROPLET_IP="${PRODUCTION_SERVER_IP:-2a01:4f9:c015:3132::1}"
 APP_DIR="/home/cms/app-prod"
-DB_NAME="cms_db_prod"
-DB_USER="cms_user_prod"
+DB_NAME="cms_prod_db"
+DB_USER="cms_prod_user"
 PROD_URL="https://www.colourmyspace.com"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -70,8 +70,8 @@ fi
 
 echo "   Server:    $DROPLET_IP"
 echo "   SSH key:   ${SSH_KEY:-auto-detected}"
-echo "   UAT port:  3000  (/home/cms/app)"
-echo "   PROD port: 3001  (/home/cms/app-prod)"
+echo "   UAT port:  3001  (/home/cms/app)"
+echo "   PROD port: 3002  (/home/cms/app-prod)"
 echo "   URL:       $PROD_URL"
 echo ""
 
@@ -133,7 +133,9 @@ echo ""
 
 # ── Step 4: Upload to server ──────────────────────────────────────
 echo "📤 Uploading to production server..."
-scp $SSH_FLAGS /tmp/cms-deploy-prod.tar.gz root@$DROPLET_IP:/tmp/
+# scp's remote spec needs the IPv6 host bracketed ([addr]:/path); ssh's
+# plain "user@addr" form (used below) doesn't need brackets.
+scp $SSH_FLAGS /tmp/cms-deploy-prod.tar.gz "root@[$DROPLET_IP]:/tmp/"
 
 # ── Step 5: Remote deploy ─────────────────────────────────────────
 # Capture the remote output so we can decide about health checks
@@ -147,11 +149,15 @@ export PGPASSWORD
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 1: Backup current build (rollback safety)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-cd $APP_DIR
+# App runs as the dedicated non-root 'cms' user on this shared server
+# (mirrors the isolation already used for other apps on this box) —
+# every app-level step (files, npm, pm2) runs as 'cms', not root.
+# BACKUP_DIR is computed once here (root shell) so the string handed to
+# 'sudo -u cms bash -c' below is a plain literal — no nested $ escaping.
 BACKUP_DIR=".next.backup.\$(date +%Y%m%d_%H%M%S)"
-if [ -d ".next" ]; then
-    cp -r .next "\$BACKUP_DIR"
-    echo "✅ Backed up .next → \$BACKUP_DIR"
+if [ -d "$APP_DIR/.next" ]; then
+    sudo -u cms bash -c "cp -r $APP_DIR/.next $APP_DIR/\$BACKUP_DIR"
+    echo "✅ Backed up .next -> \$BACKUP_DIR"
 else
     echo "⚠️  No existing .next to back up (first deploy?)"
 fi
@@ -160,8 +166,8 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 2: Extract deployment package"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-rm -rf .next
-tar -xzf /tmp/cms-deploy-prod.tar.gz
+chmod 644 /tmp/cms-deploy-prod.tar.gz
+sudo -u cms bash -c "cd $APP_DIR && rm -rf .next && tar -xzf /tmp/cms-deploy-prod.tar.gz"
 rm /tmp/cms-deploy-prod.tar.gz
 echo "✅ Extracted (clean)"
 
@@ -169,7 +175,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 2b: Prune old backups (keep last 3)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf
+sudo -u cms bash -c "ls -td $APP_DIR/.next.backup.* 2>/dev/null | tail -n +4 | xargs -r rm -rf"
 echo "✅ Old backups pruned"
 
 echo ""
@@ -225,26 +231,28 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 5: Install production dependencies"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-npm install --production --prefer-offline
+sudo -u cms bash -c "cd $APP_DIR && npm install --production --prefer-offline"
 echo "✅ Dependencies installed"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 6: Restart application"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if pm2 list | grep -q "cms-app-prod"; then
-    pm2 restart cms-app-prod
+# -H gives the 'cms' user its own \$HOME, so PM2's default
+# PM2_HOME=\$HOME/.pm2 resolves to /home/cms/.pm2 — the same daemon
+# managed by the pm2-cms systemd service (shared with cms-app/UAT).
+if sudo -u cms -H bash -lc "pm2 list" | grep -q "cms-app-prod"; then
+    sudo -u cms -H bash -lc "pm2 restart cms-app-prod"
     echo "✅ cms-app-prod restarted"
 else
-    cd $APP_DIR
-    PORT=3001 pm2 start npm --name cms-app-prod -- start
-    pm2 save
-    echo "✅ cms-app-prod started (port 3001)"
+    sudo -u cms -H bash -lc "cd $APP_DIR && PORT=3002 pm2 start npm --name cms-app-prod -- start"
+    sudo -u cms -H bash -lc "pm2 save"
+    echo "✅ cms-app-prod started (port 3002)"
 fi
 
 echo ""
 echo "📊 PM2 status:"
-pm2 list | grep cms-app
+sudo -u cms -H bash -lc "pm2 list" | grep cms-app
 
 echo ""
 echo "REMOTE_OK=true"
@@ -280,12 +288,11 @@ if [ "$HEALTH_OK" = false ] && grep -q "REMOTE_OK=true" "$REMOTE_LOG" 2>/dev/nul
     echo "❌ HEALTH CHECK FAILED — initiating rollback..."
     ssh $SSH_FLAGS root@$DROPLET_IP bash << 'ROLLBACK'
 cd /home/cms/app-prod
-LATEST_BACKUP=$(ls -td .next.backup.* 2>/dev/null | head -1)
+LATEST_BACKUP=$(sudo -u cms bash -c 'ls -td .next.backup.* 2>/dev/null | head -1')
 if [ -n "$LATEST_BACKUP" ]; then
     echo "   Restoring backup: $LATEST_BACKUP"
-    rm -rf .next
-    cp -r "$LATEST_BACKUP" .next
-    pm2 restart cms-app-prod
+    sudo -u cms bash -c "cd /home/cms/app-prod && rm -rf .next && cp -r '$LATEST_BACKUP' .next"
+    sudo -u cms -H bash -lc "pm2 restart cms-app-prod"
     echo "✅ Rollback complete — restored from $LATEST_BACKUP"
 else
     echo "❌ No backup found to roll back to!"

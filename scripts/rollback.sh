@@ -4,7 +4,7 @@
 
 set -e
 
-DROPLET_IP="68.183.53.217"
+DROPLET_IP="2a01:4f9:c015:3132::1"
 APP_DIR="/home/cms/app"
 COMMIT="${1:-HEAD~1}"
 
@@ -26,33 +26,37 @@ fi
 ssh root@$DROPLET_IP << ENDSSH
 set -e
 
-cd $APP_DIR
+# App runs as the dedicated non-root 'cms' user on this shared server —
+# every app-level step (git, npm, build, pm2) runs as 'cms', not root.
+sudo -u cms bash -c "
+    set -e
+    cd $APP_DIR
+    echo '📋 Current commit:'
+    git log -1 --oneline
 
-echo "📋 Current commit:"
-git log -1 --oneline
+    echo ''
+    echo '🔄 Rolling back to: $COMMIT'
+    git fetch origin
+    git checkout -f $COMMIT
 
-echo ""
-echo "🔄 Rolling back to: $COMMIT"
-git fetch origin
-git checkout -f $COMMIT
+    echo ''
+    echo '📦 Installing dependencies...'
+    npm install --production
 
-echo ""
-echo "📦 Installing dependencies..."
-npm install --production
-
-echo ""
-echo "🔨 Building application..."
-NODE_ENV=production npm run build
+    echo ''
+    echo '🔨 Building application...'
+    NODE_ENV=production npm run build
+"
 
 echo ""
 echo "🔄 Restarting application..."
-pm2 restart cms-app
+sudo -u cms -H bash -lc "pm2 restart cms-app"
 
 echo ""
 echo "✅ Rollback complete!"
 echo ""
 echo "📋 New commit:"
-git log -1 --oneline
+sudo -u cms bash -c "cd $APP_DIR && git log -1 --oneline"
 
 ENDSSH
 

@@ -3,7 +3,7 @@
 # Usage: ./scripts/deploy-prod-env.sh
 # For UAT, use: ./scripts/deploy-env.sh
 
-DROPLET_IP="${PRODUCTION_SERVER_IP:-68.183.53.217}"
+DROPLET_IP="${PRODUCTION_SERVER_IP:-2a01:4f9:c015:3132::1}"
 ENV_FILE=".env.production"
 REMOTE_ENV_FILE=".env.production"
 REMOTE_DIR="/home/cms/app-prod"
@@ -40,22 +40,24 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 1
 fi
 
-# Upload the file
+# Upload the file (scp needs the IPv6 host bracketed: [addr]:/path)
 echo "Uploading..."
-scp $ENV_FILE root@$DROPLET_IP:$REMOTE_DIR/$REMOTE_ENV_FILE
+scp $ENV_FILE "root@[$DROPLET_IP]:$REMOTE_DIR/$REMOTE_ENV_FILE"
 
 if [ $? -ne 0 ]; then
     echo "❌ Upload failed!"
     exit 1
 fi
 
-# Set secure permissions and restart app
+# Set secure permissions and restart app (app runs as the dedicated
+# non-root 'cms' user on this shared server)
 ssh root@$DROPLET_IP << ENDSSH
 cd $REMOTE_DIR
+chown cms:cms $REMOTE_ENV_FILE
 echo "Setting secure permissions..."
 chmod 600 $REMOTE_ENV_FILE
 echo "Restarting application..."
-pm2 restart cms-app || echo "⚠️  cms-app not running yet (first-time setup?)"
+sudo -u cms -H bash -lc "pm2 restart cms-app-prod" || echo "⚠️  cms-app-prod not running yet (first-time setup?)"
 echo "Environment variables deployed!"
 ENDSSH
 
