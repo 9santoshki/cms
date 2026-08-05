@@ -11,7 +11,8 @@
 1. Commit changes to master branch (active development branch)
 2. Run `./scripts/uatdeploy.sh` to build and deploy to UAT server
 3. Build process uses .env.uat for environment-specific configuration
-4. Application deployed to DigitalOcean Droplet (68.183.53.217)
+4. Application deployed to shared Hetzner server (`2a01:4f9:c015:3132::1`,
+   IPv6-only), directory `/home/cms/app`, database `cms_uat_db`
 5. Verified at https://uat.colourmyspace.com
 
 ### Production Deployment
@@ -19,7 +20,32 @@
 2. Tag the release: `git tag -a v[version] -m "Release description"`
 3. Run `./scripts/proddeploy.sh` to deploy to production server
 4. Initialize database (ONE TIME ONLY during first setup): `npm run init-db`
-5. Verified at https://www.colourmyspace.com
+5. Application deployed to shared Hetzner server (`2a01:4f9:c015:3132::1`,
+   IPv6-only), directory `/home/cms/app-prod`, database `cms_prod_db`
+6. Verified at https://www.colourmyspace.com
+
+### Shared server notes (as of Aug 2026)
+- UAT and prod both run on `2a01:4f9:c015:3132::1` — a Hetzner box that
+  also hosts an unrelated app (saamaandepot) under its own Linux user.
+- The app runs as a dedicated non-root `cms` Linux user (own home dir,
+  own `pm2-cms` systemd service, own nginx site file
+  `/etc/nginx/sites-available/cms`, own Postgres roles
+  `cms_uat_user`/`cms_prod_user`) — never as root, and never touching
+  the other app's user/DB/nginx file/UFW/fail2ban config.
+- PM2 process names: `cms-app` (UAT, port 3001), `cms-app-prod`
+  (prod, port 3002).
+- TLS uses a single Cloudflare Origin wildcard certificate
+  (`*.colourmyspace.com` + `colourmyspace.com`) covering both
+  environments — `/etc/ssl/certs/cms-wildcard-origin.pem`.
+- The previous droplet (`68.183.53.217`) is retired (processes stopped,
+  droplet left running as a cold rollback) — see git history around
+  Aug 2026 for the migration scripts (`setup-cms-on-shared-server.sh`,
+  `migrate-db-to-new-server.sh`).
+- Known issue: the bare apex `colourmyspace.com` (no `www`) intermittently
+  returns Cloudflare 525 — confirmed to be a Cloudflare edge-to-origin
+  issue, not a DNS/cert/nginx problem (DNS record, cert SAN, and direct
+  origin tests are all correct). `www.colourmyspace.com` and
+  `uat.colourmyspace.com` are unaffected.
 
 ## Configuration & Secrets Locations
 • `.env.local` - Local development environment variables
